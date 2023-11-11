@@ -60,15 +60,15 @@ class MainUI(QDialog):
             self.settings_ui.initialize_settings_components()
             self.settings_ui.exec()
 
-    # automatically save the current position of dialog before running the screenshot
-    # for function show_main_ui
+    # Automatically save the current position of dialog before running the screenshot
+    # For function show_main_ui
     def start_transparent_overlay(self):
         self.saved_position = self.pos()
         logger.info(f"Saved position before screenshot: X: {self.saved_position.x()} Y: {self.saved_position.y()}")
         self.hide()
         self.overlay_capture.show_overlay()  # Show the TransparentOverlay
 
-    # show the MainUI dialog of the current save position
+    # Show the MainUI dialog of the current save position
     def show_main_ui(self):
         if self.saved_position is not None:
             self.move(self.saved_position)
@@ -76,7 +76,7 @@ class MainUI(QDialog):
         if not self.overlay_capture.isHidden():
             self.overlay_capture.close_overlay()
 
-    # ignore the closing the MainUI dialog if OCR Text dialog is currently open
+    # Ignore the closing the MainUI dialog if OCR Text dialog is currently open
     def closeEvent(self, event):
         if self.overlay_capture.ocrtext_ui.isVisible():
             event.ignore()
@@ -88,15 +88,15 @@ class MainUI(QDialog):
             logger.info("Minimizing app to system tray")
             if not self.notification_shown:
                 self.notification_shown = True
-                self.tray_icon.showMessage('Hey there!', 'PyTextractOCR has been minimized to the system tray. '
-                                                         'Right-click to reopen.', QSystemTrayIcon.Information, 2000)
+                self.tray_icon.showMessage('Hey there!', 'PyTextractOCR has been minimized to the system tray. ',
+                                            QSystemTrayIcon.Information, 2000)
         else:
             self.save_main_window_position()
             event.accept()
             logger.info("Closing app")
             QCoreApplication.quit()
 
-    # save the current position of window dialog to configuration file before quitting
+    # Save the current position of window dialog to configuration file before quitting
     def save_main_window_position(self):
         window_position_x = self.pos().x()
         window_position_y = self.pos().y()
@@ -109,8 +109,8 @@ class MainUI(QDialog):
         logger.info(f"Saved position: X: {window_position_x} Y: {window_position_y}")
         update_config(self_pos_xy)
 
-    # load the save position from configuration file then move the window before showing the dialog
-    # this function will only run once before starting
+    # Load the save position from configuration file then move the window before showing the dialog
+    # This function will only run once before starting
     def load_main_window_position(self):
         config_path = Path('config.toml')
         if config_path.is_file():
@@ -136,6 +136,7 @@ class SystemTrayApp(QApplication):
         # Create Settings UI once
         self.settings_ui = SettingsUI()
         self.tray_icon = QSystemTrayIcon(self)
+        self.tray_icon.activated.connect(self.tray_icon_activated)
 
         icon_path = Path('assets/icon/app-icon.svg')
         if icon_path.is_file():
@@ -173,6 +174,10 @@ class SystemTrayApp(QApplication):
         # Pass tray_icon and settings_ui to Main_UI
         self.dialog = MainUI(self.tray_icon, self.settings_ui)
         self.dialog.show()
+
+    def tray_icon_activated(self, reason):
+        if reason == QSystemTrayIcon.Trigger:
+            self.show_dialog()
 
     def show_dialog(self):
         self.dialog.show()

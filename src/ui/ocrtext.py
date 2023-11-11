@@ -24,12 +24,11 @@ class OCRTextUI(QDialog):
     def __init__(self):
         super().__init__()
 
-        self.setWindowTitle("Screenshot to OCR - OCR Text")
+        self.setWindowTitle("PyTextractOCR - OCR Text")
         self.setWindowIcon(QIcon(app_icon))
         self.setGeometry(0, 0, 500, 300)  # Initial dialog size
         self.setMinimumSize(300, 200)
 
-        # Create a QVBoxLayout for the dialog
         self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(5, 5, 5, 5)
 
@@ -116,13 +115,6 @@ class OCRTextUI(QDialog):
 
         self.layout.addLayout(self.button_layout)
         self.setLayout(self.layout)
-
-        # Center the dialog on the screen
-        # screen = QGuiApplication.primaryScreen()
-        # screen_geometry = screen.geometry()
-        # x = (screen_geometry.width() - self.width()) // 2
-        # y = (screen_geometry.height() - self.height()) // 2
-        # self.move(x, y)
 
     def set_text(self, text):
         self.text_edit.setPlainText(text)
@@ -212,8 +204,8 @@ class OCRTextUI(QDialog):
         self.save_popup_window_position()
         self.close()
 
-    # def closeEvent(self, even):
-    #     logger.info("OCR Text dialog close")
+    def closeEvent(self, even):
+        logger.info("OCR Text dialog close")
 
 
 class ClickableLabel(QLabel):

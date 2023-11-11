@@ -6,7 +6,7 @@ import tempfile
 # Third-party libraries
 from loguru import logger
 from PIL import ImageGrab
-from playsound import playsound, PlaysoundException  # use version 1.2.2
+from playsound import playsound, PlaysoundException  # Use version 1.2.2
 from PySide6.QtCore import Qt, QRect
 from PySide6.QtGui import QPainter, QColor
 from PySide6.QtWidgets import QMainWindow
@@ -24,7 +24,7 @@ def get_current_datetime():
     year = now.year
     month = now.month
     day = now.day
-    hour = now.hour  # This will be in 24-hour format (military hour)
+    hour = now.hour  # 24-hour format (military hour)
     minute = now.minute
     second = now.second
 
@@ -38,10 +38,9 @@ class TransparentOverlayCapture(QMainWindow):
     def __init__(self, main_ui_instance):
         super().__init__()
 
-        self.setWindowTitle("Screenshot to OCR")
         self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
         self.setWindowState(Qt.WindowFullScreen)
-        self.setWindowOpacity(0.1)  # Initially fully opaque
+        self.setWindowOpacity(0.1)  # Set the window's opacity to 10% (very transparent)
 
         self.returned_text = None
         self.show_formatted_text = None
@@ -69,10 +68,6 @@ class TransparentOverlayCapture(QMainWindow):
 
     def paintEvent(self, event):
         painter = QPainter(self)
-        # Alternative to painter.fillRect
-        # painter.setOpacity(0.1)
-        # painter.setBrush(QColor('blue'))
-        # painter.drawRect(self.rect())
         painter.fillRect(self.rect(), QColor(0, 0, 0, 0))  # Make the overlay transparent
         if self.drag_area:
             painter.setOpacity(0.0)
@@ -103,7 +98,7 @@ class TransparentOverlayCapture(QMainWindow):
     def take_screenshot(self):
         if self.drag_area:
             try:
-                # Get the coordinates of the selected
+                # Get the coordinates of the selected area
                 x = min(self.drag_start_pos.x(), self.drag_end_pos.x())
                 y = min(self.drag_start_pos.y(), self.drag_end_pos.y())
                 width = abs(self.drag_start_pos.x() - self.drag_end_pos.x())

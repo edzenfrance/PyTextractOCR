@@ -185,19 +185,25 @@ class SettingsUI(QDialog):
         self.combobox_psm_value = QComboBox(self.pytesseract_tab)
         self.combobox_psm_value.setObjectName("combobox_psm_value")
         self.combobox_psm_value.setGeometry(QRect(135, 13, 61, 22))
-        self.combobox_psm_value.addItems(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13'])
+        self.combobox_psm_value.addItems(['3', '4', '5', '6', '7', '8', '9', '10', '11', '13'])
         psm_value = self.config['pytesseract']['page_segmentation_mode']
-        if psm_value > 13:
-            self.combobox_psm_value.setCurrentIndex(0)
-        elif psm_value >= 0:  # -1 means the text was not found
-            self.combobox_psm_value.setCurrentIndex(psm_value)
+        try:
+            psm_value = int(psm_value)
+            if psm_value < 3 or psm_value == 12 or psm_value > 13:
+                self.combobox_psm_value.setCurrentIndex(0)
+            else:
+                self.combobox_psm_value.setCurrentText(str(psm_value))
+        except ValueError:
+            pass
         self.toggle_checkbox_psm_tooltip(psm_value)
         self.combobox_psm_value.currentIndexChanged.connect(lambda index: (self.toggle_checkbox_psm_tooltip(index), self.toggle_apply_button()))
 
+        # LABEL - OCR Engine Mode
         self.label_oem_value = QLabel(self.pytesseract_tab)
         self.label_oem_value.setObjectName("label_oem_value")
         self.label_oem_value.setGeometry(QRect(220, 16, 101, 16))
 
+        # COMBOBOX - OCR Engine Mode
         self.combobox_oem_value = QComboBox(self.pytesseract_tab)
         self.combobox_oem_value.setObjectName("combobox_oem_value")
         self.combobox_oem_value.setGeometry(QRect(328, 13, 61, 22))
@@ -209,10 +215,12 @@ class SettingsUI(QDialog):
             self.combobox_oem_value.setCurrentIndex(oem_value)
         self.combobox_oem_value.currentIndexChanged.connect(self.toggle_apply_button)
 
+        # LABEL - Blacklist characters
         self.label_blacklist_char = QLabel(self.pytesseract_tab)
         self.label_blacklist_char.setObjectName("label_blacklist_char")
         self.label_blacklist_char.setGeometry(QRect(15, 80, 111, 16))
 
+        # LINE EDIT - Blacklist characters
         self.line_edit_blacklist_char = QLineEdit(self.pytesseract_tab)
         self.line_edit_blacklist_char.setObjectName("line_edit_blacklist_char")
         self.line_edit_blacklist_char.setGeometry(QRect(135, 77, 191, 22))
@@ -220,10 +228,12 @@ class SettingsUI(QDialog):
         self.line_edit_blacklist_char.editingFinished.connect(lambda: SettingsUI.remove_duplicate_chars(self.line_edit_blacklist_char))
         self.line_edits['line_edit_blacklist_char'] = self.line_edit_blacklist_char  # Add to the dictionary
 
+        # LABEL - Whitelist characters
         self.label_whitelist_char = QLabel(self.pytesseract_tab)
         self.label_whitelist_char.setObjectName("label_whitelist_char")
         self.label_whitelist_char.setGeometry(QRect(15, 110, 111, 16))
 
+        # LINE EDIT - Whitelist characters
         self.line_edit_whitelist_char = QLineEdit(self.pytesseract_tab)
         self.line_edit_whitelist_char.setObjectName("line_edit_whitelist_char")
         self.line_edit_whitelist_char.setGeometry(QRect(135, 108, 191, 22))
@@ -231,38 +241,33 @@ class SettingsUI(QDialog):
         self.line_edit_whitelist_char.editingFinished.connect(lambda: SettingsUI.remove_duplicate_chars(self.line_edit_whitelist_char))
         self.line_edits['line_edit_whitelist_char'] = self.line_edit_whitelist_char  # Add to the dictionary
 
+        # CHECKBOX - Detect digits only
         self.checkbox_detect_digits_only = QCheckBox(self.pytesseract_tab)
         self.checkbox_detect_digits_only.setObjectName("checkbox_detect_digits_only")
         self.checkbox_detect_digits_only.setGeometry(QRect(16, 47, 115, 20))
         self.checkbox_detect_digits_only.stateChanged.connect(self.toggle_apply_button)
 
+        # https://tesseract-ocr.github.io/tessdoc/Data-Files-in-different-versions.html
+        # LABEL - Languages
         self.label_languages = QLabel(self.pytesseract_tab)
         self.label_languages.setObjectName("label_languages")
         self.label_languages.setGeometry(QRect(15, 142, 61, 16))
 
-        self.line_edit_languages = QLineEdit(self.pytesseract_tab)
-        self.line_edit_languages.setObjectName("line_edit_languages")
-        self.line_edit_languages.setGeometry(QRect(135, 139, 191, 22))
-        self.line_edit_languages.textChanged.connect(self.toggle_apply_button)
-        self.line_edits['line_edit_languages'] = self.line_edit_languages  # Add to the dictionary
-
-        self.label_language_code_link = QLabel(self.pytesseract_tab)
-        self.label_language_code_link.setObjectName("label_language_code_link")
-        self.label_language_code_link.setGeometry(QRect(332, 142, 31, 16))
-        self.label_language_code_link.setOpenExternalLinks(True)
-
+        # CHECKBOX - Blacklist characters
         self.checkbox_blacklist_char = QCheckBox(self.pytesseract_tab)
         self.checkbox_blacklist_char.setObjectName("checkbox_blacklist_char")
         self.checkbox_blacklist_char.setGeometry(QRect(332, 78, 15, 20))
         self.checkbox_blacklist_char.stateChanged.connect(self.toggle_apply_button)
         self.checkbox_blacklist_char.clicked.connect(lambda: self.toggle_wblist_checkbox(self.checkbox_blacklist_char))
 
+        # CHECKBOX - Whitelist characters
         self.checkbox_whitelist_char = QCheckBox(self.pytesseract_tab)
         self.checkbox_whitelist_char.setObjectName("checkbox_whitelist_char")
         self.checkbox_whitelist_char.setGeometry(QRect(332, 113, 15, 20))
         self.checkbox_whitelist_char.stateChanged.connect(self.toggle_apply_button)
         self.checkbox_whitelist_char.clicked.connect(lambda: self.toggle_wblist_checkbox(self.checkbox_whitelist_char))
 
+        # CHECBOX - Preserved interword spacing
         self.checkbox_preserved_interword_spc = QCheckBox(self.pytesseract_tab)
         self.checkbox_preserved_interword_spc.setObjectName("checkbox_preserved_interword_spc")
         self.checkbox_preserved_interword_spc.setGeometry(QRect(147, 47, 171, 20))
@@ -318,21 +323,25 @@ class SettingsUI(QDialog):
         self.translate_tab = QWidget()
         self.translate_tab.setObjectName("translate_tab")
 
+        # CHECKBOX - Append translation to clipboard
         self.checkbox_append_translation = QCheckBox(self.translate_tab)
         self.checkbox_append_translation.setObjectName("checkbox_append_translation")
         self.checkbox_append_translation.setGeometry(QRect(16, 10, 201, 20))
         self.checkbox_append_translation.stateChanged.connect(self.toggle_apply_button)
 
+        # CHECKBOX - Show translation in popup window
         self.checkbox_show_translation = QCheckBox(self.translate_tab)
         self.checkbox_show_translation.setObjectName("checkbox_show_translation")
         self.checkbox_show_translation.setGeometry(QRect(16, 40, 211, 20))
         self.checkbox_show_translation.setChecked(self.config['translate']['enable_translation'])
         self.checkbox_show_translation.stateChanged.connect(self.toggle_apply_button)
 
+        # LABEL - Server timeout
         self.label_server_timeout = QLabel(self.translate_tab)
         self.label_server_timeout.setObjectName("label_server_timeout")
         self.label_server_timeout.setGeometry(QRect(250, 42, 101, 16))
 
+        # CUSTOM QSPINBOX
         self.spinbox_server_timeout = CustomSpinBox(self.translate_tab)
         self.spinbox_server_timeout.setObjectName("spinbox_server_timeout")
         self.spinbox_server_timeout.setGeometry(QRect(333, 40, 71, 22))
@@ -483,13 +492,11 @@ class SettingsUI(QDialog):
             for lang_code, full_name in translation_options.items():
                 full_name = full_name.capitalize()
                 if full_name != ocr_lang:
-                    # logger.info(f"Language: {full_name} - Code: {lang_code}")
                     self.translate_to_combo.addItem(full_name)
 
             # Get the translation value in configuration file. English: Value
             language_value = self.config['translate'][ocr_lang.lower()]
             translate_to_text_value = self.translate_to_combo.findText(language_value.capitalize())
-            # logger.info(f"Language: {ocr_lang.lower()}: {language_value}")
             if translate_to_text_value >= 0:  # -1 means the text was not found
                 self.translate_to_combo.setCurrentIndex(translate_to_text_value)
 
@@ -497,17 +504,6 @@ class SettingsUI(QDialog):
             self.tableWidget.setCellWidget(row, 1, self.translate_to_combo)
             self.translate_to_comboboxes.append(self.translate_to_combo)
             self.translate_to_combo.currentIndexChanged.connect(self.toggle_apply_button)
-
-        # COMBOBOX - Page segmentation mode
-        self.combobox_psm_value = QComboBox(self.pytesseract_tab)
-        self.combobox_psm_value.setObjectName("combobox_psm_value")
-        self.combobox_psm_value.setGeometry(QRect(135, 13, 61, 22))
-        self.combobox_psm_value.addItems(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13'])
-        psm_value = self.config['pytesseract']['page_segmentation_mode']
-        if psm_value > 13:
-            self.combobox_psm_value.setCurrentIndex(0)
-        elif psm_value >= 0:  # -1 means the text was not found
-            self.combobox_psm_value.setCurrentIndex(psm_value)
 
         # Make 'Translate To' column stretch to fill table width.
         # noinspection PyUnresolvedReferences
@@ -551,20 +547,6 @@ class SettingsUI(QDialog):
         # Tab 1
         self.tab_widget.setTabText(self.tab_widget.indexOf(self.pytesseract_tab), "Pytesseract")
         self.label_psm_value.setText("Page segment mode:")
-        self.combobox_psm_value.setItemText(0, "0")
-        self.combobox_psm_value.setItemText(1, "1")
-        self.combobox_psm_value.setItemText(2, "2")
-        self.combobox_psm_value.setItemText(3, "3")
-        self.combobox_psm_value.setItemText(4, "4")
-        self.combobox_psm_value.setItemText(5, "5")
-        self.combobox_psm_value.setItemText(6, "6")
-        self.combobox_psm_value.setItemText(7, "7")
-        self.combobox_psm_value.setItemText(8, "8")
-        self.combobox_psm_value.setItemText(9, "9")
-        self.combobox_psm_value.setItemText(10, "10")
-        self.combobox_psm_value.setItemText(11, "11")
-        self.combobox_psm_value.setItemText(12, "12")
-        self.combobox_psm_value.setItemText(13, "13")
         self.label_oem_value.setText("OCR Engine mode:")
         self.combobox_oem_value.setItemText(0, "0")
         self.combobox_oem_value.setItemText(1, "1")
@@ -574,10 +556,9 @@ class SettingsUI(QDialog):
         self.label_whitelist_char.setText("Whitelist characters:")
         self.checkbox_detect_digits_only.setText("Detect digits only")
         self.label_languages.setText("Languages:")
-        self.label_language_code_link.setText("<a href='https://tesseract-ocr.github.io/tessdoc/Data-Files-in-different-versions.html'>Code</a>")
         self.checkbox_blacklist_char.setText("")
         self.checkbox_whitelist_char.setText("")
-        self.checkbox_preserved_interword_spc.setText("Preserve Interword Spacing")
+        self.checkbox_preserved_interword_spc.setText("Preserve interword spacing")
         self.tab_widget.setTabText(self.tab_widget.indexOf(self.pytesseract_tab), "Pytesseract")
 
         # Tab 2
@@ -586,29 +567,20 @@ class SettingsUI(QDialog):
         self.checkbox_show_translation.setText("Show translation in popup window")
         self.label_server_timeout.setText("Server timeout:")
 
-        # Tab 3
-        # with open(help_file, 'r') as f:
-        #     html_content = f.read()
-        #     self.text_browser_help.setHtml(html_content)
-
         self.tab_widget.setTabText(self.tab_widget.indexOf(self.output_tab), "Output")
 
     def toggle_checkbox_psm_tooltip(self, psm_value):
         info_text = {
-            0: "Orientation and script detection (OSD) only.",
-            1: "Automatic page segmentation with OSD.",
-            2: "Automatic page segmentation,but no OSD,\nor OCR. (not implemented)",
-            3: "Fully automatic page segmentation, but\nno OSD. (Default)",
-            4: "Assume a single column of text of variable sizes. ",
-            5: "Assume a single uniform block of vertically\naligned text. ",
-            6: "Assume a single uniform block of text. ",
-            7: "Treat the image as a single text line. ",
-            8: "Treat the image as a single word. ",
-            9: "Treat the image as a single word in a circle. ",
-            10: "Treat the image as a single character. ",
-            11: "Sparse text. Find as much text as possible in\nno particular order. ",
-            12: "Sparse text with OSD.",
-            13: "Raw line. Treat the image as a single text line,\nbypassing hacks that are Tesseract-specific."
+            0: "Fully automatic page segmentation, but\nno OSD. (Default)",
+            1: "Assume a single column of text of variable sizes. ",
+            2: "Assume a single uniform block of vertically\naligned text. ",
+            3: "Assume a single uniform block of text. ",
+            4: "Treat the image as a single text line. ",
+            5: "Treat the image as a single word. ",
+            6: "Treat the image as a single word in a circle. ",
+            7: "Treat the image as a single character. ",
+            8: "Sparse text. Find as much text as possible in\nno particular order. ",
+            9: "Raw line. Treat the image as a single text line,\nbypassing hacks that are Tesseract-specific."
         }
         self.combobox_psm_value.setToolTip(info_text.get(psm_value, ""))
 
@@ -707,7 +679,7 @@ class SettingsUI(QDialog):
     def stop_updating_apply_button(self):
         logger.info(f"Apply button state: {self.button_apply_was_enabled}")
         if self.button_apply_was_enabled:
-            self.fade_timer.stop()  # stop running the update_apply_button_state
+            self.fade_timer.stop()  # Forcefully stopping the update_apply_button_state
             palette = QPalette()
             gray_color = QColor(128, 128, 128)
             palette.setColor(QPalette.ButtonText, gray_color)
@@ -798,7 +770,6 @@ class SettingsUI(QDialog):
                 'whitelist_char': self.line_edit_whitelist_char.text(),
                 'detect_digits_only': self.checkbox_detect_digits_only.isChecked(),
                 'preserved_interword_spaces': self.checkbox_preserved_interword_spc.isChecked(),
-                # 'html_based_ocr_output': self.checkbox_html_based_ocr.isChecked(),
                 'language': "eng"
             },
             "output": {
