@@ -4,12 +4,14 @@ import os
 # Third-party libraries
 from loguru import logger
 from PIL import Image, ImageEnhance, ImageOps, ImageFilter
+from pytesseract import Output
+import pandas as pd
+import cv2
 import pyperclip
 import pytesseract
 
 # Source
 from src.config.config import load_config
-from src.ocr import ocr_indentation_space
 
 # Set the Tesseract OCR command path
 pytesseract.pytesseract.tesseract_cmd = 'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
@@ -25,20 +27,24 @@ class ImageProcessor:
         self.filename = None
 
     def perform_pytesseract_ocr(self, filename):
-        """
-        Perform Optical Character Recognition (OCR) on an image using PyTessaract.
-        ...
-        After performing OCR, it calls another method `show_screenshot_ui()`.
-        """
         try:
             self.filename = filename
             image_path = self.get_image_path()
 
-            if self.config['preferences']['auto_ocr']:
-                # Perform OCR and convert the text in the image into a string or hOCR format
-                ocr_text = self.perform_ocr(image_path)
+            # Point to the folder where Tesseract language data is located
+            os.environ['TESSDATA_PREFIX'] = './tessdata/'
 
-                # Copy string/hOCR text to clipboard if possible and not empty
+            if self.config['preferences']['auto_ocr']:
+                logger.info(f"Using Pytesseract Version: {pytesseract.get_tesseract_version()}")
+                ImageProcessor.preprocess_image(image_path)
+                self.get_pytesseract_configuration()
+
+                if self.config['pytesseract']['preserve_interword_spaces']:
+                    ocr_text = self.perform_ocr_image_to_data(image_path)
+                else:
+                    ocr_text = self.perform_ocr_image_to_string(image_path)
+
+                # Copy text to clipboard if possible and not empty
                 if self.config['output']['copy_to_clipboard']:
                     if len(ocr_text) != 0:
                         formatted_text = ocr_text.decode('utf-8') if isinstance(ocr_text, bytes) else ocr_text
@@ -52,10 +58,7 @@ class ImageProcessor:
             logger.error(f"An error occurred during PyTessaract OCR process: {e}")
 
         finally:
-            # print(f"[perform_pytesseract_ocr]"
-            #       f"\n------------------OCR Text------------------\n"
-            #       f"\n{self.show_formatted_text}"
-            #       f"\n------------------OCR Text------------------")
+            logger.info(f"OCR Text\n{self.show_formatted_text}")
             return self.show_formatted_text
 
     def get_image_path(self):
@@ -114,30 +117,68 @@ class ImageProcessor:
 
     def get_pytesseract_configuration(self):
         psmv = str(self.config['pytesseract']['page_segmentation_mode'])
-        piws = str(int(self.config['pytesseract']['preserved_interword_spaces']))
-        obdg = " -c tessedit_char_whitelist=0123456789" if self.config['pytesseract']['detect_digits_only'] else ""
+        piws = str(int(self.config['pytesseract']['preserve_interword_spaces']))
+        te_char = ""
 
-        self.custom_config = r'-l eng --psm ' + psmv + ' --oem 3' + '-c preserve_interword_spaces=' + piws + obdg
-        logger.info(f"Pytesseract config = {self.custom_config}")
+        if self.config['pytesseract']['detect_digits_only']:
+            te_char = " -c tessedit_char_whitelist=0123456789"
+        elif self.config['pytesseract']['enable_blacklist_char']:
+            bchr = self.config['pytesseract']['blacklist_char']
+            te_char = f" -c tessedit_char_blacklist={bchr}"
+        elif self.config['pytesseract']['enable_whitelist_char']:
+            wchr = self.config['pytesseract']['whitelist_char']
+            te_char = f" -c tessedit_char_whitelist={wchr}"
 
-    def perform_ocr(self, image_path):
-        logger.info(f"Using Pytesseract Version: {pytesseract.get_tesseract_version()}")
-        if self.config['preferences']['auto_ocr']:
-            # Set the TESSDATA_PREFIX environment variable to point to your tessdata directory
-            os.environ['TESSDATA_PREFIX'] = './tessdata/'
+        self.custom_config = r'-l eng --psm ' + psmv + ' --oem 3' + ' -c preserve_interword_spaces=' + piws + te_char
+        logger.info(f"Pytesseract configuration ({self.custom_config})")
 
-            self.get_pytesseract_configuration()
+    def perform_ocr_image_to_string(self, image_path):
+        logger.info(f"Performing pytesseract image to string '{image_path}'")
+        ocr_text = pytesseract.image_to_string(Image.open(image_path), config=self.custom_config)
+        return ocr_text
 
-            if self.config['pytesseract']['preserved_interword_spaces']:
-                ImageProcessor.preprocess_image(image_path)
-                ocr_text = ocr_indentation_space.perform_ocr(image_path)
-                return ocr_text
+    # https://stackoverflow.com/questions/61250577
+    def perform_ocr_image_to_data(self, image_path):
+        logger.info(f"Performing pytesseract with preserve interword spaces '{image_path}'")
+        img = cv2.imread(image_path, cv2.COLOR_BGR2GRAY)
+        gauss = cv2.GaussianBlur(img, (3, 3), 0)
 
-            else:
-                ImageProcessor.preprocess_image(image_path)
-                logger.info(f"Performing pytesseract image to string '{image_path}'")
-                ocr_text = pytesseract.image_to_string(Image.open(image_path), config=self.custom_config)
-                return ocr_text
+        # custom_config = r'-l eng --oem 1 --psm 6 -c preserve_interword_spaces=1'
+        d = pytesseract.image_to_data(gauss, config=self.custom_config, output_type=Output.DICT)
+        df = pd.DataFrame(d)
+
+        # Clean up blanks
+        df1 = df[(df.conf != '-1') & (df.text != ' ') & (df.text != '')]
+
+        # Sort blocks vertically
+        sorted_blocks = df1.groupby('block_num').first().sort_values('top').index.tolist()
+        for block in sorted_blocks:
+            curr = df1[df1['block_num'] == block]
+            sel = curr[curr.text.str.len() > 3]
+            char_w = (sel.width / sel.text.str.len()).mean()
+            prev_par, prev_line, prev_left = 0, 0, 0
+            text = ''
+            for ix, ln in curr.iterrows():
+                # Add new line when necessary
+                if prev_par != ln['par_num']:
+                    text += '\n'
+                    prev_par = ln['par_num']
+                    prev_line = ln['line_num']
+                    prev_left = 0
+                elif prev_line != ln['line_num']:
+                    text += '\n'
+                    prev_line = ln['line_num']
+                    prev_left = 0
+
+                added = 0  # Number of spaces that should be added
+                if ln['left'] / char_w > prev_left + 1:
+                    added = int((ln['left']) / char_w) - prev_left
+                    text += ' ' * added
+                text += ln['text'] + ' '
+                prev_left += len(ln['text']) + added + 1
+            text += '\n'
+            # print(text)
+            return text
 
     @staticmethod
     def copy_to_clipboard(text):
@@ -155,4 +196,4 @@ class ImageProcessor:
             logger.success(f"Temporary file successfully removed '{image_path}'")
 
         except Exception as e:
-            logger.error(f"An error occured while removing temporary file '{image_path}': {e}")
+            logger.error(f"An error occurred while removing temporary file '{image_path}': {e}")

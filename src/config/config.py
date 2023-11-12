@@ -48,8 +48,8 @@ def load_config():
             'enable_whitelist_char': False,
             'whitelist_char': "",
             'detect_digits_only': False,
-            'preserved_interword_spaces': False,
-            'language': "eng"
+            'preserve_interword_spaces': False,
+            'language': "english"
         },
         "output": {
             'copy_to_clipboard': True,

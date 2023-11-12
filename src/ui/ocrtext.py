@@ -37,7 +37,6 @@ class OCRTextUI(QDialog):
         self.initial_font = None
         self.pos_x = None
         self.pos_y = None
-
         self.text_edit = None
         self.text_edit_two = None
         self.windows_on_top = None
@@ -52,7 +51,6 @@ class OCRTextUI(QDialog):
             while self.layout.count():
                 child = self.layout.takeAt(0)
                 if child.widget():
-                    logger.warning("--- Deleting Layout Widget")
                     child.widget().deleteLater()
 
         # Create a QPlainTextEdit

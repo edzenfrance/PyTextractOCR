@@ -190,7 +190,7 @@ class SettingsUI(QDialog):
         try:
             psm_value = int(psm_value)
             if psm_value < 3 or psm_value == 12 or psm_value > 13:
-                self.combobox_psm_value.setCurrentIndex(0)
+                self.combobox_psm_value.setCurrentIndex(3)
             else:
                 self.combobox_psm_value.setCurrentText(str(psm_value))
         except ValueError:
@@ -209,8 +209,8 @@ class SettingsUI(QDialog):
         self.combobox_oem_value.setGeometry(QRect(328, 13, 61, 22))
         self.combobox_oem_value.addItems(['0', '1', '2', '3'])
         oem_value = self.config['pytesseract']['ocr_engine_mode']
-        if oem_value > 4:
-            self.combobox_oem_value.setCurrentIndex(0)
+        if oem_value > 3:
+            self.combobox_oem_value.setCurrentIndex(3)
         elif oem_value >= 0:  # -1 means the text was not found
             self.combobox_oem_value.setCurrentIndex(oem_value)
         self.combobox_oem_value.currentIndexChanged.connect(self.toggle_apply_button)
@@ -253,6 +253,22 @@ class SettingsUI(QDialog):
         self.label_languages.setObjectName("label_languages")
         self.label_languages.setGeometry(QRect(15, 142, 61, 16))
 
+        # COMBOBOX - Languages
+        self.combobox_languages = QComboBox(self.pytesseract_tab)
+        self.combobox_languages.setObjectName("combobox_languages")
+        self.combobox_languages.setGeometry(QRect(82, 141, 80, 22))
+        cbox_lang = ["English", "French", "German", "Japanese", "Korean", "Russian", "Spanish"]
+        language_value = self.config['pytesseract']['language']
+        match_found = False
+        for index, lang_item in enumerate(cbox_lang):
+            self.combobox_languages.addItem(lang_item)
+            if lang_item == language_value.capitalize():
+                self.combobox_languages.setCurrentText(lang_item)
+                match_found = True
+        if not match_found:
+            self.combobox_languages.setCurrentIndex(0)
+        self.combobox_languages.currentIndexChanged.connect(self.toggle_apply_button)
+
         # CHECKBOX - Blacklist characters
         self.checkbox_blacklist_char = QCheckBox(self.pytesseract_tab)
         self.checkbox_blacklist_char.setObjectName("checkbox_blacklist_char")
@@ -267,11 +283,11 @@ class SettingsUI(QDialog):
         self.checkbox_whitelist_char.stateChanged.connect(self.toggle_apply_button)
         self.checkbox_whitelist_char.clicked.connect(lambda: self.toggle_wblist_checkbox(self.checkbox_whitelist_char))
 
-        # CHECBOX - Preserved interword spacing
-        self.checkbox_preserved_interword_spc = QCheckBox(self.pytesseract_tab)
-        self.checkbox_preserved_interword_spc.setObjectName("checkbox_preserved_interword_spc")
-        self.checkbox_preserved_interword_spc.setGeometry(QRect(147, 47, 171, 20))
-        self.checkbox_preserved_interword_spc.stateChanged.connect(self.toggle_apply_button)
+        # CHECKBOX - Preserve interword spaces
+        self.checkbox_preserve_interword_spaces = QCheckBox(self.pytesseract_tab)
+        self.checkbox_preserve_interword_spaces.setObjectName("checkbox_preserve_interword_spaces")
+        self.checkbox_preserve_interword_spaces.setGeometry(QRect(147, 47, 171, 20))
+        self.checkbox_preserve_interword_spaces.stateChanged.connect(self.toggle_apply_button)
 
         self.tab_widget.addTab(self.pytesseract_tab, "")
 
@@ -558,7 +574,7 @@ class SettingsUI(QDialog):
         self.label_languages.setText("Languages:")
         self.checkbox_blacklist_char.setText("")
         self.checkbox_whitelist_char.setText("")
-        self.checkbox_preserved_interword_spc.setText("Preserve interword spacing")
+        self.checkbox_preserve_interword_spaces.setText("Preserve interword spaces")
         self.tab_widget.setTabText(self.tab_widget.indexOf(self.pytesseract_tab), "Pytesseract")
 
         # Tab 2
@@ -566,7 +582,6 @@ class SettingsUI(QDialog):
         self.checkbox_append_translation.setText("Append translation to clipboard")
         self.checkbox_show_translation.setText("Show translation in popup window")
         self.label_server_timeout.setText("Server timeout:")
-
         self.tab_widget.setTabText(self.tab_widget.indexOf(self.output_tab), "Output")
 
     def toggle_checkbox_psm_tooltip(self, psm_value):
@@ -597,7 +612,7 @@ class SettingsUI(QDialog):
         self.checkbox_detect_digits_only.setChecked(self.config['pytesseract']['detect_digits_only'])
         self.checkbox_blacklist_char.setChecked(self.config['pytesseract']['enable_blacklist_char'])
         self.checkbox_whitelist_char.setChecked(self.config['pytesseract']['enable_whitelist_char'])
-        self.checkbox_preserved_interword_spc.setChecked(self.config['pytesseract']['preserved_interword_spaces'])
+        self.checkbox_preserve_interword_spaces.setChecked(self.config['pytesseract']['preserve_interword_spaces'])
         self.checkbox_copyto_clipboard.setChecked(self.config['output']['copy_to_clipboard'])
         self.checkbox_show_popup_window.setChecked(self.config['output']['show_popup_window'])
         self.checkbox_auto_save_output.setChecked(self.config['output']['auto_save_capture'])
@@ -679,7 +694,7 @@ class SettingsUI(QDialog):
     def stop_updating_apply_button(self):
         logger.info(f"Apply button state: {self.button_apply_was_enabled}")
         if self.button_apply_was_enabled:
-            self.fade_timer.stop()  # Forcefully stopping the update_apply_button_state
+            self.fade_timer.stop()  # Forcefully stop the update_apply_button_state
             palette = QPalette()
             gray_color = QColor(128, 128, 128)
             palette.setColor(QPalette.ButtonText, gray_color)
@@ -769,8 +784,8 @@ class SettingsUI(QDialog):
                 'enable_whitelist_char': self.checkbox_whitelist_char.isChecked(),
                 'whitelist_char': self.line_edit_whitelist_char.text(),
                 'detect_digits_only': self.checkbox_detect_digits_only.isChecked(),
-                'preserved_interword_spaces': self.checkbox_preserved_interword_spc.isChecked(),
-                'language': "eng"
+                'preserve_interword_spaces': self.checkbox_preserve_interword_spaces.isChecked(),
+                'language': self.combobox_languages.currentText().lower()
             },
             "output": {
                 'copy_to_clipboard': self.checkbox_copyto_clipboard.isChecked(),
