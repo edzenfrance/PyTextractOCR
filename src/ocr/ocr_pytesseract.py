@@ -5,10 +5,11 @@ import os
 from loguru import logger
 from PIL import Image, ImageEnhance, ImageOps, ImageFilter
 from pytesseract import Output
-import pandas as pd
 import cv2
+import pandas as pd
 import pyperclip
 import pytesseract
+
 
 # Source
 from src.config.config import load_config
@@ -139,11 +140,13 @@ class ImageProcessor:
 
     # https://stackoverflow.com/questions/61250577
     def perform_ocr_image_to_data(self, image_path):
-        logger.info(f"Performing pytesseract with preserve interword spaces '{image_path}'")
         img = cv2.imread(image_path, cv2.COLOR_BGR2GRAY)
         gauss = cv2.GaussianBlur(img, (3, 3), 0)
 
+        logger.info(f"Performing pytesseract image to data '{image_path}'")
         # custom_config = r'-l eng --oem 1 --psm 6 -c preserve_interword_spaces=1'
+        text = pytesseract.image_to_string(gauss)
+        logger.info(f"TEXT --------: {text}")
         d = pytesseract.image_to_data(gauss, config=self.custom_config, output_type=Output.DICT)
         df = pd.DataFrame(d)
 

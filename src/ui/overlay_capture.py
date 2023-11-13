@@ -14,7 +14,7 @@ from PySide6.QtWidgets import QMainWindow
 # Source
 from src.config.config import load_config
 from src.ocr.ocr_pytesseract import ImageProcessor
-from src.ui.ocrtext import OCRTextUI
+from src.ui.ocr_text import OCRTextUI
 from src.utils.message_box import show_message_box
 
 
