@@ -64,7 +64,7 @@ class MainUI(QDialog):
     # For function show_main_ui
     def start_transparent_overlay(self):
         self.saved_position = self.pos()
-        logger.info(f"Saved position before screenshot: X: {self.saved_position.x()} Y: {self.saved_position.y()}")
+        logger.info(f"Main window saved position before screenshot: X: {self.saved_position.x()} Y: {self.saved_position.y()}")
         self.hide()
         self.overlay_capture.show_overlay()  # Show the TransparentOverlay
 
@@ -78,7 +78,7 @@ class MainUI(QDialog):
 
     # Ignore the closing the MainUI dialog if OCR Text dialog is currently open
     def closeEvent(self, event):
-        if self.overlay_capture.ocrtext_ui.isVisible():
+        if self.overlay_capture.ocr_text_ui.isVisible():
             event.ignore()
             return
 
@@ -106,7 +106,7 @@ class MainUI(QDialog):
                 'position_y': window_position_y
             }
         }
-        logger.info(f"Saved position: X: {window_position_x} Y: {window_position_y}")
+        logger.info(f"Main window saved position: X: {window_position_x} Y: {window_position_y}")
         update_config(self_pos_xy)
 
     # Load the save position from configuration file then move the window before showing the dialog
@@ -135,6 +135,7 @@ class SystemTrayApp(QApplication):
 
         # Create Settings UI once
         self.settings_ui = SettingsUI()
+        self.settings_ui.finished.connect(self.on_settings_ui_closed)
         self.tray_icon = QSystemTrayIcon(self)
         self.tray_icon.activated.connect(self.tray_icon_activated)
 
@@ -150,7 +151,7 @@ class SystemTrayApp(QApplication):
         self.menu = QMenu()
 
         self.main_menu_action = QAction('Show Menu')
-        self.main_menu_action.triggered.connect(self.show_dialog)
+        self.main_menu_action.triggered.connect(self.show_main_ui)
         self.main_menu_action.setIcon(QIcon('assets/icon/screenshot.svg'))
         self.menu.addAction(self.main_menu_action)
 
@@ -172,17 +173,22 @@ class SystemTrayApp(QApplication):
         self.tray_icon.setContextMenu(self.menu)
 
         # Pass tray_icon and settings_ui to Main_UI
-        self.dialog = MainUI(self.tray_icon, self.settings_ui)
-        self.dialog.show()
+        self.main_ui = MainUI(self.tray_icon, self.settings_ui)
+        self.main_ui.show()
 
     def tray_icon_activated(self, reason):
         if reason == QSystemTrayIcon.Trigger:
-            self.show_dialog()
+            self.show_main_ui()
 
-    def show_dialog(self):
-        self.dialog.show()
+    def show_main_ui(self):
+        self.main_ui.show()
 
     def show_settings_ui_tray(self):
         if not self.settings_ui.isVisible():
+            self.main_menu_action.setEnabled(False)
             self.settings_ui.initialize_settings_components()
             self.settings_ui.exec()
+
+    def on_settings_ui_closed(self):
+        logger.info("Settings UI closed")
+        self.main_menu_action.setEnabled(True)

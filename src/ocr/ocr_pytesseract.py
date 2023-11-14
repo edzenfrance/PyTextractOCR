@@ -3,13 +3,12 @@ import os
 
 # Third-party libraries
 from loguru import logger
-from PIL import Image, ImageEnhance, ImageOps, ImageFilter
+from PIL import Image
 from pytesseract import Output
 import cv2
 import pandas as pd
 import pyperclip
 import pytesseract
-
 
 # Source
 from src.config.config import load_config
@@ -29,15 +28,15 @@ class ImageProcessor:
 
     def perform_pytesseract_ocr(self, filename):
         try:
+            # Point to the folder where Tesseract language data is located
+            os.environ['TESSDATA_PREFIX'] = './tessdata/'
+            logger.info(f"Using Pytesseract Version: {pytesseract.get_tesseract_version()}")
+
             self.filename = filename
             image_path = self.get_image_path()
 
-            # Point to the folder where Tesseract language data is located
-            os.environ['TESSDATA_PREFIX'] = './tessdata/'
-
             if self.config['preferences']['auto_ocr']:
-                logger.info(f"Using Pytesseract Version: {pytesseract.get_tesseract_version()}")
-                ImageProcessor.preprocess_image(image_path)
+                self.preprocess_image(image_path)
                 self.get_pytesseract_configuration()
 
                 if self.config['pytesseract']['preserve_interword_spaces']:
@@ -68,69 +67,45 @@ class ImageProcessor:
         if self.config['output']['auto_save_capture']:
             logger.info(f" Image Path: '{save_dir}\\{self.filename}'")
             return save_dir + "\\" + self.filename
-
         else:
             logger.info(f"Image Path: '{self.filename}'")
             return self.filename
 
-    @staticmethod
-    def preprocess_image(image_file):
+    def preprocess_image(self, image_file):
         logger.info(f"Preprocessing the image '{image_file}' before ocr")
         try:
-            with Image.open(image_file) as img:
-                img = ImageProcessor.start_preprocess_image(img,
-                                                            scale_factor=3.0,
-                                                            sharpness_factor=1.5,
-                                                            contrast_factor=2.0)
-                img.save(image_file)
-                logger.success(f"Image preprocessing completed successfully")
+            if self.config['pytesseract']['image_binarization']:
+                threshold = self.config['pytesseract']['binarization_threshold']
+                binarize_img = ImageProcessor.binarize(Image.open(image_file), threshold)
+                binarize_img.save(image_file)
+                logger.success("Image preprocessing successfully completed")
 
         except Exception as e:
             logger.error(f"An error occurred while opening the image '{image_file}' {e}")
-
-    @staticmethod
-    def start_preprocess_image(image, scale_factor=None, sharpness_factor=None, contrast_factor=None):
-        try:
-            # # Apply Gaussian blur to the image
-            # image = image.filter(ImageFilter.GaussianBlur(radius=1))
-            # # Convert image to grayscale
-            # image = image.convert('L')
-            # # Invert the colors
-            # image = ImageOps.invert(image)
-
-            if scale_factor is not None:
-                width, height = image.size
-                new_size = (int(width * scale_factor), int(height * scale_factor))
-                image = image.resize(new_size)
-
-            if sharpness_factor is not None:
-                enhancer = ImageEnhance.Sharpness(image)
-                image = enhancer.enhance(sharpness_factor)
-
-            if contrast_factor is not None:
-                enhancer = ImageEnhance.Contrast(image)
-                image = enhancer.enhance(contrast_factor)
-
-            return image
-
-        except Exception as e:
-            logger.error(f"An error occurred while preprocessing the image: {str(e)}")
 
     def get_pytesseract_configuration(self):
         psmv = str(self.config['pytesseract']['page_segmentation_mode'])
         piws = str(int(self.config['pytesseract']['preserve_interword_spaces']))
         te_char = ""
+        lang_dict = {
+            'eng': 'english',
+            'fra': 'french',
+            'deu': 'german',
+            'jpn': 'japanese',
+            'kor': 'korean',
+            'rus': 'russian',
+            'spa': 'spanish'
+        }
+        search_lang = self.config['pytesseract']['language']
+        found_key = [key for key, value in lang_dict.items() if value == search_lang]
+        lang_key = ''.join(found_key) if found_key else 'eng'
 
-        if self.config['pytesseract']['detect_digits_only']:
-            te_char = " -c tessedit_char_whitelist=0123456789"
-        elif self.config['pytesseract']['enable_blacklist_char']:
-            bchr = self.config['pytesseract']['blacklist_char']
-            te_char = f" -c tessedit_char_blacklist={bchr}"
+        if self.config['pytesseract']['enable_blacklist_char']:
+            te_char = f" -c tessedit_char_blacklist={self.config['pytesseract']['blacklist_char']}"
         elif self.config['pytesseract']['enable_whitelist_char']:
-            wchr = self.config['pytesseract']['whitelist_char']
-            te_char = f" -c tessedit_char_whitelist={wchr}"
+            te_char = f" -c tessedit_char_whitelist={self.config['pytesseract']['whitelist_char']}"
 
-        self.custom_config = r'-l eng --psm ' + psmv + ' --oem 3' + ' -c preserve_interword_spaces=' + piws + te_char
+        self.custom_config = r'-l ' + lang_key + ' --psm ' + psmv + ' --oem 3' + ' -c preserve_interword_spaces=' + piws + te_char
         logger.info(f"Pytesseract configuration ({self.custom_config})")
 
     def perform_ocr_image_to_string(self, image_path):
@@ -140,13 +115,11 @@ class ImageProcessor:
 
     # https://stackoverflow.com/questions/61250577
     def perform_ocr_image_to_data(self, image_path):
-        img = cv2.imread(image_path, cv2.COLOR_BGR2GRAY)
-        gauss = cv2.GaussianBlur(img, (3, 3), 0)
+        img = cv2.imread(image_path)
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        gauss = cv2.GaussianBlur(gray, (3, 3), 0)
 
         logger.info(f"Performing pytesseract image to data '{image_path}'")
-        # custom_config = r'-l eng --oem 1 --psm 6 -c preserve_interword_spaces=1'
-        text = pytesseract.image_to_string(gauss)
-        logger.info(f"TEXT --------: {text}")
         d = pytesseract.image_to_data(gauss, config=self.custom_config, output_type=Output.DICT)
         df = pd.DataFrame(d)
 
@@ -182,6 +155,29 @@ class ImageProcessor:
             text += '\n'
             # print(text)
             return text
+
+    # https://www.numpyninja.com/post/optical-character-recognition-ocr-using-py-tesseract-part-1
+    @staticmethod
+    def binarize(image_to_transform, threshold):
+        # Now, lets convert that image to a single greyscale image using convert()
+        output_image = image_to_transform.convert("L")
+        '''
+        The threshold value is usually provided as a number between 0 and 255, which is the number of bits in a byte.
+        The algorithm for the binarization is pretty simple, go through every pixel in the image and, if it's greater
+        than the threshold, turn it all the way up (255), and if it's lower than the threshold, turn it all the way down (0).
+        So lets write this in code. First, we need to iterate over all of the pixels in the image we want to work with
+        '''
+        for x in range(output_image.width):
+            for y in range(output_image.height):
+                # For the given pixel at w,h, lets check its value against the threshold
+                if output_image.getpixel((x, y)) < threshold:  # Note that the first parameter is actually a tuple object
+                    # Let's set this to zero
+                    output_image.putpixel((x, y), 0)
+                else:
+                    # Otherwise let's set this to 255
+                    output_image.putpixel((x, y), 255)
+        # Now we just return the new image
+        return output_image
 
     @staticmethod
     def copy_to_clipboard(text):

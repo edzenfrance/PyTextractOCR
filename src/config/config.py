@@ -41,15 +41,16 @@ def load_config():
             'sound_file': "assets\\sound\\sound.wav",
         },
         "pytesseract": {
+            'language': "english",
             'page_segmentation_mode': 6,
             'ocr_engine_mode': 3,
+            'preserve_interword_spaces': False,
+            'image_binarization': False,
+            'binarization_threshold': 64,
             'enable_blacklist_char': False,
             'blacklist_char': "",
             'enable_whitelist_char': False,
-            'whitelist_char': "",
-            'detect_digits_only': False,
-            'preserve_interword_spaces': False,
-            'language': "english"
+            'whitelist_char': ""
         },
         "output": {
             'copy_to_clipboard': True,

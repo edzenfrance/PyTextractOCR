@@ -52,7 +52,7 @@ class TransparentOverlayCapture(QMainWindow):
         self.drag_start_pos = None
         self.drag_end_pos = None
 
-        self.ocrtext_ui = OCRTextUI()
+        self.ocr_text_ui = OCRTextUI()
         self.main_ui_instance = main_ui_instance
 
     def show_overlay(self):
@@ -99,12 +99,15 @@ class TransparentOverlayCapture(QMainWindow):
         if self.drag_area:
             try:
                 # Get the coordinates of the selected area
-                x = min(self.drag_start_pos.x(), self.drag_end_pos.x())
-                y = min(self.drag_start_pos.y(), self.drag_end_pos.y())
-                width = abs(self.drag_start_pos.x() - self.drag_end_pos.x())
-                height = abs(self.drag_start_pos.y() - self.drag_end_pos.y())
+                if self.drag_start_pos is not None and self.drag_end_pos is not None:
+                    x = min(self.drag_start_pos.x(), self.drag_end_pos.x())
+                    y = min(self.drag_start_pos.y(), self.drag_end_pos.y())
+                    width = abs(self.drag_start_pos.x() - self.drag_end_pos.x())
+                    height = abs(self.drag_start_pos.y() - self.drag_end_pos.y())
 
-                self.capture_selected_area(x, y, width, height)
+                    self.capture_selected_area(x, y, width, height)
+                    self.drag_start_pos = None
+                    self.drag_end_pos = None
 
             except ValueError as e:
                 show_message_box("Critical", "Error", str(e))
@@ -162,14 +165,14 @@ class TransparentOverlayCapture(QMainWindow):
 
     def show_ocr_text_ui(self):
         if self.config['output']['show_popup_window']:
-            if not self.ocrtext_ui.isVisible():
-                self.ocrtext_ui.init_ui()
-                self.ocrtext_ui.show()
+            if not self.ocr_text_ui.isVisible():
+                self.ocr_text_ui.init_ui()
+                self.ocr_text_ui.show()
 
             else:
-                self.ocrtext_ui.init_ui()
-                self.ocrtext_ui.raise_()
-            self.ocrtext_ui.set_text(self.returned_text)
+                self.ocr_text_ui.init_ui()
+                self.ocr_text_ui.raise_()
+            self.ocr_text_ui.set_text(self.returned_text)
 
     def play_the_sound_file(self):
         sound_file = self.config['preferences']['sound_file']
