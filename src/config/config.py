@@ -36,7 +36,7 @@ def load_config():
     default_config = {
         "preferences": {
             'auto_ocr': True,
-            'minimize_system_tray': False,
+            'minimize_to_system_tray': False,
             'enable_sound': True,
             'sound_file': "assets\\sound\\sound.wav",
         },
@@ -69,7 +69,7 @@ def load_config():
             'russian': "english",
             'spanish': "english"
         },
-        "ocr_preview": {
+        "ocr_window": {
             'font_name': "Arial",
             'font_size': 12,
             'font_weight': 400,
@@ -80,9 +80,10 @@ def load_config():
             'position_y': 0,
             'always_on_top': False
         },
-        "main_position": {
-            'position_x': 0,
-            'position_y': 0
+        "miscellaneous": {
+            'main_window_position_x': 0,
+            'main_window_position_y': 0,
+            'tray_notification_shown': False
         }
     }
 

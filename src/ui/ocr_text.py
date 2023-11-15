@@ -88,7 +88,7 @@ class OCRTextUI(QDialog):
 
         self.windows_on_top = QCheckBox("Always on top", self)
         self.windows_on_top.setGeometry(QRect(16, 110, 190, 20))
-        if self.config['ocr_preview']['always_on_top']:
+        if self.config['ocr_window']['always_on_top']:
             self.windows_on_top.setChecked(True)
             self.setWindowFlag(Qt.WindowStaysOnTopHint)
         self.windows_on_top.stateChanged.connect(self.set_always_on_top)
@@ -100,6 +100,7 @@ class OCRTextUI(QDialog):
         # Create a ClickableLabel for changing the font
         self.font_label = ClickableLabel("Font", self)
         self.font_label.setStyleSheet("color: blue; text-decoration: underline;")
+        self.font_label.setToolTip("<html><head/><body><p style='color: black; text-decoration: none;'>Customize text font</p></body></html>")
         # Connect the ClickableLabel's click event to the change_font function
         self.font_label.clicked.connect(self.change_font)
         self.button_layout.addWidget(self.font_label)
@@ -107,7 +108,7 @@ class OCRTextUI(QDialog):
         self.close_button = QPushButton("OK", self)
         self.close_button.setFixedSize(75, 23)
         self.close_button.setAutoDefault(False)
-        self.close_button.setToolTip("Click OK to save the window position")
+        self.close_button.setToolTip("Close window and save window position")
         self.button_layout.addWidget(self.close_button)
         self.close_button.clicked.connect(self.ok_button)
 
@@ -121,7 +122,7 @@ class OCRTextUI(QDialog):
         window_position_x = self.pos().x()
         window_position_y = self.pos().y()
         self_pos_xy = {
-            "ocr_preview": {
+            "ocr_window": {
                 'position_x': window_position_x,
                 'position_y': window_position_y
             }
@@ -131,20 +132,20 @@ class OCRTextUI(QDialog):
 
     def load_popup_window_position(self):
         self.config = load_config()
-        self.pos_x = self.config['ocr_preview']['position_x']
-        self.pos_y = self.config['ocr_preview']['position_y']
+        self.pos_x = self.config['ocr_window']['position_x']
+        self.pos_y = self.config['ocr_window']['position_y']
         self.move(self.pos_x, self.pos_y)
 
     def load_font_config(self):
         self.config = load_config()
-        initial_font_name = self.config['ocr_preview']['font_name']
-        initial_font_size = self.config['ocr_preview']['font_size']
-        initial_font_weight = self.config['ocr_preview']['font_weight']
-        initial_font_strikeout = self.config['ocr_preview']['font_strikeout']
-        initial_font_underline = self.config['ocr_preview']['font_underline']
+        initial_font_name = self.config['ocr_window']['font_name']
+        initial_font_size = self.config['ocr_window']['font_size']
+        initial_font_weight = self.config['ocr_window']['font_weight']
+        initial_font_strikeout = self.config['ocr_window']['font_strikeout']
+        initial_font_underline = self.config['ocr_window']['font_underline']
 
         # Set the fourth parameter to True if italic or bold is in Font Style
-        initial_font_style = self.config['ocr_preview']['font_style']
+        initial_font_style = self.config['ocr_window']['font_style']
         initial_font_italic = True if 'italic' in initial_font_style.lower() else False
         initial_font_bold = True if 'bold' in initial_font_style.lower() else False
 
@@ -161,13 +162,14 @@ class OCRTextUI(QDialog):
             self.setWindowFlag(Qt.WindowStaysOnTopHint)
         else:
             self.setWindowFlag(Qt.WindowStaysOnTopHint, False)
-        on_top_config = {"ocr_preview": {'always_on_top': self.windows_on_top.isChecked()}}
+        on_top_config = {"ocr_window": {'always_on_top': self.windows_on_top.isChecked()}}
         update_config(on_top_config)
         self.show()
 
     def change_font(self):
         self.load_font_config()
         font_dialog = QFontDialog(self.initial_font)
+        font_dialog.setWindowIcon(QIcon(app_icon))
 
         # noinspection PyUnresolvedReferences
         if font_dialog.exec() == QDialog.Accepted:
@@ -184,7 +186,7 @@ class OCRTextUI(QDialog):
             self.text_edit.setFont(selected_font)
 
             font_config = {
-                "ocr_preview": {
+                "ocr_window": {
                     'font_name': font_name,
                     'font_size': font_size,
                     'font_weight': int(font_weight),
@@ -203,7 +205,7 @@ class OCRTextUI(QDialog):
         self.close()
 
     def closeEvent(self, even):
-        logger.info("OCR Text dialog close")
+        logger.info("OCR Text window closed")
 
 
 class ClickableLabel(QLabel):

@@ -164,7 +164,7 @@ class SettingsUI(QDialog):
         self.line_edit_sound_file.setGeometry(QRect(95, 101, 251, 22))
         self.line_edit_sound_file.setCursorPosition(0)
         self.line_edit_sound_file.textChanged.connect(self.toggle_apply_button)
-        self.line_edits['line_edit_sound_file'] = self.line_edit_sound_file # Add to the dictionary
+        self.line_edits['line_edit_sound_file'] = self.line_edit_sound_file  # Add to the dictionary
 
         # BUTTON - ...
         self.button_sound_file = QPushButton(self.preferences_tab)
@@ -263,7 +263,7 @@ class SettingsUI(QDialog):
         self.spinbox_binarization_threshold.setObjectName("spinbox_binarization_threshold")
         self.spinbox_binarization_threshold.setGeometry(QRect(340, 105, 51, 22))
         self.spinbox_binarization_threshold.setMinimum(0)
-        self.spinbox_binarization_threshold.setMaximum(256)
+        self.spinbox_binarization_threshold.setMaximum(255)
         self.spinbox_binarization_threshold.setValue(int(self.config['translate']['server_timeout']))
         self.spinbox_binarization_threshold.valueChanged.connect(self.toggle_apply_button)
         self.spinbox_binarization_threshold.editingFinished.connect(self.toggle_apply_button)
@@ -590,8 +590,17 @@ class SettingsUI(QDialog):
         self.combobox_oem_value.setItemText(2, "2")
         self.combobox_oem_value.setItemText(3, "3")
         self.checkbox_preserve_interword_spaces.setText("Preserve interword spaces")
+        self.checkbox_preserve_interword_spaces.setToolTip("Enable this option to preserve interword spaces in the OCR output.\n"
+                                                           "This helps maintain the original spacing between words in the recognized text.")
         self.checkbox_image_binarization.setText("Apply binarization on image")
+        self.checkbox_image_binarization.setToolTip("Enable this option to convert the image to a binary format.\n"
+                                                    "Binarization simplifies the image by separating pixels into black\n"
+                                                    "and white, making it suitable for various image processing tasks.")
         self.label_binarization_threshold.setText("Binarization threshold:")
+        self.label_binarization_threshold.setToolTip("Threshold minimum = 0, maximum = 255\n"
+                                                     "Set the threshold value for binarization. Pixels with values above\n"
+                                                     "this threshold will be set to white, and those below will be black.\n"
+                                                     "Adjust the threshold based on the characteristics of your images.")
         self.label_blacklist_char.setText("Blacklist characters:")
         self.label_whitelist_char.setText("Whitelist characters:")
         self.checkbox_blacklist_char.setText("Enable")
@@ -641,7 +650,7 @@ class SettingsUI(QDialog):
         self.config = load_config()
         self.initialize_settings_components_finish = False
         self.checkbox_auto_ocr.setChecked(self.config['preferences']['auto_ocr'])
-        self.checkbox_minimize_to_sys_tray.setChecked(self.config['preferences']['minimize_system_tray'])
+        self.checkbox_minimize_to_sys_tray.setChecked(self.config['preferences']['minimize_to_system_tray'])
         self.checkbox_play_sound.setChecked(self.config['preferences']['enable_sound'])
         self.line_edit_sound_file.setText(self.config['preferences']['sound_file'].replace('/', '\\'))
         self.checkbox_preserve_interword_spaces.setChecked(self.config['pytesseract']['preserve_interword_spaces'])
@@ -810,9 +819,9 @@ class SettingsUI(QDialog):
         settings_config = {
             "preferences": {
                 'auto_ocr': self.checkbox_auto_ocr.isChecked(),
+                'minimize_to_system_tray': self.checkbox_minimize_to_sys_tray.isChecked(),
                 'enable_sound': self.checkbox_play_sound.isChecked(),
-                'sound_file': self.sound_path_file,
-                'minimize_system_tray': self.checkbox_minimize_to_sys_tray.isChecked(),
+                'sound_file': self.sound_path_file
             },
             "pytesseract": {
                 'language': self.combobox_ocr_language.currentText().lower(),
@@ -834,7 +843,7 @@ class SettingsUI(QDialog):
                 'output_folder_path': self.new_output_folder_path
             },
             "translate": {
-                'enable_translation':self.checkbox_show_translation.isChecked(),
+                'enable_translation': self.checkbox_show_translation.isChecked(),
                 'server_timeout': self.spinbox_server_timeout.value(),
                 'english': self.translate_to_comboboxes[0].currentText().lower(),
                 'french': self.translate_to_comboboxes[1].currentText().lower(),
@@ -854,5 +863,6 @@ class SettingsUI(QDialog):
     def closeEvent(self, event):
         logger.info("Close button pressed")
         self.stop_updating_apply_button()
-        self.finished.emit(0)  # For on_settings_ui_closed in main.py
+        # For on_settings_ui_closed in MainUI, for disabling 'Show PyTextractOCR' menu in system tray
+        # self.finished.emit(0)
         self.close()

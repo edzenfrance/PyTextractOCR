@@ -58,7 +58,10 @@ class ImageProcessor:
             logger.error(f"An error occurred during PyTessaract OCR process: {e}")
 
         finally:
-            logger.info(f"OCR Text\n{self.show_formatted_text}")
+            if self.show_formatted_text is not None:
+                logger.info(f"OCR Text\n{self.show_formatted_text}")
+            else:
+                logger.info("OCR Text is empty")
             return self.show_formatted_text
 
     def get_image_path(self):
@@ -72,7 +75,7 @@ class ImageProcessor:
             return self.filename
 
     def preprocess_image(self, image_file):
-        logger.info(f"Preprocessing the image '{image_file}' before ocr")
+        logger.info(f"Preprocessing the image before ocr '{image_file}'")
         try:
             if self.config['pytesseract']['image_binarization']:
                 threshold = self.config['pytesseract']['binarization_threshold']
@@ -81,7 +84,7 @@ class ImageProcessor:
                 logger.success("Image preprocessing successfully completed")
 
         except Exception as e:
-            logger.error(f"An error occurred while opening the image '{image_file}' {e}")
+            logger.error(f"An error occurred while preproccessing the image '{image_file}' {e}")
 
     def get_pytesseract_configuration(self):
         psmv = str(self.config['pytesseract']['page_segmentation_mode'])

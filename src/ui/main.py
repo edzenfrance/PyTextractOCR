@@ -15,7 +15,7 @@ from src.config.config import load_config, update_config
 
 
 class MainUI(QDialog):
-    def __init__(self, tray_icon, settings_ui):
+    def __init__(self):
         super().__init__()
 
         self.setWindowTitle("PyTextractOCR")
@@ -28,11 +28,45 @@ class MainUI(QDialog):
         self.pos_x = None
         self.config = None
         self.saved_position = None
-        self.notification_shown = False
 
-        # Save both instances from SystemTrayApp
-        self.tray_icon = tray_icon
-        self.settings_ui = settings_ui
+        # Create Settings UI once
+        self.settings_ui = SettingsUI()
+        self.settings_ui.finished.connect(self.on_settings_ui_closed)
+
+        self.tray_icon = QSystemTrayIcon(self)
+        self.tray_icon.activated.connect(self.tray_icon_activated)
+
+        icon_path = Path('assets/icon/app-icon.svg')
+        if icon_path.is_file():
+            self.tray_icon.setIcon(QIcon(str(icon_path)))
+        else:
+            # Use a built-in system icon if the custom one is missing.
+            self.tray_icon.setIcon(self.style().standardIcon(QStyle.SP_MessageBoxInformation))
+        self.tray_icon.setToolTip('System Tray Example')
+
+        self.main_menu_action = QAction('Show PyTexractOCR')
+        self.settings_action = QAction('Settings')
+        self.about_action = QAction('About')
+        self.exit_action = QAction('Exit')
+
+        self.main_menu_action.setIcon(QIcon('assets/icon/screenshot.svg'))
+        self.settings_action.setIcon(QIcon('assets/icon/setting-icon.svg'))
+        self.about_action.setIcon(QIcon('assets/icon/info-circle-icon.svg'))
+        self.exit_action.setIcon(QIcon('assets/icon/red-x-line-icon.svg'))
+
+        self.main_menu_action.triggered.connect(self.show)
+        self.settings_action.triggered.connect(self.show_settings_from_tray)
+        self.about_action.triggered.connect(self.show_about_from_tray)
+        self.exit_action.triggered.connect(self.exit_app_from_tray)
+
+        self.menu = QMenu()
+        self.menu.addAction(self.main_menu_action)
+        self.menu.addAction(self.settings_action)
+        self.menu.addAction(self.about_action)
+        self.menu.addAction(self.exit_action)
+
+        self.tray_icon.setContextMenu(self.menu)
+        self.tray_icon.show()
 
         self.load_main_window_position()
 
@@ -58,7 +92,10 @@ class MainUI(QDialog):
     def show_settings_ui_main(self):
         if not self.settings_ui.isVisible():
             self.settings_ui.initialize_settings_components()
-            self.settings_ui.exec()
+            self.settings_ui.show()
+        else:
+            self.settings_ui.showNormal()
+            self.settings_ui.raise_()
 
     # Automatically save the current position of dialog before running the screenshot
     # For function show_main_ui
@@ -76,24 +113,34 @@ class MainUI(QDialog):
         if not self.overlay_capture.isHidden():
             self.overlay_capture.close_overlay()
 
+    def mousePressEvent(self, event):
+        logger.info("Mouse clicked")
+
     # Ignore the closing the MainUI dialog if OCR Text dialog is currently open
     def closeEvent(self, event):
+        if self.settings_ui.isVisible():
+            self.settings_ui.showNormal()
+            self.settings_ui.raise_()
+            event.ignore()
+            return
+
         if self.overlay_capture.ocr_text_ui.isVisible():
             event.ignore()
             return
 
         self.config = load_config()
-        system_tray = self.config['preferences']['minimize_system_tray']
+        system_tray = self.config['preferences']['minimize_to_system_tray']
+        tray_notif = self.config['miscellaneous']['tray_notification_shown']
         if system_tray:
-            logger.info("Minimizing app to system tray")
-            if not self.notification_shown:
-                self.notification_shown = True
+            logger.info("Minimizing application to system tray")
+            if not tray_notif:
                 self.tray_icon.showMessage('Hey there!', 'PyTextractOCR has been minimized to the system tray. ',
-                                            QSystemTrayIcon.Information, 2000)
+                                           QSystemTrayIcon.Information, 2000)
+                update_config({"miscellaneous": {'tray_notification_shown': True}})
         else:
             self.save_main_window_position()
             event.accept()
-            logger.info("Closing app")
+            logger.info("Application closed")
             QCoreApplication.quit()
 
     # Save the current position of window dialog to configuration file before quitting
@@ -101,9 +148,9 @@ class MainUI(QDialog):
         window_position_x = self.pos().x()
         window_position_y = self.pos().y()
         self_pos_xy = {
-            "main_position": {
-                'position_x': window_position_x,
-                'position_y': window_position_y
+            "miscellaneous": {
+                'main_window_position_x': window_position_x,
+                'main_window_position_y': window_position_y
             }
         }
         logger.info(f"Main window saved position: X: {window_position_x} Y: {window_position_y}")
@@ -115,8 +162,8 @@ class MainUI(QDialog):
         config_path = Path('config.toml')
         if config_path.is_file():
             self.config = load_config()
-            pos_x = self.config['main_position']['position_x']
-            pos_y = self.config['main_position']['position_y']
+            pos_x = self.config['miscellaneous']['main_window_position_x']
+            pos_y = self.config['miscellaneous']['main_window_position_y']
             self.move(pos_x, pos_y)
             logger.info(f"Loading main window position: X: {pos_x} Y: {pos_y}")
         else:
@@ -128,67 +175,24 @@ class MainUI(QDialog):
             self.move(x, y)
             logger.info(f"Moving main window position to center: X: {x}, Y: {y}")
 
-
-class SystemTrayApp(QApplication):
-    def __init__(self):
-        super().__init__()
-
-        # Create Settings UI once
-        self.settings_ui = SettingsUI()
-        self.settings_ui.finished.connect(self.on_settings_ui_closed)
-        self.tray_icon = QSystemTrayIcon(self)
-        self.tray_icon.activated.connect(self.tray_icon_activated)
-
-        icon_path = Path('assets/icon/app-icon.svg')
-        if icon_path.is_file():
-            self.tray_icon.setIcon(QIcon(str(icon_path)))
-        else:
-            # Use a built-in system icon if the custom one is missing.
-            self.tray_icon.setIcon(self.style().standardIcon(QStyle.SP_MessageBoxInformation))
-        self.tray_icon.setToolTip('System Tray Example')
-        self.tray_icon.show()
-
-        self.menu = QMenu()
-
-        self.main_menu_action = QAction('Show Menu')
-        self.main_menu_action.triggered.connect(self.show_main_ui)
-        self.main_menu_action.setIcon(QIcon('assets/icon/screenshot.svg'))
-        self.menu.addAction(self.main_menu_action)
-
-        self.settings_action = QAction('Settings')
-        self.settings_action.triggered.connect(self.show_settings_ui_tray)
-        self.settings_action.setIcon(QIcon('assets/icon/setting-icon.svg'))
-        self.menu.addAction(self.settings_action)
-
-        self.about_action = QAction('About')
-        self.about_action.triggered.connect(self.show_settings_ui_tray)
-        self.about_action.setIcon(QIcon('assets/icon/info-circle-icon.svg'))
-        self.menu.addAction(self.about_action)
-
-        self.quit_action = QAction('Exit')
-        self.quit_action.triggered.connect(self.quit)
-        self.quit_action.setIcon(QIcon('assets/icon/red-x-line-icon.svg'))
-        self.menu.addAction(self.quit_action)
-
-        self.tray_icon.setContextMenu(self.menu)
-
-        # Pass tray_icon and settings_ui to Main_UI
-        self.main_ui = MainUI(self.tray_icon, self.settings_ui)
-        self.main_ui.show()
-
     def tray_icon_activated(self, reason):
         if reason == QSystemTrayIcon.Trigger:
-            self.show_main_ui()
+            self.show()
 
-    def show_main_ui(self):
-        self.main_ui.show()
-
-    def show_settings_ui_tray(self):
+    def show_settings_from_tray(self):
         if not self.settings_ui.isVisible():
-            self.main_menu_action.setEnabled(False)
+            # self.main_menu_action.setEnabled(False)
             self.settings_ui.initialize_settings_components()
-            self.settings_ui.exec()
+            self.settings_ui.show()
+
+    def show_about_from_tray(self):
+        pass
+
+    def exit_app_from_tray(self):
+        self.save_main_window_position()
+        logger.info("Application closed using system tray")
+        QCoreApplication.quit()
 
     def on_settings_ui_closed(self):
-        logger.info("Settings UI closed")
-        self.main_menu_action.setEnabled(True)
+        logger.info("Settings window close")
+        # self.main_menu_action.setEnabled(True)

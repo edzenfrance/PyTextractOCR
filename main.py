@@ -1,8 +1,9 @@
-import sys
-from src.ui.main import SystemTrayApp
-
+from PySide6.QtWidgets import QApplication
+from src.ui.main import MainUI
 
 if __name__ == "__main__":
-    app = SystemTrayApp()
+    app = QApplication([])
     app.setQuitOnLastWindowClosed(False)
-    sys.exit(app.exec())
+    dialog = MainUI()
+    dialog.show()
+    app.exec()
