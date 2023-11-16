@@ -47,6 +47,7 @@ def load_config():
             'preserve_interword_spaces': False,
             'image_binarization': False,
             'binarization_threshold': 64,
+            'image_deskewing': False,
             'enable_blacklist_char': False,
             'blacklist_char': "",
             'enable_whitelist_char': False,

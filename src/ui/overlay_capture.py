@@ -140,7 +140,7 @@ class TransparentOverlayCapture(QMainWindow):
 
             try:
                 screenshot.save(directory / self.filename)
-                logger.info(f"Screenshot saved: {directory}\\{added_name}{current_datetime}.png'")
+                logger.info(f"Screenshot saved: {directory}\\{added_name}{current_datetime}.png")
 
             except Exception as e:
                 self.close_overlay_then_show_main()

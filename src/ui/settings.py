@@ -249,7 +249,7 @@ class SettingsUI(QDialog):
         self.checkbox_preserve_interword_spaces.setGeometry(QRect(16, 75, 171, 20))
         self.checkbox_preserve_interword_spaces.stateChanged.connect(self.toggle_apply_button)
 
-        # CHECKBOX - Apply binarization on image
+        # CHECKBOX - Binarize image
         self.checkbox_image_binarization = QCheckBox(self.pytesseract_tab)
         self.checkbox_image_binarization.setObjectName("checkbox_image_binarization")
         self.checkbox_image_binarization.setGeometry(QRect(16, 105, 180, 20))
@@ -270,15 +270,21 @@ class SettingsUI(QDialog):
         self.spinbox_binarization_threshold.valueChanged.connect(self.toggle_apply_button)
         self.spinbox_binarization_threshold.editingFinished.connect(self.toggle_apply_button)
 
+        # CHECKBOX - Deskew image
+        self.checkbox_image_deskewing = QCheckBox(self.pytesseract_tab)
+        self.checkbox_image_deskewing.setObjectName("checkbox_image_deskewing")
+        self.checkbox_image_deskewing.setGeometry(QRect(16, 135, 180, 20))
+        self.checkbox_image_deskewing.stateChanged.connect(self.toggle_apply_button)
+
         # LABEL - Blacklist characters
         self.label_blacklist_char = QLabel(self.pytesseract_tab)
         self.label_blacklist_char.setObjectName("label_blacklist_char")
-        self.label_blacklist_char.setGeometry(QRect(15, 138, 111, 16))
+        self.label_blacklist_char.setGeometry(QRect(15, 168, 111, 16))
 
         # LINE EDIT - Blacklist characters
         self.line_edit_blacklist_char = QLineEdit(self.pytesseract_tab)
         self.line_edit_blacklist_char.setObjectName("line_edit_blacklist_char")
-        self.line_edit_blacklist_char.setGeometry(QRect(135, 135, 191, 22))
+        self.line_edit_blacklist_char.setGeometry(QRect(135, 165, 191, 22))
         self.line_edit_blacklist_char.textChanged.connect(self.toggle_apply_button)
         self.line_edit_blacklist_char.editingFinished.connect(lambda: SettingsUI.remove_duplicate_chars(self.line_edit_blacklist_char))
         self.line_edits['line_edit_blacklist_char'] = self.line_edit_blacklist_char  # Add to the dictionary
@@ -286,19 +292,19 @@ class SettingsUI(QDialog):
         # CHECKBOX - Enable
         self.checkbox_blacklist_char = QCheckBox(self.pytesseract_tab)
         self.checkbox_blacklist_char.setObjectName("checkbox_blacklist_char")
-        self.checkbox_blacklist_char.setGeometry(QRect(333, 136, 60, 20))
+        self.checkbox_blacklist_char.setGeometry(QRect(333, 166, 60, 20))
         self.checkbox_blacklist_char.stateChanged.connect(self.toggle_apply_button)
         self.checkbox_blacklist_char.clicked.connect(lambda: self.toggle_wblist_checkbox(self.checkbox_blacklist_char))
 
         # LABEL - Whitelist characters
         self.label_whitelist_char = QLabel(self.pytesseract_tab)
         self.label_whitelist_char.setObjectName("label_whitelist_char")
-        self.label_whitelist_char.setGeometry(QRect(15, 168, 111, 16))
+        self.label_whitelist_char.setGeometry(QRect(15, 198, 111, 16))
 
         # LINE EDIT - Whitelist characters
         self.line_edit_whitelist_char = QLineEdit(self.pytesseract_tab)
         self.line_edit_whitelist_char.setObjectName("line_edit_whitelist_char")
-        self.line_edit_whitelist_char.setGeometry(QRect(135, 166, 191, 22))
+        self.line_edit_whitelist_char.setGeometry(QRect(135, 196, 191, 22))
         self.line_edit_whitelist_char.textChanged.connect(self.toggle_apply_button)
         self.line_edit_whitelist_char.editingFinished.connect(lambda: SettingsUI.remove_duplicate_chars(self.line_edit_whitelist_char))
         self.line_edits['line_edit_whitelist_char'] = self.line_edit_whitelist_char  # Add to the dictionary
@@ -306,7 +312,7 @@ class SettingsUI(QDialog):
         # CHECKBOX - Enable
         self.checkbox_whitelist_char = QCheckBox(self.pytesseract_tab)
         self.checkbox_whitelist_char.setObjectName("checkbox_whitelist_char")
-        self.checkbox_whitelist_char.setGeometry(QRect(333, 167, 60, 20))
+        self.checkbox_whitelist_char.setGeometry(QRect(333, 197, 60, 20))
         self.checkbox_whitelist_char.stateChanged.connect(self.toggle_apply_button)
         self.checkbox_whitelist_char.clicked.connect(lambda: self.toggle_wblist_checkbox(self.checkbox_whitelist_char))
 
@@ -594,7 +600,7 @@ class SettingsUI(QDialog):
         self.checkbox_preserve_interword_spaces.setText("Preserve interword spaces")
         self.checkbox_preserve_interword_spaces.setToolTip("Enable this option to preserve interword spaces in the OCR output.\n"
                                                            "This helps maintain the original spacing between words in the recognized text.")
-        self.checkbox_image_binarization.setText("Apply binarization on image")
+        self.checkbox_image_binarization.setText("Binarize image")
         self.checkbox_image_binarization.setToolTip("Enable this option to convert the image to a binary format.\n"
                                                     "Binarization simplifies the image by separating pixels into black\n"
                                                     "and white, making it suitable for various image processing tasks.")
@@ -603,6 +609,11 @@ class SettingsUI(QDialog):
                                                      "Set the threshold value for binarization. Pixels with values above\n"
                                                      "this threshold will be set to white, and those below will be black.\n"
                                                      "Adjust the threshold based on the characteristics of your images.")
+        self.checkbox_image_deskewing.setText("Deskew image")
+        self.checkbox_image_deskewing.setToolTip("Enable this option to automatically straighten skewed text in the image,\n"
+                                                 "optimizing it for OCR. Improved alignment enhances OCR accuracy, making\n"
+                                                 "text extraction more efficient. Ideal for scanned documents or images with\n"
+                                                 "tilted text.")
         self.label_blacklist_char.setText("Blacklist characters:")
         self.label_whitelist_char.setText("Whitelist characters:")
         self.checkbox_blacklist_char.setText("Enable")
@@ -658,6 +669,7 @@ class SettingsUI(QDialog):
         self.checkbox_preserve_interword_spaces.setChecked(self.config['pytesseract']['preserve_interword_spaces'])
         self.checkbox_image_binarization.setChecked(self.config['pytesseract']['image_binarization'])
         self.spinbox_binarization_threshold.setValue(self.config['pytesseract']['binarization_threshold'])
+        self.checkbox_image_deskewing.setChecked(self.config['pytesseract']['image_deskewing'])
         self.line_edit_blacklist_char.setText(self.config['pytesseract']['blacklist_char'])
         self.line_edit_whitelist_char.setText(self.config['pytesseract']['whitelist_char'])
         self.checkbox_blacklist_char.setChecked(self.config['pytesseract']['enable_blacklist_char'])
@@ -840,6 +852,7 @@ class SettingsUI(QDialog):
                 'preserve_interword_spaces': self.checkbox_preserve_interword_spaces.isChecked(),
                 'image_binarization': self.checkbox_image_binarization.isChecked(),
                 'binarization_threshold': self.spinbox_binarization_threshold.value(),
+                'image_deskewing': self.checkbox_image_deskewing.isChecked(),
                 'enable_blacklist_char': self.checkbox_blacklist_char.isChecked(),
                 'blacklist_char': self.line_edit_blacklist_char.text(),
                 'enable_whitelist_char': self.checkbox_whitelist_char.isChecked(),

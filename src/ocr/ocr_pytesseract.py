@@ -1,11 +1,15 @@
-# Standard library
+# Standard libraries
 import os
+import math
+from typing import Tuple, Union
 
 # Third-party libraries
+from deskew import determine_skew
 from loguru import logger
 from PIL import Image
 from pytesseract import Output
 import cv2
+import numpy as np
 import pandas as pd
 import pyperclip
 import pytesseract
@@ -22,7 +26,7 @@ class ImageProcessor:
 
         self.config = load_config()
         self.filename = None
-        self.show_formatted_text = None
+        self.extracted_text = None
         self.custom_config = None
         self.filename = None
 
@@ -30,7 +34,7 @@ class ImageProcessor:
         try:
             # Point to the folder where Tesseract language data is located
             os.environ['TESSDATA_PREFIX'] = './tessdata/'
-            logger.info(f"Using Pytesseract Version: {pytesseract.get_tesseract_version()}")
+            logger.info(f"Pytesseract version: {pytesseract.get_tesseract_version()}")
 
             self.filename = filename
             image_path = self.get_image_path()
@@ -44,25 +48,23 @@ class ImageProcessor:
                 else:
                     ocr_text = self.perform_ocr_image_to_string(image_path)
 
-                # Copy text to clipboard if possible and not empty
                 if self.config['output']['copy_to_clipboard']:
-                    if len(ocr_text) != 0:
-                        formatted_text = ocr_text.decode('utf-8') if isinstance(ocr_text, bytes) else ocr_text
-                        self.copy_to_clipboard(formatted_text)
-                        self.show_formatted_text = formatted_text
+                    if ocr_text:
+                        self.copy_to_clipboard(ocr_text)
+                        self.extracted_text = ocr_text
 
                 if not self.config['output']['auto_save_capture']:
                     self.remove_temp_file(image_path)
 
         except Exception as e:
-            logger.error(f"An error occurred during PyTessaract OCR process: {e}")
+            logger.error(f"An error occurred during Pytesseract OCR process: {e}")
 
         finally:
-            if self.show_formatted_text is not None:
-                logger.info(f"OCR Text\n{self.show_formatted_text}")
+            if self.extracted_text is not None:
+                logger.info(f"OCR Text\n{self.extracted_text}")
             else:
                 logger.info("OCR Text is empty")
-            return self.show_formatted_text
+            return self.extracted_text
 
     def get_image_path(self):
         save_dir = self.config['output']['output_folder_path']
@@ -75,16 +77,19 @@ class ImageProcessor:
             return self.filename
 
     def preprocess_image(self, image_file):
-        logger.info(f"Preprocessing the image before ocr '{image_file}'")
         try:
             if self.config['pytesseract']['image_binarization']:
+                logger.info("Binarizing the image")
                 threshold = self.config['pytesseract']['binarization_threshold']
-                binarize_img = ImageProcessor.binarize(Image.open(image_file), threshold)
-                binarize_img.save(image_file)
-                logger.success("Image preprocessing successfully completed")
+                ImageProcessor.binarize_image(image_file, threshold)
+                logger.success("Binarizing completed")
+            if self.config['pytesseract']['image_deskewing']:
+                logger.info("Deskewing the image")
+                ImageProcessor.deskew_image(image_file)
+                logger.success("Deskewing completed")
 
         except Exception as e:
-            logger.error(f"An error occurred while preproccessing the image '{image_file}' {e}")
+            logger.error(f"An error occurred while preprocessing the image [{e}]")
 
     def get_pytesseract_configuration(self):
         psmv = str(self.config['pytesseract']['page_segmentation_mode'])
@@ -109,7 +114,7 @@ class ImageProcessor:
             te_char = f" -c tessedit_char_whitelist={self.config['pytesseract']['whitelist_char']}"
 
         self.custom_config = r'-l ' + lang_key + ' --psm ' + psmv + ' --oem 3' + ' -c preserve_interword_spaces=' + piws + te_char
-        logger.info(f"Pytesseract configuration ({self.custom_config})")
+        logger.info(f"Pytesseract configuration: {self.custom_config}")
 
     def perform_ocr_image_to_string(self, image_path):
         logger.info(f"Performing pytesseract image to string '{image_path}'")
@@ -159,28 +164,52 @@ class ImageProcessor:
             # print(text)
             return text
 
+    @staticmethod
+    def binarize_image(image_file, threshold):
+        binarize_img = ImageProcessor.binarize(Image.open(image_file), threshold)
+        binarize_img.save(image_file)
+
     # https://www.numpyninja.com/post/optical-character-recognition-ocr-using-py-tesseract-part-1
     @staticmethod
     def binarize(image_to_transform, threshold):
-        # Now, lets convert that image to a single greyscale image using convert()
+        # Convert the image to a single greyscale image using convert()
         output_image = image_to_transform.convert("L")
         '''
         The threshold value is usually provided as a number between 0 and 255, which is the number of bits in a byte.
         The algorithm for the binarization is pretty simple, go through every pixel in the image and, if it's greater
         than the threshold, turn it all the way up (255), and if it's lower than the threshold, turn it all the way down (0).
-        So lets write this in code. First, we need to iterate over all of the pixels in the image we want to work with
         '''
         for x in range(output_image.width):
             for y in range(output_image.height):
-                # For the given pixel at w,h, lets check its value against the threshold
+                # For the given pixel at w,h, check the value against the threshold
                 if output_image.getpixel((x, y)) < threshold:  # Note that the first parameter is actually a tuple object
-                    # Let's set this to zero
                     output_image.putpixel((x, y), 0)
                 else:
-                    # Otherwise let's set this to 255
                     output_image.putpixel((x, y), 255)
-        # Now we just return the new image
         return output_image
+
+    @staticmethod
+    def deskew_image(image_file):
+        image = cv2.imread(image_file)
+        grayscale = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        angle = determine_skew(grayscale)
+        rotated = ImageProcessor.rotate(image, angle, (0, 0, 0))
+        cv2.imwrite(image_file, rotated)
+
+    @staticmethod
+    def rotate(
+            image: np.ndarray, angle: float, background: Union[int, Tuple[int, int, int]]
+    ) -> np.ndarray:
+        old_width, old_height = image.shape[:2]
+        angle_radian = math.radians(angle)
+        width = abs(np.sin(angle_radian) * old_height) + abs(np.cos(angle_radian) * old_width)
+        height = abs(np.sin(angle_radian) * old_width) + abs(np.cos(angle_radian) * old_height)
+
+        image_center = tuple(np.array(image.shape[1::-1]) / 2)
+        rot_mat = cv2.getRotationMatrix2D(image_center, angle, 1.0)
+        rot_mat[1, 2] += (width - old_width) / 2
+        rot_mat[0, 2] += (height - old_height) / 2
+        return cv2.warpAffine(image, rot_mat, (int(round(height)), int(round(width))), borderValue=background)
 
     @staticmethod
     def copy_to_clipboard(text):
