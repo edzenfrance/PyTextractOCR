@@ -1,4 +1,5 @@
-# Standard library
+# Standard libraries
+import os
 from pathlib import Path
 
 # Third-party libraries
@@ -116,6 +117,7 @@ class SettingsUI(QDialog):
         # BUTTON - OK
         self.button_OK_settings = QPushButton(self.horizontalLayoutWidget)
         self.button_OK_settings.setObjectName("button_OK_settings")
+        self.button_OK_settings.setAutoDefault(True)
         self.button_OK_settings.clicked.connect(self.ok_button_clicked)
         self.horizontal_buttons_layout.addWidget(self.button_OK_settings)
 
@@ -712,7 +714,6 @@ class SettingsUI(QDialog):
     def toggle_apply_button(self):
         if not self.initialize_settings_components_finish:
             return
-        logger.debug(f"Apply button state: {self.button_apply_was_enabled}")
         if not self.button_apply_was_enabled:
             self.fade_timer.start()
             self.button_apply_settings.setEnabled(True)
@@ -752,23 +753,28 @@ class SettingsUI(QDialog):
 
     def apply_button_clicked(self):
         try:
+            self.button_OK_settings.setDefault(False)
             self.check_sound_file()
             self.check_and_create_output_folder()
-            self.stop_updating_apply_button()
+            self.button_OK_settings.setFocus()
 
         except ValueError as e:
             show_message_box("Critical", "Error", str(e))
+        else:
+            if self.output_folder_created:
+                self.stop_updating_apply_button()
 
     def ok_button_clicked(self):
         try:
             self.check_sound_file()
             self.check_and_create_output_folder()
-            self.stop_updating_apply_button()
 
         except ValueError as e:
             show_message_box("Critical", "Error", str(e))
         else:
-            self.hide()
+            if self.output_folder_created:
+                self.stop_updating_apply_button()
+                self.hide()
 
     def check_sound_file(self):
         self.sound_path_file = self.line_edit_sound_file.text()
@@ -779,41 +785,45 @@ class SettingsUI(QDialog):
                 raise ValueError(f"Sound file does not exist.")
 
     def check_and_create_output_folder(self):
-        if not self.checkbox_auto_save_output.isChecked():
-            self.output_folder_created = True
-            self.new_output_folder_path = self.line_edit_output_folder.text()
-            self.save_settings_config()
-            return
-
         output_folder_path = self.line_edit_output_folder.text()
-        if not output_folder_path:
-            raise ValueError("Output folder is empty.")
 
-        directory = Path(output_folder_path)
-        if directory.exists() and directory.is_dir():
-            logger.info(f"Folder path already exist '{output_folder_path}'")
-            self.new_output_folder_path = output_folder_path
-            self.save_settings_config()
+        if self.checkbox_auto_save_output.isChecked():
+            if not output_folder_path:
+                self.tab_widget.setCurrentIndex(2)
+                raise ValueError("Output folder is empty.")
 
-        else:
-            logger.info(f"Trying to create folder '{output_folder_path}'")
-            response = show_message_box(
-                "Question",
-                "Confirm",
-                "Output Folder \"" + output_folder_path + "\" does NOT exist.\n\nDo you want to create it?",
-            )
-            if response == "Yes":
-                try:
-                    directory.mkdir()
-                    logger.success(f"Folder created successfully '{output_folder_path}'")
-                    self.new_output_folder_path = output_folder_path
-                    self.save_settings_config()
-
-                except OSError as e:
-                    logger.error(f"Failed to create output folder. {e}'")
-                    raise ValueError("Failed to create output folder.")
+        if output_folder_path:
+            directory = Path(output_folder_path)
+            if directory.exists() and directory.is_dir():
+                logger.info(f"Output folder already exist '{output_folder_path}'")
+                self.output_folder_created = True
+                self.new_output_folder_path = output_folder_path
+                self.save_settings_config()
             else:
-                self.new_output_folder_path = ""
+                self.tab_widget.setCurrentIndex(2)
+                response = show_message_box(
+                    "Question",
+                    "Confirm",
+                    "Output Folder \"" + output_folder_path + "\" does not exist.\n\nDo you want to create it?",
+                )
+                if response == "Yes":
+                    try:
+                        logger.info(f"Creating output folder")
+                        drive_letter = Path(output_folder_path).drive
+                        if not os.path.exists(drive_letter):
+                            logger.error(f"Failed to create output folder. Drive letter does not exist.")
+                            raise ValueError("Failed to create output folder.")
+                        directory.mkdir(parents=True, exist_ok=True)
+                        logger.success(f"Output folder created successfully '{output_folder_path}'")
+                        self.output_folder_created = True
+                        self.new_output_folder_path = output_folder_path
+                        self.save_settings_config()
+
+                    except OSError as e:
+                        logger.error(f"Failed to create output folder. {e}'")
+                        raise ValueError("Failed to create output folder.")
+                else:
+                    self.output_folder_created = False
 
     def save_settings_config(self):
         settings_config = {

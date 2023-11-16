@@ -1,4 +1,7 @@
+# Third-party library
 from PySide6.QtWidgets import QApplication
+
+# Source
 from src.ui.main import MainUI
 
 if __name__ == "__main__":

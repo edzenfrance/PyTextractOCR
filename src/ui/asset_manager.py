@@ -1,2 +1,6 @@
 app_icon = "assets/icon/app-icon.svg"
+main_icon = "assets/icon/screenshot.svg"
+settings_icon = "assets/icon/setting-icon.svg"
+about_icon = "assets/icon/info-circle-icon.svg"
+exit_icon = "'assets/icon/red-x-line-icon.svg'"
 sound_file = "assets/sound/sound.wav"

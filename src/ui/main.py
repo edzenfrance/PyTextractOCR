@@ -4,11 +4,11 @@ from pathlib import Path
 # Third-party libraries
 from PySide6.QtCore import Qt, QCoreApplication
 from PySide6.QtGui import QIcon, QAction, QGuiApplication
-from PySide6.QtWidgets import QDialog, QHBoxLayout, QPushButton, QApplication, QSystemTrayIcon, QMenu, QStyle
+from PySide6.QtWidgets import QDialog, QHBoxLayout, QPushButton, QSystemTrayIcon, QMenu, QStyle
 from loguru import logger
 
-# Source
-from src.ui.asset_manager import app_icon
+# Sources
+from src.ui.asset_manager import app_icon, main_icon, settings_icon, about_icon, exit_icon
 from src.ui.overlay_capture import TransparentOverlayCapture
 from src.ui.settings import SettingsUI
 from src.config.config import load_config, update_config
@@ -29,30 +29,30 @@ class MainUI(QDialog):
         self.config = None
         self.saved_position = None
 
-        # Create Settings UI once
+        # Create Settings UI instance once
         self.settings_ui = SettingsUI()
         self.settings_ui.finished.connect(self.on_settings_ui_closed)
 
         self.tray_icon = QSystemTrayIcon(self)
         self.tray_icon.activated.connect(self.tray_icon_activated)
 
-        icon_path = Path('assets/icon/app-icon.svg')
+        icon_path = Path(app_icon)
         if icon_path.is_file():
             self.tray_icon.setIcon(QIcon(str(icon_path)))
         else:
             # Use a built-in system icon if the custom one is missing.
             self.tray_icon.setIcon(self.style().standardIcon(QStyle.SP_MessageBoxInformation))
-        self.tray_icon.setToolTip('System Tray Example')
+        self.tray_icon.setToolTip("System Tray Example")
 
         self.main_menu_action = QAction('Show PyTexractOCR')
         self.settings_action = QAction('Settings')
         self.about_action = QAction('About')
         self.exit_action = QAction('Exit')
 
-        self.main_menu_action.setIcon(QIcon('assets/icon/screenshot.svg'))
-        self.settings_action.setIcon(QIcon('assets/icon/setting-icon.svg'))
-        self.about_action.setIcon(QIcon('assets/icon/info-circle-icon.svg'))
-        self.exit_action.setIcon(QIcon('assets/icon/red-x-line-icon.svg'))
+        self.main_menu_action.setIcon(QIcon(main_icon))
+        self.settings_action.setIcon(QIcon(settings_icon))
+        self.about_action.setIcon(QIcon(about_icon))
+        self.exit_action.setIcon(QIcon(exit_icon))
 
         self.main_menu_action.triggered.connect(self.show)
         self.settings_action.triggered.connect(self.show_settings_from_tray)
@@ -113,9 +113,6 @@ class MainUI(QDialog):
         if not self.overlay_capture.isHidden():
             self.overlay_capture.close_overlay()
 
-    def mousePressEvent(self, event):
-        logger.info("Mouse clicked")
-
     # Ignore the closing the MainUI dialog if OCR Text dialog is currently open
     def closeEvent(self, event):
         if self.settings_ui.isVisible():
@@ -125,6 +122,8 @@ class MainUI(QDialog):
             return
 
         if self.overlay_capture.ocr_text_ui.isVisible():
+            self.overlay_capture.ocr_text_ui.showNormal()
+            self.overlay_capture.ocr_text_ui.raise_()
             event.ignore()
             return
 

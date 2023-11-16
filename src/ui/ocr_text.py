@@ -15,7 +15,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-# Source
+# Sources
 from src.config.config import load_config, update_config
 from src.ui.asset_manager import app_icon
 

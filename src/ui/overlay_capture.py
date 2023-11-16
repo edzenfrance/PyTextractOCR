@@ -1,4 +1,4 @@
-# Standard library
+# Standard libraries
 from datetime import datetime
 from pathlib import Path
 import tempfile
@@ -11,7 +11,7 @@ from PySide6.QtCore import Qt, QRect
 from PySide6.QtGui import QPainter, QColor
 from PySide6.QtWidgets import QMainWindow
 
-# Source
+# Sources
 from src.config.config import load_config
 from src.ocr.ocr_pytesseract import ImageProcessor
 from src.ui.ocr_text import OCRTextUI
@@ -121,7 +121,7 @@ class TransparentOverlayCapture(QMainWindow):
 
         # Capture the screenshot of the selected area
         screenshot = ImageGrab.grab(bbox=(x, y, x + width, y + height))
-        added_name = "ss2ocr_"
+        added_name = "pyteocr_"
 
         if self.config['output']['auto_save_capture']:
             self.filename = added_name + current_datetime + ".png"
