@@ -41,8 +41,8 @@ class MyHeader(QHeaderView):
         super().paintSection(painter, rect, index)
 
 
-# Custom QSpinBox (Server Timeout)
-# validate() fixed the QSpinBox value that revert to original when it is out of focus
+# Custom QSpinBox (Server timeout)
+# Fixed the spin box value that revert to original when it is out of focus
 class CustomSpinBox(QSpinBox):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -904,8 +904,8 @@ class SettingsUI(QDialog):
         self.close()
 
     def closeEvent(self, event):
-        logger.info("Close button pressed")
         self.stop_updating_apply_button()
         # For on_settings_ui_closed in MainUI, for disabling 'Show PyTextractOCR' menu in system tray
         # self.finished.emit(0)
         self.close()
+        logger.info("Settings window closed")

@@ -31,10 +31,11 @@ class MainUI(QDialog):
         self.config = None
         self.saved_position = None
 
-        # Create Settings UI instance once
+        # Create an instance of Settings UI
         self.settings_ui = SettingsUI()
         self.settings_ui.finished.connect(self.on_settings_ui_closed)
 
+        # Create an instance of System Tray Icon
         self.tray_icon = QSystemTrayIcon(self)
         self.tray_icon.activated.connect(self.tray_icon_activated)
 
@@ -97,15 +98,15 @@ class MainUI(QDialog):
             self.settings_ui.showNormal()
             self.settings_ui.raise_()
 
-    # Automatically save the current position of dialog before running the screenshot
-    # For function show_main_ui
+    # Automatically save the current position of window before screenshot
+    # Use for show_main_ui function
     def start_transparent_overlay(self):
         self.saved_position = self.pos()
         logger.info(f"Main window saved position before screenshot: X: {self.saved_position.x()} Y: {self.saved_position.y()}")
         self.hide()
         self.overlay_capture.show_overlay()  # Show the TransparentOverlay
 
-    # Show the MainUI dialog of the current save position
+    # Show the MainUI window at the saved position
     def show_main_ui(self):
         if self.saved_position is not None:
             self.move(self.saved_position)
@@ -113,7 +114,7 @@ class MainUI(QDialog):
         if not self.overlay_capture.isHidden():
             self.overlay_capture.close_overlay()
 
-    # Ignore the closing the MainUI dialog if OCR Text dialog is currently open
+    # Ignore the closing the MainUI window if OCR Text window is currently open
     def closeEvent(self, event):
         if self.settings_ui.isVisible():
             self.settings_ui.showNormal()
@@ -142,7 +143,7 @@ class MainUI(QDialog):
             logger.info("Application closed")
             QCoreApplication.quit()
 
-    # Save the current position of window dialog to configuration file before quitting
+    # Save the current position of window before quitting
     def save_main_window_position(self):
         window_position_x = self.pos().x()
         window_position_y = self.pos().y()
@@ -155,24 +156,25 @@ class MainUI(QDialog):
         logger.info(f"Main window saved position: X: {window_position_x} Y: {window_position_y}")
         update_config(self_pos_xy)
 
-    # Load the save position from configuration file then move the window before showing the dialog
     def load_main_window_position(self):
         logger.info("FIRST RUN")
         config_path = Path('config.toml')
         if config_path.is_file():
+            # Move the window at the saved position
             self.config = load_config()
             pos_x = self.config['miscellaneous']['main_window_position_x']
             pos_y = self.config['miscellaneous']['main_window_position_y']
+            logger.info(f"Moving main window position: X: {pos_x} Y: {pos_y}")
             self.move(pos_x, pos_y)
-            logger.info(f"Loading main window position: X: {pos_x} Y: {pos_y}")
+
         else:
-            # Center the dialog on the screen if the configuration file is not found
+            # Center the window on the screen if the configuration file is not found
             screen = QGuiApplication.primaryScreen()
             screen_geometry = screen.geometry()
             x = (screen_geometry.width() - self.width()) // 2
             y = (screen_geometry.height() - self.height()) // 2
-            self.move(x, y)
             logger.info(f"Moving main window position to center: X: {x}, Y: {y}")
+            self.move(x, y)
 
     def tray_icon_activated(self, reason):
         if reason == QSystemTrayIcon.Trigger:
@@ -193,5 +195,5 @@ class MainUI(QDialog):
         QCoreApplication.quit()
 
     def on_settings_ui_closed(self):
-        logger.info("Settings window close")
+        logger.info("Settings window closed")
         # self.main_menu_action.setEnabled(True)

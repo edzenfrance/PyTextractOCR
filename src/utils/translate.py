@@ -134,9 +134,6 @@ def translate_text(extracted_text):
                     destination_language = dest_lang_code
                     break
 
-    text = extracted_text
-    source_lan = source_language
-    translated_to = destination_language
-    translated_text = translator.translate(text, src=source_lan, dest=translated_to)
+    translated_text = translator.translate(extracted_text, src=source_language, dest=destination_language)
     translated_text_result = translated_text.text
     return translated_text_result
