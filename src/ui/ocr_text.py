@@ -38,7 +38,7 @@ class OCRTextUI(QDialog):
         self.pos_x = None
         self.pos_y = None
         self.text_edit = None
-        self.text_edit_two = None
+        self.text_edit_translated = None
         self.windows_on_top = None
         self.font_label = None
         self.close_button = None
@@ -60,14 +60,14 @@ class OCRTextUI(QDialog):
         self.text_edit.setPlainText("")
         self.layout.addWidget(self.text_edit)
 
-        # Add new QPlainTextEdit if necessary
+        # Add new QPlainTextEdit if translation is enabled
         self.config = load_config()
         if self.config['translate']['enable_translation']:
-            self.text_edit_two = QPlainTextEdit(self)
+            self.text_edit_translated = QPlainTextEdit(self)
             self.load_font_config()
-            self.text_edit_two.setFont(self.initial_font)
-            self.text_edit_two.setPlainText("")
-            self.layout.addWidget(self.text_edit_two)
+            self.text_edit_translated.setFont(self.initial_font)
+            self.text_edit_translated.setPlainText("")
+            self.layout.addWidget(self.text_edit_translated)
 
         self.button_layout = QHBoxLayout()
 
@@ -101,7 +101,6 @@ class OCRTextUI(QDialog):
         self.font_label = ClickableLabel("Font", self)
         self.font_label.setStyleSheet("color: blue; text-decoration: underline;")
         self.font_label.setToolTip("<html><head/><body><p style='color: black; text-decoration: none;'>Customize text font</p></body></html>")
-        # Connect the ClickableLabel's click event to the change_font function
         self.font_label.clicked.connect(self.change_font)
         self.button_layout.addWidget(self.font_label)
 
@@ -115,8 +114,11 @@ class OCRTextUI(QDialog):
         self.layout.addLayout(self.button_layout)
         self.setLayout(self.layout)
 
-    def set_text(self, text):
+    def set_extracted_text(self, text):
         self.text_edit.setPlainText(text)
+
+    def set_translated_text(self, text):
+        self.text_edit_translated.setPlainText(text)
 
     def save_popup_window_position(self):
         window_position_x = self.pos().x()

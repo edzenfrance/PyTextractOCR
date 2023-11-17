@@ -13,7 +13,7 @@ from PySide6.QtWidgets import QMainWindow
 
 # Sources
 from src.config.config import load_config
-from src.ocr.ocr_pytesseract import ImageProcessor
+from src.ocr.ocr_processor import ImageProcessor
 from src.ui.ocr_text import OCRTextUI
 from src.utils.message_box import show_message_box
 
@@ -159,7 +159,7 @@ class TransparentOverlayCapture(QMainWindow):
         self.close_overlay()
         self.returned_text = ImageProcessor().perform_pytesseract_ocr(self.filename)
         self.main_ui_instance.show_main_ui()
-        if self.returned_text is not None:
+        if self.returned_text[0] is not None:
             logger.success("Screenshot taken and OCR completed")
             self.show_ocr_text_ui()
 
@@ -172,7 +172,8 @@ class TransparentOverlayCapture(QMainWindow):
             else:
                 self.ocr_text_ui.init_ui()
                 self.ocr_text_ui.raise_()
-            self.ocr_text_ui.set_text(self.returned_text)
+            self.ocr_text_ui.set_extracted_text(self.returned_text[0])
+            self.ocr_text_ui.set_translated_text(self.returned_text[1])
 
     def play_the_sound_file(self):
         sound_file = self.config['preferences']['sound_file']

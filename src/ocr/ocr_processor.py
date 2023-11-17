@@ -16,6 +16,7 @@ import pytesseract
 
 # Source
 from src.config.config import load_config
+from src.utils.translate import translate_text
 
 # Set the Tesseract OCR command path
 pytesseract.pytesseract.tesseract_cmd = 'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
@@ -27,6 +28,7 @@ class ImageProcessor:
         self.config = load_config()
         self.filename = None
         self.extracted_text = None
+        self.translated_text = None
         self.custom_config = None
         self.filename = None
 
@@ -56,15 +58,19 @@ class ImageProcessor:
                 if not self.config['output']['auto_save_capture']:
                     self.remove_temp_file(image_path)
 
+                if self.config['translate']['enable_translation']:
+                    if ocr_text:
+                        self.translated_text = self.translate_extracted_text(self.extracted_text)
+
         except Exception as e:
             logger.error(f"An error occurred during Pytesseract OCR process: {e}")
 
         finally:
             if self.extracted_text is not None:
-                logger.info(f"OCR Text\n{self.extracted_text}")
+                logger.info(f"OCR Text:\n{self.extracted_text}\nTranslated Text:\n{self.translated_text}")
             else:
                 logger.info("OCR Text is empty")
-            return self.extracted_text
+            return self.extracted_text, self.translated_text
 
     def get_image_path(self):
         save_dir = self.config['output']['output_folder_path']
@@ -219,6 +225,18 @@ class ImageProcessor:
 
         except Exception as e:
             logger.error(f"An error occurred while copying text to clipboard: {e}")
+
+    @staticmethod
+    def translate_extracted_text(extracted_text):
+        google_trans_text = None
+        try:
+            google_trans_text = translate_text(extracted_text)
+            logger.success("Text successfully translated using google translate")
+
+        except Exception as e:
+            logger.error(f"An error occurred while translating text: {e}")
+
+        return google_trans_text
 
     @staticmethod
     def remove_temp_file(image_path):

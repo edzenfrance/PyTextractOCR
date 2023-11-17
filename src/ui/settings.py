@@ -404,21 +404,11 @@ class SettingsUI(QDialog):
 
         header_vertical = MyHeader(Qt.Vertical, self.tableWidget)
         self.tableWidget.setVerticalHeader(header_vertical)
-
-        # Set number of columns
-        self.tableWidget.setColumnCount(2)
-
-        # Add a row to the table
-        self.tableWidget.setRowCount(7)
-
-        # Now set the horizontal header labels.
-        self.tableWidget.setHorizontalHeaderLabels(self.labels)
-
-        # Make the entire table read-only
-        self.tableWidget.setEditTriggers(QAbstractItemView.NoEditTriggers)
-
-        # No items can be selected
-        self.tableWidget.setSelectionMode(QAbstractItemView.NoSelection)
+        self.tableWidget.setColumnCount(2)  # Set number of columns
+        self.tableWidget.setRowCount(7)  # Add a row to the table
+        self.tableWidget.setHorizontalHeaderLabels(self.labels)  # Now set the horizontal header labels.
+        self.tableWidget.setEditTriggers(QAbstractItemView.NoEditTriggers)  # Make the entire table read-only
+        self.tableWidget.setSelectionMode(QAbstractItemView.NoSelection)  # No items can be selected
 
         ocr_languages = ["English", "French", "German", "Japanese", "Korean", "Russian", "Spanish"]
         translation_options = {
@@ -538,10 +528,10 @@ class SettingsUI(QDialog):
 
             self.translate_to_combo = QComboBox()
             # Add the full language names with the first letter capitalized to the combo box, excluding the current language
-            for lang_code, full_name in translation_options.items():
-                full_name = full_name.capitalize()
-                if full_name != ocr_lang:
-                    self.translate_to_combo.addItem(full_name)
+            for lang_code, lang_name in translation_options.items():
+                lang_name = lang_name.capitalize()
+                if lang_name != ocr_lang:
+                    self.translate_to_combo.addItem(lang_name)
 
             # Get the translation value in configuration file. English: Value
             language_value = self.config['translate'][ocr_lang.lower()]
@@ -575,7 +565,6 @@ class SettingsUI(QDialog):
         self.init_ui()
 
     def init_ui(self):
-        # Set labels and tooltips
         self.button_apply_settings.setText("Apply")
         self.button_OK_settings.setText("OK")
         self.button_cancel_settings.setText("Cancel")
