@@ -31,8 +31,6 @@ def check_config_keys(default_config, loaded_config):
 
 
 def load_config():
-    logger.info("Loading configuration file 'config.toml'")
-
     default_config = {
         "preferences": {
             'auto_ocr': True,
@@ -62,13 +60,13 @@ def load_config():
         "translate": {
             'enable_translation': False,
             'server_timeout': 2000,
-            'english': "japanese",
-            'french': "english",
-            'german': "english",
-            'japanese': "english",
-            'korean': "english",
-            'russian': "english",
-            'spanish': "english"
+            'english': "ja",
+            'french': "en",
+            'german': "en",
+            'japanese': "en",
+            'korean': "en",
+            'russian': "en",
+            'spanish': "en"
         },
         "ocr_window": {
             'font_name': "Arial",
@@ -89,7 +87,7 @@ def load_config():
     }
 
     try:
-        # Attempt to load the existing config if it exists
+        # logger.info("Loading configuration file 'config.toml'")
         if Path('config.toml').exists():
             config = toml.load('config.toml')
         else:
@@ -109,7 +107,6 @@ def load_config():
                 if key in config[section]:
                     section_config[key] = config[section][key]
 
-    # logger.debug(f"Configuration: {default_config}")
     with open("config.toml", "w") as f:
         toml.dump(default_config, f)
 

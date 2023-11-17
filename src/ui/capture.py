@@ -121,7 +121,7 @@ class TransparentOverlayCapture(QMainWindow):
 
         # Capture the screenshot of the selected area
         screenshot = ImageGrab.grab(bbox=(x, y, x + width, y + height))
-        added_name = "pyteocr_"
+        added_name = "pytexractocr_"
 
         if self.config['output']['auto_save_capture']:
             self.filename = added_name + current_datetime + ".png"
@@ -144,7 +144,7 @@ class TransparentOverlayCapture(QMainWindow):
 
             except Exception as e:
                 self.close_overlay_then_show_main()
-                logger.error(f"An error occured while taking a screenshot {e}")
+                logger.error(f"An error occurred while taking a screenshot {e}")
                 raise ValueError(f"Failed to create a screenshot file in '{self.directory_msg}'")
 
         else:

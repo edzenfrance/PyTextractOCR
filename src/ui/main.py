@@ -24,6 +24,8 @@ class MainUI(QDialog):
         self.setWindowFlag(Qt.WindowMaximizeButtonHint, False)
         self.setWindowFlag(Qt.WindowStaysOnTopHint)
 
+        self.load_main_window_position()
+
         self.pos_y = None
         self.pos_x = None
         self.config = None
@@ -67,8 +69,6 @@ class MainUI(QDialog):
 
         self.tray_icon.setContextMenu(self.menu)
         self.tray_icon.show()
-
-        self.load_main_window_position()
 
         horizontal_layout = QHBoxLayout()
 
@@ -156,8 +156,8 @@ class MainUI(QDialog):
         update_config(self_pos_xy)
 
     # Load the save position from configuration file then move the window before showing the dialog
-    # This function will only run once before starting
     def load_main_window_position(self):
+        logger.info("FIRST RUN")
         config_path = Path('config.toml')
         if config_path.is_file():
             self.config = load_config()
@@ -166,7 +166,7 @@ class MainUI(QDialog):
             self.move(pos_x, pos_y)
             logger.info(f"Loading main window position: X: {pos_x} Y: {pos_y}")
         else:
-            # Center the dialog on the screen
+            # Center the dialog on the screen if the configuration file is not found
             screen = QGuiApplication.primaryScreen()
             screen_geometry = screen.geometry()
             x = (screen_geometry.width() - self.width()) // 2

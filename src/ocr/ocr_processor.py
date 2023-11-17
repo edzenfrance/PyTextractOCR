@@ -178,8 +178,7 @@ class ImageProcessor:
     # https://www.numpyninja.com/post/optical-character-recognition-ocr-using-py-tesseract-part-1
     @staticmethod
     def binarize(image_to_transform, threshold):
-        # Convert the image to a single greyscale image using convert()
-        output_image = image_to_transform.convert("L")
+        output_image = image_to_transform.convert("L")  # Convert to greyscale image
         '''
         The threshold value is usually provided as a number between 0 and 255, which is the number of bits in a byte.
         The algorithm for the binarization is pretty simple, go through every pixel in the image and, if it's greater

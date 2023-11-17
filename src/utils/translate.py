@@ -8,7 +8,7 @@ translator = Translator()
 
 
 def translate_text(extracted_text):
-    translation_options = {
+    languages = {
         'af': 'afrikaans',
         'sq': 'albanian',
         'am': 'amharic',
@@ -124,13 +124,13 @@ def translate_text(extracted_text):
     source_language = None
     destination_language = None
 
-    for source_lang_code, source_lang_name in translation_options.items():
+    for source_lang_code, source_lang_name in languages.items():
         if source_lang_name == selected_language:
             source_language = source_lang_code
-            dest_lang = config['translate'][selected_language.lower()]
+            dest_lang = config['translate'][selected_language]
 
-            for dest_lang_code, dest_lang_name in translation_options.items():
-                if dest_lang_name == dest_lang.lower():
+            for dest_lang_code, dest_lang_name in languages.items():
+                if dest_lang_code == dest_lang:
                     destination_language = dest_lang_code
                     break
 

@@ -1,5 +1,6 @@
 # Standard libraries
 import os
+import re
 from pathlib import Path
 
 # Third-party libraries
@@ -74,9 +75,9 @@ class SettingsUI(QDialog):
         self.setWindowFlags(Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
 
         self.initialize_settings_components_finish = False
-        self.output_folder_created = False
+        self.output_folder_created = True
         self.sound_path_file = None
-        self.new_output_folder_path = None
+        self.new_output_folder_path = ""
         self.folder_path_show = None
         self.folder_path = None
         self.file_path = None
@@ -193,6 +194,7 @@ class SettingsUI(QDialog):
         self.combobox_ocr_language.setGeometry(QRect(105, 13, 91, 22))
         cbox_lang = ["English", "French", "German", "Japanese", "Korean", "Russian", "Spanish"]
         language_value = self.config['pytesseract']['language']
+        language_value = str(language_value)
         match_found = False
         for index, lang_item in enumerate(cbox_lang):
             self.combobox_ocr_language.addItem(lang_item)
@@ -220,8 +222,8 @@ class SettingsUI(QDialog):
                 self.combobox_psm_value.setCurrentIndex(3)
             else:
                 self.combobox_psm_value.setCurrentText(str(psm_value))
-        except ValueError:
-            pass
+        except ValueError as e:
+            logger.error(f"Error converting psm value to integer: {e}")
         self.toggle_checkbox_psm_tooltip(psm_value)
         self.combobox_psm_value.currentIndexChanged.connect(lambda index: (self.toggle_checkbox_psm_tooltip(index), self.toggle_apply_button()))
 
@@ -236,10 +238,14 @@ class SettingsUI(QDialog):
         self.combobox_oem_value.setGeometry(QRect(330, 45, 61, 22))
         self.combobox_oem_value.addItems(['0', '1', '2', '3'])
         oem_value = self.config['pytesseract']['ocr_engine_mode']
-        if oem_value > 3:
-            self.combobox_oem_value.setCurrentIndex(3)
-        elif oem_value >= 0:  # -1 means the text was not found
-            self.combobox_oem_value.setCurrentIndex(oem_value)
+        try:
+            oem_value = int(oem_value)
+            if oem_value > 3:
+                self.combobox_oem_value.setCurrentIndex(3)
+            elif oem_value >= 0:  # -1 means the text was not found
+                self.combobox_oem_value.setCurrentIndex(oem_value)
+        except ValueError as e:
+            logger.error(f"Error converting oem value to integer: {e}")
         self.toggle_checkbox_oem_tooltip(oem_value)
         self.combobox_oem_value.currentIndexChanged.connect(lambda index: (self.toggle_checkbox_oem_tooltip(index), self.toggle_apply_button()))
 
@@ -266,7 +272,7 @@ class SettingsUI(QDialog):
         self.spinbox_binarization_threshold.setGeometry(QRect(340, 105, 51, 22))
         self.spinbox_binarization_threshold.setMinimum(0)
         self.spinbox_binarization_threshold.setMaximum(255)
-        self.spinbox_binarization_threshold.setValue(int(self.config['translate']['server_timeout']))
+
         self.spinbox_binarization_threshold.valueChanged.connect(self.toggle_apply_button)
         self.spinbox_binarization_threshold.editingFinished.connect(self.toggle_apply_button)
 
@@ -376,7 +382,6 @@ class SettingsUI(QDialog):
         self.checkbox_show_translation = QCheckBox(self.translate_tab)
         self.checkbox_show_translation.setObjectName("checkbox_show_translation")
         self.checkbox_show_translation.setGeometry(QRect(16, 40, 211, 20))
-        self.checkbox_show_translation.setChecked(self.config['translate']['enable_translation'])
         self.checkbox_show_translation.stateChanged.connect(self.toggle_apply_button)
 
         # LABEL - Server timeout
@@ -390,7 +395,6 @@ class SettingsUI(QDialog):
         self.spinbox_server_timeout.setGeometry(QRect(333, 40, 71, 22))
         self.spinbox_server_timeout.setMinimum(100)
         self.spinbox_server_timeout.setMaximum(10000)
-        self.spinbox_server_timeout.setValue(int(self.config['translate']['server_timeout']))
         self.spinbox_server_timeout.valueChanged.connect(self.toggle_apply_button)
         self.spinbox_server_timeout.editingFinished.connect(self.toggle_apply_button)
 
@@ -410,8 +414,8 @@ class SettingsUI(QDialog):
         self.tableWidget.setEditTriggers(QAbstractItemView.NoEditTriggers)  # Make the entire table read-only
         self.tableWidget.setSelectionMode(QAbstractItemView.NoSelection)  # No items can be selected
 
-        ocr_languages = ["English", "French", "German", "Japanese", "Korean", "Russian", "Spanish"]
-        translation_options = {
+        combobox_languages = ["English", "French", "German", "Japanese", "Korean", "Russian", "Spanish"]
+        self.languages = {
             'af': 'afrikaans',
             'sq': 'albanian',
             'am': 'amharic',
@@ -523,26 +527,25 @@ class SettingsUI(QDialog):
 
         self.translate_to_comboboxes = []
 
-        for row, ocr_lang in enumerate(ocr_languages):
-            ocr_lang_item = QTableWidgetItem(ocr_lang)
+        for row, cbox_lang in enumerate(combobox_languages):
+            table_widget_lang_item = QTableWidgetItem(cbox_lang)
 
-            self.translate_to_combo = QComboBox()
-            # Add the full language names with the first letter capitalized to the combo box, excluding the current language
-            for lang_code, lang_name in translation_options.items():
-                lang_name = lang_name.capitalize()
-                if lang_name != ocr_lang:
-                    self.translate_to_combo.addItem(lang_name)
+            self.translate_to_combobox = QComboBox()
+            # Add the languages with the first letter capitalized to the combo box, excluding the current language
+            for lang_code, lang_name in self.languages.items():
+                if lang_name != cbox_lang:
+                    self.translate_to_combobox.addItem(lang_name.capitalize())
 
-            # Get the translation value in configuration file. English: Value
-            language_value = self.config['translate'][ocr_lang.lower()]
-            translate_to_text_value = self.translate_to_combo.findText(language_value.capitalize())
-            if translate_to_text_value >= 0:  # -1 means the text was not found
-                self.translate_to_combo.setCurrentIndex(translate_to_text_value)
+            for lang_code, lang_name in self.languages.items():
+                if lang_code == self.config['translate'][cbox_lang.lower()]:
+                    cbox_lang_index = self.translate_to_combobox.findText(lang_name.capitalize())
+                    if cbox_lang_index >= 0:  # -1 means the text was not found
+                        self.translate_to_combobox.setCurrentIndex(cbox_lang_index)
 
-            self.tableWidget.setItem(row, 0, ocr_lang_item)
-            self.tableWidget.setCellWidget(row, 1, self.translate_to_combo)
-            self.translate_to_comboboxes.append(self.translate_to_combo)
-            self.translate_to_combo.currentIndexChanged.connect(self.toggle_apply_button)
+            self.tableWidget.setItem(row, 0, table_widget_lang_item)
+            self.tableWidget.setCellWidget(row, 1, self.translate_to_combobox)
+            self.translate_to_comboboxes.append(self.translate_to_combobox)
+            self.translate_to_combobox.currentIndexChanged.connect(self.toggle_apply_button)
 
         # Make 'Translate To' column stretch to fill table width.
         # noinspection PyUnresolvedReferences
@@ -651,23 +654,40 @@ class SettingsUI(QDialog):
         logger.info("Initializing settings component")
         self.config = load_config()
         self.initialize_settings_components_finish = False
-        self.checkbox_auto_ocr.setChecked(self.config['preferences']['auto_ocr'])
-        self.checkbox_minimize_to_sys_tray.setChecked(self.config['preferences']['minimize_to_system_tray'])
-        self.checkbox_play_sound.setChecked(self.config['preferences']['enable_sound'])
-        self.line_edit_sound_file.setText(self.config['preferences']['sound_file'].replace('/', '\\'))
-        self.checkbox_preserve_interword_spaces.setChecked(self.config['pytesseract']['preserve_interword_spaces'])
-        self.checkbox_image_binarization.setChecked(self.config['pytesseract']['image_binarization'])
-        self.spinbox_binarization_threshold.setValue(self.config['pytesseract']['binarization_threshold'])
-        self.checkbox_image_deskewing.setChecked(self.config['pytesseract']['image_deskewing'])
-        self.line_edit_blacklist_char.setText(self.config['pytesseract']['blacklist_char'])
-        self.line_edit_whitelist_char.setText(self.config['pytesseract']['whitelist_char'])
-        self.checkbox_blacklist_char.setChecked(self.config['pytesseract']['enable_blacklist_char'])
-        self.checkbox_whitelist_char.setChecked(self.config['pytesseract']['enable_whitelist_char'])
-        self.checkbox_copyto_clipboard.setChecked(self.config['output']['copy_to_clipboard'])
-        self.checkbox_show_popup_window.setChecked(self.config['output']['show_popup_window'])
-        self.checkbox_auto_save_output.setChecked(self.config['output']['auto_save_capture'])
-        self.line_edit_output_folder.setText(self.config['output']['output_folder_path'].replace('/', '\\'))
+        self.set_widget_value(self.checkbox_auto_ocr, 'preferences','auto_ocr')
+        self.set_widget_value(self.checkbox_minimize_to_sys_tray, 'preferences', 'minimize_to_system_tray')
+        self.set_widget_value(self.checkbox_play_sound, 'preferences', 'enable_sound')
+        self.set_widget_value(self.line_edit_sound_file, 'preferences', 'sound_file', True)
+        self.set_widget_value(self.checkbox_preserve_interword_spaces, 'pytesseract', 'preserve_interword_spaces')
+        self.set_widget_value(self.checkbox_preserve_interword_spaces, 'pytesseract', 'image_binarization')
+        self.set_widget_value(self.spinbox_binarization_threshold, 'pytesseract', 'binarization_threshold')
+        self.set_widget_value(self.checkbox_image_deskewing, 'pytesseract', 'image_deskewing')
+        self.set_widget_value(self.line_edit_blacklist_char, 'pytesseract', 'blacklist_char')
+        self.set_widget_value(self.line_edit_whitelist_char, 'pytesseract', 'whitelist_char')
+        self.set_widget_value(self.checkbox_blacklist_char, 'pytesseract', 'enable_blacklist_char')
+        self.set_widget_value(self.checkbox_whitelist_char, 'pytesseract', 'enable_whitelist_char')
+        self.set_widget_value(self.checkbox_copyto_clipboard, 'output', 'copy_to_clipboard')
+        self.set_widget_value(self.checkbox_show_popup_window, 'output', 'show_popup_window')
+        self.set_widget_value(self.checkbox_auto_save_output, 'output', 'auto_save_capture')
+        self.set_widget_value(self.line_edit_output_folder, 'output', 'output_folder_path', True)
+        self.set_widget_value(self.checkbox_show_translation, 'translate', 'enable_translation')
+        self.set_widget_value(self.spinbox_server_timeout, 'translate', 'server_timeout')
         self.initialize_settings_components_finish = True
+
+    def set_widget_value(self, widget, table_name, key, line_edit_replace=None):
+        try:
+            value = self.config[table_name][key]
+            if line_edit_replace:
+                formatted_value = re.sub(r'\\+', r'\\', str(value).replace('/', '\\'))
+                widget.setText(formatted_value)
+            elif isinstance(widget, QLineEdit):
+                widget.setText(value)
+            elif isinstance(widget, QSpinBox):
+                widget.setValue(int(value))
+            elif isinstance(widget, QCheckBox):
+                widget.setChecked(value)
+        except (TypeError, ValueError, AttributeError):
+            logger.error(f"Invalid configuration - Table: {table_name} | Key: {key} | Value: {value}")
 
     def eventFilter(self, obj, event):
         for object_name, line_edit in self.line_edits.items():
@@ -794,6 +814,7 @@ class SettingsUI(QDialog):
                 raise ValueError("Output folder is empty.")
 
         if output_folder_path:
+            logger.info("OUTPUT FOLDER")
             directory = Path(output_folder_path)
             if directory.exists() and directory.is_dir():
                 logger.info(f"Output folder already exist '{output_folder_path}'")
@@ -825,6 +846,8 @@ class SettingsUI(QDialog):
                         raise ValueError("Failed to create output folder.")
                 else:
                     self.output_folder_created = False
+        else:
+            self.save_settings_config()
 
     def save_settings_config(self):
         settings_config = {
@@ -857,17 +880,25 @@ class SettingsUI(QDialog):
             "translate": {
                 'enable_translation': self.checkbox_show_translation.isChecked(),
                 'server_timeout': self.spinbox_server_timeout.value(),
-                'english': self.translate_to_comboboxes[0].currentText().lower(),
-                'french': self.translate_to_comboboxes[1].currentText().lower(),
-                'german': self.translate_to_comboboxes[2].currentText().lower(),
-                'japanese': self.translate_to_comboboxes[3].currentText().lower(),
-                'korean': self.translate_to_comboboxes[4].currentText().lower(),
-                'russian': self.translate_to_comboboxes[5].currentText().lower(),
-                'spanish': self.translate_to_comboboxes[6].currentText().lower()
+                'english': self.get_language_code(0),
+                'french': self.get_language_code(1),
+                'german': self.get_language_code(2),
+                'japanese': self.get_language_code(3),
+                'korean': self.get_language_code(4),
+                'russian': self.get_language_code(5),
+                'spanish': self.get_language_code(6)
             }
         }
         logger.info("Saving settings in configuration file")
         update_config(settings_config)
+
+    def get_language_code(self, combobox_count):
+        combobox_text = self.translate_to_comboboxes[combobox_count].currentText().lower()
+        lang_code = None
+        for lang_codes, lang_names in self.languages.items():
+            if lang_names == combobox_text.lower():
+                lang_code = lang_codes
+        return lang_code
 
     def cancel_button(self):
         self.close()
