@@ -166,7 +166,6 @@ class MainUI(QDialog):
             pos_y = self.config['miscellaneous']['main_window_position_y']
             logger.info(f"Moving main window position: X: {pos_x} Y: {pos_y}")
             self.move(pos_x, pos_y)
-
         else:
             # Center the window on the screen if the configuration file is not found
             screen = QGuiApplication.primaryScreen()

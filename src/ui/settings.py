@@ -31,40 +31,6 @@ from src.ui.asset_manager import app_icon
 from src.utils.message_box import show_message_box
 
 
-# For Table Widget
-class MyHeader(QHeaderView):
-    def __init__(self, orientation, parent=None):
-        super().__init__(orientation, parent)
-
-    def paintSection(self, painter: QPainter, rect: QRect, index: int) -> None:
-        painter.setFont(self.font())
-        super().paintSection(painter, rect, index)
-
-
-# Custom QSpinBox (Server timeout)
-# Fixed the spin box value that revert to original when it is out of focus
-class CustomSpinBox(QSpinBox):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def textFromValue(self, value):
-        return f"{value} ms"
-
-    def valueFromText(self, text):
-        stripped_text = text.replace(" ms", "")
-        return int(stripped_text) if stripped_text else 100  # Set default value to 100 if stripped_text is empty
-
-    def validate(self, text, index):
-        stripped_text = text.replace(" ms", "")
-
-        if stripped_text.isdigit() or stripped_text == "":
-            value = int(stripped_text) if stripped_text else 100  # Set default value to 100 if stripped_text is empty
-            if 0 <= value <= 10000:
-                return QValidator.Acceptable, index
-
-        return QValidator.Invalid, index
-
-
 class SettingsUI(QDialog):
     def __init__(self):
         super().__init__()
@@ -91,7 +57,6 @@ class SettingsUI(QDialog):
         # Initialize timer for fading effect
         self.fade_timer = QTimer()
         self.fade_timer.setInterval(50)  # Adjust the interval for a smoother transition
-        # noinspection PyUnresolvedReferences
         self.fade_timer.timeout.connect(self.update_apply_button_state)
 
         self.horizontalLayoutWidget = QWidget(self)
@@ -548,9 +513,7 @@ class SettingsUI(QDialog):
             self.translate_to_combobox.currentIndexChanged.connect(self.toggle_apply_button)
 
         # Make 'Translate To' column stretch to fill table width.
-        # noinspection PyUnresolvedReferences
         header_horizontal.setSectionResizeMode(0, QHeaderView.ResizeToContents)
-        # noinspection PyUnresolvedReferences
         header_horizontal.setSectionResizeMode(1, QHeaderView.Stretch)
 
         self.tableWidget.setObjectName("tableWidget")
@@ -558,7 +521,6 @@ class SettingsUI(QDialog):
         self.tableWidget.verticalHeader().setVisible(False)
 
         self.tab_widget.addTab(self.translate_tab, "")
-
         self.tab_widget.setCurrentIndex(0)
 
         # Connect the focus events to custom slots for all QLineEdit widgets
@@ -909,3 +871,37 @@ class SettingsUI(QDialog):
         # self.finished.emit(0)
         self.close()
         logger.info("Settings window closed")
+
+
+# For Table Widget
+class MyHeader(QHeaderView):
+    def __init__(self, orientation, parent=None):
+        super().__init__(orientation, parent)
+
+    def paintSection(self, painter: QPainter, rect: QRect, index: int) -> None:
+        painter.setFont(self.font())
+        super().paintSection(painter, rect, index)
+
+
+# Custom QSpinBox (Server timeout)
+# Fixed the spin box value that revert to original when it is out of focus
+class CustomSpinBox(QSpinBox):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def textFromValue(self, value):
+        return f"{value} ms"
+
+    def valueFromText(self, text):
+        stripped_text = text.replace(" ms", "")
+        return int(stripped_text) if stripped_text else 100  # Set default value to 100 if stripped_text is empty
+
+    def validate(self, text, index):
+        stripped_text = text.replace(" ms", "")
+
+        if stripped_text.isdigit() or stripped_text == "":
+            value = int(stripped_text) if stripped_text else 100  # Set default value to 100 if stripped_text is empty
+            if 0 <= value <= 10000:
+                return QValidator.Acceptable, index
+
+        return QValidator.Invalid, index

@@ -13,25 +13,9 @@ from PySide6.QtWidgets import QMainWindow
 
 # Sources
 from src.config.config import load_config
-from src.ocr.ocr_processor import ImageProcessor
+from src.ocr.ocr_processor import perform_pytesseract_ocr
 from src.ui.ocr_text import OCRTextUI
 from src.utils.message_box import show_message_box
-
-
-def get_current_datetime():
-    now = datetime.now()
-
-    year = now.year
-    month = now.month
-    day = now.day
-    hour = now.hour  # 24-hour format (military hour)
-    minute = now.minute
-    second = now.second
-
-    yearmonthdate_militaryhourminutesecond = f"{year}{month:02d}{day:02d}_{hour:02d}{minute:02d}{second:02d}"
-
-    logger.info(f"Current date and time: {yearmonthdate_militaryhourminutesecond}")
-    return yearmonthdate_militaryhourminutesecond
 
 
 class TransparentOverlayCapture(QMainWindow):
@@ -47,7 +31,6 @@ class TransparentOverlayCapture(QMainWindow):
         self.config = None
         self.filename = None
         self.directory_msg = None
-
         self.drag_area = None
         self.drag_start_pos = None
         self.drag_end_pos = None
@@ -137,7 +120,6 @@ class TransparentOverlayCapture(QMainWindow):
                     self.close_overlay_then_show_main()
                     logger.error(f"An error occurred while creating folder {e}")
                     raise ValueError(f"Failed to create output folder.\n\nThe system cannot find the path specified: '{directory}'")
-
             try:
                 screenshot.save(directory / self.filename)
                 logger.info(f"Screenshot saved: {directory}\\{added_name}{current_datetime}.png")
@@ -146,7 +128,6 @@ class TransparentOverlayCapture(QMainWindow):
                 self.close_overlay_then_show_main()
                 logger.error(f"An error occurred while taking a screenshot {e}")
                 raise ValueError(f"Failed to create a screenshot file in '{self.directory_msg}'")
-
         else:
             with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as temp:
                 self.filename = temp.name
@@ -157,7 +138,7 @@ class TransparentOverlayCapture(QMainWindow):
             self.play_the_sound_file()
 
         self.close_overlay()
-        self.returned_text = ImageProcessor().perform_pytesseract_ocr(self.filename)
+        self.returned_text = perform_pytesseract_ocr(self.filename)
         self.main_ui_instance.show_main_ui()
         if self.returned_text[0] is not None:
             logger.success("Screenshot taken and OCR completed")
@@ -168,12 +149,12 @@ class TransparentOverlayCapture(QMainWindow):
             if not self.ocr_text_ui.isVisible():
                 self.ocr_text_ui.init_ui()
                 self.ocr_text_ui.show()
-
             else:
                 self.ocr_text_ui.init_ui()
                 self.ocr_text_ui.raise_()
             self.ocr_text_ui.set_extracted_text(self.returned_text[0])
-            self.ocr_text_ui.set_translated_text(self.returned_text[1])
+            if self.returned_text[1] is not None:
+                self.ocr_text_ui.set_translated_text(self.returned_text[1])
 
     def play_the_sound_file(self):
         sound_file = self.config['preferences']['sound_file']
@@ -186,3 +167,16 @@ class TransparentOverlayCapture(QMainWindow):
                 logger.error(f"An error occurred while playing the sound '{sound_file}' {e} ")
         else:
             logger.error(f"{sound_file} doesnt exist")
+
+
+def get_current_datetime():
+    now = datetime.now()
+    year = now.year
+    month = now.month
+    day = now.day
+    hour = now.hour  # 24-hour format (military hour)
+    minute = now.minute
+    second = now.second
+    current_datetime = f"{year}{month:02d}{day:02d}_{hour:02d}{minute:02d}{second:02d}"
+    logger.info(f"Current date and time: {current_datetime}")
+    return current_datetime

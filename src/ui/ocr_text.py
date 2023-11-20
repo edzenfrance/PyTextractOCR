@@ -173,7 +173,6 @@ class OCRTextUI(QDialog):
         font_dialog = QFontDialog(self.initial_font)
         font_dialog.setWindowIcon(QIcon(app_icon))
 
-        # noinspection PyUnresolvedReferences
         if font_dialog.exec() == QDialog.Accepted:
             selected_font = font_dialog.selectedFont()
             font_name = selected_font.family()
@@ -181,12 +180,9 @@ class OCRTextUI(QDialog):
             font_weight = selected_font.weight()
             font_strikeout = selected_font.strikeOut()
             font_underline = selected_font.underline()
-
             font_style_bold = "Bold" if selected_font.bold() else "Regular"
             font_style_italic = "Italic" if selected_font.italic() else ""
-
             self.text_edit.setFont(selected_font)
-
             font_config = {
                 "ocr_window": {
                     'font_name': font_name,
