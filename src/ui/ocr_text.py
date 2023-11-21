@@ -42,6 +42,7 @@ class OCRTextUI(QDialog):
         self.windows_on_top = None
         self.font_label = None
         self.close_button = None
+        self.button_layout = None
 
         self.load_popup_window_position()
 
@@ -100,7 +101,8 @@ class OCRTextUI(QDialog):
         # Create a ClickableLabel for changing the font
         self.font_label = ClickableLabel("Font", self)
         self.font_label.setStyleSheet("color: blue; text-decoration: underline;")
-        self.font_label.setToolTip("<html><head/><body><p style='color: black; text-decoration: none;'>Customize text font</p></body></html>")
+        self.font_label.setToolTip("<html><head/><body><p style='color: rgb(87, 87, 87);"
+                                   "text-decoration: none;'>Customize text font</p></body></html>")
         self.font_label.clicked.connect(self.change_font)
         self.button_layout.addWidget(self.font_label)
 

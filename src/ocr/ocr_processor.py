@@ -21,11 +21,8 @@ from src.utils.translate import translate_text
 # Set the Tesseract OCR command path
 pytesseract.pytesseract.tesseract_cmd = 'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
 
-config = None
 
-
-def perform_pytesseract_ocr(file_name):
-    global config
+def perform_pytesseract_ocr(captured_image):
     config = load_config()
     extracted_text = None
     translated_text = None
@@ -34,28 +31,29 @@ def perform_pytesseract_ocr(file_name):
         # Point to the folder where Tesseract language data is located
         os.environ['TESSDATA_PREFIX'] = './tessdata/'
 
-        image_path = get_image_path(file_name)
+        auto_save = config['output']['auto_save_capture']
+        image_path = f"{config['output']['output_folder_path']}\\{captured_image}" if auto_save else captured_image
+        logger.info(f"Image Path: {image_path}")
 
-        if config['preferences']['auto_ocr']:
-            preprocess_image(image_path)
-            custom_config = get_pytesseract_configuration()
+        preprocess_image(image_path, config)
+        custom_config = get_pytesseract_configuration(config)
 
-            if config['pytesseract']['preserve_interword_spaces']:
-                ocr_text = perform_ocr_image_to_data(image_path, custom_config)
-            else:
-                ocr_text = perform_ocr_image_to_string(image_path, custom_config)
+        if config['pytesseract']['preserve_interword_spaces']:
+            ocr_text = perform_ocr_image_to_data(image_path, custom_config)
+        else:
+            ocr_text = perform_ocr_image_to_string(image_path, custom_config)
 
-            if config['output']['copy_to_clipboard']:
-                if ocr_text:
-                    copy_to_clipboard(ocr_text)
-                    extracted_text = ocr_text
+        if config['output']['copy_to_clipboard']:
+            if ocr_text:
+                copy_to_clipboard(ocr_text)
+                extracted_text = ocr_text
 
-            if not config['output']['auto_save_capture']:
-                remove_temp_file(image_path)
+        if not config['output']['auto_save_capture']:
+            remove_temp_file(image_path)
 
-            if config['translate']['enable_translation']:
-                if ocr_text:
-                    translated_text = translate_extracted_text(extracted_text)
+        if config['translate']['enable_translation']:
+            if ocr_text:
+                translated_text = translate_extracted_text(extracted_text)
 
     except Exception as e:
         logger.error(f"An error occurred during Pytesseract OCR process: {e}")
@@ -68,17 +66,7 @@ def perform_pytesseract_ocr(file_name):
         return extracted_text, translated_text
 
 
-def get_image_path(file_name):
-    save_dir = config['output']['output_folder_path']
-    if config['output']['auto_save_capture']:
-        logger.info(f" Image Path: '{save_dir}\\{file_name}'")
-        return save_dir + "\\" + file_name
-    else:
-        logger.info(f"Image Path: '{file_name}'")
-        return file_name
-
-
-def preprocess_image(image_file):
+def preprocess_image(image_file, config):
     try:
         if config['pytesseract']['image_binarization']:
             threshold = config['pytesseract']['binarization_threshold']
@@ -92,7 +80,7 @@ def preprocess_image(image_file):
         logger.error(f"An error occurred while preprocessing the image [{e}]")
 
 
-def get_pytesseract_configuration():
+def get_pytesseract_configuration(config):
     psmv = str(config['pytesseract']['page_segmentation_mode'])
     piws = str(int(config['pytesseract']['preserve_interword_spaces']))
     te_char = ""
@@ -105,8 +93,8 @@ def get_pytesseract_configuration():
         'rus': 'russian',
         'spa': 'spanish'
     }
-    search_lang = config['pytesseract']['language']
-    found_key = [key for key, value in lang_dict.items() if value == search_lang]
+    ocr_lang = config['pytesseract']['language']
+    found_key = [key for key, value in lang_dict.items() if value == ocr_lang]
     lang_key = ''.join(found_key) if found_key else 'eng'
 
     if config['pytesseract']['enable_blacklist_char']:
@@ -114,7 +102,7 @@ def get_pytesseract_configuration():
     elif config['pytesseract']['enable_whitelist_char']:
         te_char = f" -c tessedit_char_whitelist={config['pytesseract']['whitelist_char']}"
 
-    custom_config = r'-l ' + lang_key + ' --psm ' + psmv + ' --oem 3' + ' -c preserve_interword_spaces=' + piws + te_char
+    custom_config = r'-l jpn+' + lang_key + ' --psm ' + psmv + ' --oem 3' + ' -c preserve_interword_spaces=' + piws + te_char
     logger.info(f"Pytesseract custom configuration: {custom_config}")
     return custom_config
 

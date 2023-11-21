@@ -103,33 +103,27 @@ class SettingsUI(QDialog):
         self.preferences_tab = QWidget()
         self.preferences_tab.setObjectName("preferences_tab")
 
-        # CHECKBOX - Enable Automatic OCR for Capture
-        self.checkbox_auto_ocr = QCheckBox(self.preferences_tab)
-        self.checkbox_auto_ocr.setObjectName("checkbox_auto_ocr")
-        self.checkbox_auto_ocr.setGeometry(QRect(16, 10, 151, 20))
-        self.checkbox_auto_ocr.stateChanged.connect(self.toggle_apply_button)
-
         # CHECKBOX - Minimize system tray on close
         self.checkbox_minimize_to_sys_tray = QCheckBox(self.preferences_tab)
         self.checkbox_minimize_to_sys_tray.setObjectName("checkbox_minimize_to_sys_tray")
-        self.checkbox_minimize_to_sys_tray.setGeometry(QRect(16, 40, 210, 20))
+        self.checkbox_minimize_to_sys_tray.setGeometry(QRect(16, 10, 210, 20))
         self.checkbox_minimize_to_sys_tray.stateChanged.connect(self.toggle_apply_button)
 
         # CHECKBOX - Play sound on capture
         self.checkbox_play_sound = QCheckBox(self.preferences_tab)
         self.checkbox_play_sound.setObjectName("checkbox_play_sound")
-        self.checkbox_play_sound.setGeometry(QRect(16, 70, 141, 20))
+        self.checkbox_play_sound.setGeometry(QRect(16, 40, 141, 20))
         self.checkbox_play_sound.stateChanged.connect(self.toggle_apply_button)
 
         # LABEL - Sound file
         self.label_sound_file = QLabel(self.preferences_tab)
         self.label_sound_file.setObjectName("label_sound_file")
-        self.label_sound_file.setGeometry(QRect(15, 103, 81, 16))
+        self.label_sound_file.setGeometry(QRect(15, 73, 81, 16))
 
         # LINE EDIT - Sound file
         self.line_edit_sound_file = QLineEdit(self.preferences_tab)
         self.line_edit_sound_file.setObjectName("line_edit_sound_file")
-        self.line_edit_sound_file.setGeometry(QRect(95, 101, 251, 22))
+        self.line_edit_sound_file.setGeometry(QRect(95, 71, 251, 22))
         self.line_edit_sound_file.setCursorPosition(0)
         self.line_edit_sound_file.textChanged.connect(self.toggle_apply_button)
         self.line_edits['line_edit_sound_file'] = self.line_edit_sound_file  # Add to the dictionary
@@ -148,16 +142,16 @@ class SettingsUI(QDialog):
         self.pytesseract_tab.setObjectName("pytesseract_tab")
 
         # https://tesseract-ocr.github.io/tessdoc/Data-Files-in-different-versions.html
-        # LABEL - Languages
+        # LABEL - OCR Language
         self.label_ocr_language = QLabel(self.pytesseract_tab)
         self.label_ocr_language.setObjectName("label_ocr_language")
         self.label_ocr_language.setGeometry(QRect(15, 16, 85, 16))
 
-        # COMBOBOX - Languages
+        # COMBOBOX - OCR Language
         self.combobox_ocr_language = QComboBox(self.pytesseract_tab)
         self.combobox_ocr_language.setObjectName("combobox_ocr_language")
         self.combobox_ocr_language.setGeometry(QRect(105, 13, 91, 22))
-        cbox_lang = ["English", "French", "German", "Japanese", "Korean", "Russian", "Spanish"]
+        cbox_lang = ["Combine", "English", "French", "German", "Japanese", "Korean", "Russian", "Spanish"]
         language_value = self.config['pytesseract']['language']
         language_value = str(language_value)
         match_found = False
@@ -170,7 +164,7 @@ class SettingsUI(QDialog):
             self.combobox_ocr_language.setCurrentIndex(0)
         self.combobox_ocr_language.currentIndexChanged.connect(self.toggle_apply_button)
 
-        # LABEL - Page segmentation mode:
+        # LABEL - Page segmentation mode
         self.label_psm_value = QLabel(self.pytesseract_tab)
         self.label_psm_value.setObjectName("label_psm_value")
         self.label_psm_value.setGeometry(QRect(15, 48, 119, 16))
@@ -192,12 +186,12 @@ class SettingsUI(QDialog):
         self.toggle_checkbox_psm_tooltip(psm_value)
         self.combobox_psm_value.currentIndexChanged.connect(lambda index: (self.toggle_checkbox_psm_tooltip(index), self.toggle_apply_button()))
 
-        # LABEL - OCR Engine Mode
+        # LABEL - OCR Engine mode
         self.label_oem_value = QLabel(self.pytesseract_tab)
         self.label_oem_value.setObjectName("label_oem_value")
         self.label_oem_value.setGeometry(QRect(222, 48, 101, 16))
 
-        # COMBOBOX - OCR Engine Mode
+        # COMBOBOX - OCR Engine mode
         self.combobox_oem_value = QComboBox(self.pytesseract_tab)
         self.combobox_oem_value.setObjectName("combobox_oem_value")
         self.combobox_oem_value.setGeometry(QRect(330, 45, 61, 22))
@@ -536,14 +530,13 @@ class SettingsUI(QDialog):
 
         # Tab 0
         self.tab_widget.setTabText(self.tab_widget.indexOf(self.preferences_tab), "Preferences")
-        self.checkbox_auto_ocr.setText("Enable automatic OCR")
         self.checkbox_minimize_to_sys_tray.setText("Minimize to system tray on close")
         self.checkbox_play_sound.setText("Play sound on capture")
         self.label_sound_file.setText("Sound file:")
         self.button_sound_file.setText(". . .")
 
         # Tab 1
-        self.tab_widget.setTabText(self.tab_widget.indexOf(self.pytesseract_tab), "Pytesseract")
+        self.tab_widget.setTabText(self.tab_widget.indexOf(self.pytesseract_tab), "OCR")
         self.label_ocr_language.setText("OCR Language:")
         self.label_psm_value.setText("Page segment mode:")
         self.label_oem_value.setText("OCR Engine mode:")
@@ -572,7 +565,6 @@ class SettingsUI(QDialog):
         self.label_whitelist_char.setText("Whitelist characters:")
         self.checkbox_blacklist_char.setText("Enable")
         self.checkbox_whitelist_char.setText("Enable")
-        self.tab_widget.setTabText(self.tab_widget.indexOf(self.pytesseract_tab), "Pytesseract")
 
         # Tab 2
         self.checkbox_copyto_clipboard.setText("Copy to clipboard")
@@ -616,7 +608,6 @@ class SettingsUI(QDialog):
         logger.info("Initializing settings component")
         self.config = load_config()
         self.initialize_settings_components_finish = False
-        self.set_widget_value(self.checkbox_auto_ocr, 'preferences','auto_ocr')
         self.set_widget_value(self.checkbox_minimize_to_sys_tray, 'preferences', 'minimize_to_system_tray')
         self.set_widget_value(self.checkbox_play_sound, 'preferences', 'enable_sound')
         self.set_widget_value(self.line_edit_sound_file, 'preferences', 'sound_file', True)
@@ -814,7 +805,6 @@ class SettingsUI(QDialog):
     def save_settings_config(self):
         settings_config = {
             "preferences": {
-                'auto_ocr': self.checkbox_auto_ocr.isChecked(),
                 'minimize_to_system_tray': self.checkbox_minimize_to_sys_tray.isChecked(),
                 'enable_sound': self.checkbox_play_sound.isChecked(),
                 'sound_file': self.sound_path_file

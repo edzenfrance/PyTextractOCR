@@ -33,7 +33,6 @@ def check_config_keys(default_config, loaded_config):
 def load_config():
     default_config = {
         "preferences": {
-            'auto_ocr': True,
             'minimize_to_system_tray': False,
             'enable_sound': True,
             'sound_file': "assets\\sound\\sound.wav",
