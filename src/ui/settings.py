@@ -18,11 +18,13 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QPushButton,
+    QScrollArea,
     QSpinBox,
     QTableWidget,
     QTableWidgetItem,
     QTabWidget,
-    QWidget
+    QWidget,
+    QVBoxLayout
 )
 
 # Source
@@ -42,6 +44,7 @@ class SettingsUI(QDialog):
 
         self.initialize_settings_components_finish = False
         self.output_folder_created = True
+        self.hidden_widgets = False
         self.sound_path_file = None
         self.new_output_folder_path = ""
         self.folder_path_show = None
@@ -164,7 +167,46 @@ class SettingsUI(QDialog):
             self.combobox_ocr_language.setCurrentIndex(0)
         self.combobox_ocr_language.currentIndexChanged.connect(self.toggle_apply_button)
 
-        # LABEL - Page segmentation mode
+        # BUTTON - Show all
+        self.button_show_all_lang = QPushButton(self.pytesseract_tab)
+        self.button_show_all_lang.setObjectName("button__show_all_lang")
+        self.button_show_all_lang.setGeometry(105, 12, 91, 24)
+        self.button_show_all_lang.setAutoDefault(False)
+        self.button_show_all_lang.setText("Show all")
+        self.button_show_all_lang.clicked.connect(self.hide_all_components_in_tab)
+
+        # Create a scrollable area
+        self.scroll_area = QScrollArea(self.pytesseract_tab)
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setGeometry(QRect(5, 41, 399, 217))
+        self.scroll_area.setVisible(False)
+
+        # Create a widget for the scroll area
+        self.scroll_content = QWidget(self.scroll_area)
+        self.scroll_area.setWidget(self.scroll_content)
+
+        # Create a layout for the scroll content
+        self.scroll_content_layout = QVBoxLayout(self.scroll_content)
+        self.scroll_content.setLayout(self.scroll_content_layout)
+
+        # Add checkboxes for different languages with "Download"
+        scroll_area_languages = ["English", "French", "German", "Japanese", "Korean", "Russian", "Spanish"]
+        self.scroll_area_checkbox_dict = {}
+
+        for language in scroll_area_languages:
+            # Create a horizontal layout for each row (checkbox, Download label, Delete label)
+            scroll_row_layout = QHBoxLayout()
+            sc_checkbox = QCheckBox(language)
+            sc_button = QPushButton("Download")
+            self.scroll_area_checkbox_dict[language] = sc_checkbox
+            scroll_row_layout.addWidget(sc_checkbox)
+            scroll_row_layout.addWidget(sc_button)
+            self.scroll_content_layout.addLayout(scroll_row_layout)
+
+        if 'English' in self.scroll_area_checkbox_dict:
+            self.scroll_area_checkbox_dict['English'].setChecked(True)
+
+        # LABEL - Page segmentation mode:
         self.label_psm_value = QLabel(self.pytesseract_tab)
         self.label_psm_value.setObjectName("label_psm_value")
         self.label_psm_value.setGeometry(QRect(15, 48, 119, 16))
@@ -186,12 +228,12 @@ class SettingsUI(QDialog):
         self.toggle_checkbox_psm_tooltip(psm_value)
         self.combobox_psm_value.currentIndexChanged.connect(lambda index: (self.toggle_checkbox_psm_tooltip(index), self.toggle_apply_button()))
 
-        # LABEL - OCR Engine mode
+        # LABEL - OCR Engine Mode
         self.label_oem_value = QLabel(self.pytesseract_tab)
         self.label_oem_value.setObjectName("label_oem_value")
         self.label_oem_value.setGeometry(QRect(222, 48, 101, 16))
 
-        # COMBOBOX - OCR Engine mode
+        # COMBOBOX - OCR Engine Mode
         self.combobox_oem_value = QComboBox(self.pytesseract_tab)
         self.combobox_oem_value.setObjectName("combobox_oem_value")
         self.combobox_oem_value.setGeometry(QRect(330, 45, 61, 22))
@@ -359,7 +401,7 @@ class SettingsUI(QDialog):
 
         self.tableWidget = QTableWidget(self.translate_tab)
 
-        # Set table header labels.
+        # Set table header labels
         self.labels = ["OCR Language", "Translate To (Using Google Translate)"]
 
         header_horizontal = MyHeader(Qt.Horizontal, self.tableWidget)
@@ -369,7 +411,7 @@ class SettingsUI(QDialog):
         self.tableWidget.setVerticalHeader(header_vertical)
         self.tableWidget.setColumnCount(2)  # Set number of columns
         self.tableWidget.setRowCount(7)  # Add a row to the table
-        self.tableWidget.setHorizontalHeaderLabels(self.labels)  # Now set the horizontal header labels.
+        self.tableWidget.setHorizontalHeaderLabels(self.labels)  # Now set the horizontal header labels
         self.tableWidget.setEditTriggers(QAbstractItemView.NoEditTriggers)  # Make the entire table read-only
         self.tableWidget.setSelectionMode(QAbstractItemView.NoSelection)  # No items can be selected
 
@@ -653,6 +695,27 @@ class SettingsUI(QDialog):
                     line_edit.clearFocus()
                     line_edit.setStyleSheet("border: 1px solid rgb(115, 115, 115);")
         return super().eventFilter(obj, event)
+
+    def hide_all_components_in_tab(self):
+        widget_to_exclude = [self.label_ocr_language, self.button_show_all_lang]
+        tab_widgets_content = self.pytesseract_tab.findChildren(QWidget)
+        scroll_area_widgets_content = self.scroll_area.findChildren(QWidget)
+
+        for widget in tab_widgets_content:
+            if widget in widget_to_exclude:
+                continue
+            if widget in scroll_area_widgets_content:
+                continue
+            widget.hide() if not self.hidden_widgets else widget.show()
+
+        if not self.hidden_widgets:
+            self.button_show_all_lang.setText("Hide")
+            self.scroll_area.setVisible(True)
+        else:
+            self.button_show_all_lang.setText("Show")
+            self.scroll_area.setVisible(False)
+
+        self.hidden_widgets = not self.hidden_widgets
 
     @staticmethod
     def remove_duplicate_chars(line_edit):
