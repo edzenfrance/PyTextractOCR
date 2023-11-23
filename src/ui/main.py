@@ -157,7 +157,6 @@ class MainUI(QDialog):
         update_config(self_pos_xy)
 
     def load_main_window_position(self):
-        logger.info("FIRST RUN")
         config_path = Path('config.toml')
         if config_path.is_file():
             # Move the window at the saved position

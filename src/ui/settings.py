@@ -1,11 +1,15 @@
 # Standard libraries
 import os
 import re
+import socket
+import time
 from pathlib import Path
+from urllib import request, error
 
 # Third-party libraries
+import requests
 from loguru import logger
-from PySide6.QtCore import Qt, QRect, QTimer, QEvent
+from PySide6.QtCore import Qt, QRect, QTimer, QEvent, QThread, Signal
 from PySide6.QtGui import QColor, QPalette, QIcon, QPainter, QValidator
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -18,6 +22,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QPushButton,
+    QProgressBar,
     QScrollArea,
     QSpinBox,
     QTableWidget,
@@ -51,6 +56,7 @@ class SettingsUI(QDialog):
         self.folder_path = None
         self.file_path = None
         self.file_path_show = None
+        self.download_lang_name = None
 
         # Dictionary to store QLineEdit widgets and their event handling logic
         self.line_edits = {}
@@ -144,36 +150,17 @@ class SettingsUI(QDialog):
         self.pytesseract_tab = QWidget()
         self.pytesseract_tab.setObjectName("pytesseract_tab")
 
-        # https://tesseract-ocr.github.io/tessdoc/Data-Files-in-different-versions.html
         # LABEL - OCR Language
         self.label_ocr_language = QLabel(self.pytesseract_tab)
         self.label_ocr_language.setObjectName("label_ocr_language")
         self.label_ocr_language.setGeometry(QRect(15, 16, 85, 16))
 
-        # COMBOBOX - OCR Language
-        self.combobox_ocr_language = QComboBox(self.pytesseract_tab)
-        self.combobox_ocr_language.setObjectName("combobox_ocr_language")
-        self.combobox_ocr_language.setGeometry(QRect(105, 13, 91, 22))
-        cbox_lang = ["Combine", "English", "French", "German", "Japanese", "Korean", "Russian", "Spanish"]
-        language_value = self.config['pytesseract']['language']
-        language_value = str(language_value)
-        match_found = False
-        for index, lang_item in enumerate(cbox_lang):
-            self.combobox_ocr_language.addItem(lang_item)
-            if lang_item == language_value.capitalize():
-                self.combobox_ocr_language.setCurrentText(lang_item)
-                match_found = True
-        if not match_found:
-            self.combobox_ocr_language.setCurrentIndex(0)
-        self.combobox_ocr_language.currentIndexChanged.connect(self.toggle_apply_button)
-
         # BUTTON - Show all
-        self.button_show_all_lang = QPushButton(self.pytesseract_tab)
-        self.button_show_all_lang.setObjectName("button__show_all_lang")
-        self.button_show_all_lang.setGeometry(105, 12, 91, 24)
-        self.button_show_all_lang.setAutoDefault(False)
-        self.button_show_all_lang.setText("Show all")
-        self.button_show_all_lang.clicked.connect(self.hide_all_components_in_tab)
+        self.button_ocr_language = QPushButton(self.pytesseract_tab)
+        self.button_ocr_language.setObjectName("button__show_all_lang")
+        self.button_ocr_language.setGeometry(105, 12, 91, 24)
+        self.button_ocr_language.setAutoDefault(False)
+        self.button_ocr_language.clicked.connect(self.hide_all_components_in_tab)
 
         # Create a scrollable area
         self.scroll_area = QScrollArea(self.pytesseract_tab)
@@ -189,22 +176,47 @@ class SettingsUI(QDialog):
         self.scroll_content_layout = QVBoxLayout(self.scroll_content)
         self.scroll_content.setLayout(self.scroll_content_layout)
 
-        # Add checkboxes for different languages with "Download"
-        scroll_area_languages = ["English", "French", "German", "Japanese", "Korean", "Russian", "Spanish"]
-        self.scroll_area_checkbox_dict = {}
+        # Add checkboxes for different languages with "Download" button
+        self.checkbox_languages = {
+            'eng': 'english',
+            'fra': 'french',
+            'deu': 'german',
+            'jpn': 'japanese',
+            'kor': 'korean',
+            'rus': 'russian',
+            'spa': 'spanish'
+        }
+        self.sc_checkbox_dict = {}
+        self.sc_button_dict = {}
+        self.sc_progressbar_dict = {}
+        self.sc_checkboxes = []
 
-        for language in scroll_area_languages:
-            # Create a horizontal layout for each row (checkbox, Download label, Delete label)
-            scroll_row_layout = QHBoxLayout()
-            sc_checkbox = QCheckBox(language)
-            sc_button = QPushButton("Download")
-            self.scroll_area_checkbox_dict[language] = sc_checkbox
-            scroll_row_layout.addWidget(sc_checkbox)
-            scroll_row_layout.addWidget(sc_button)
-            self.scroll_content_layout.addLayout(scroll_row_layout)
+        for lang_code, lang_name in self.checkbox_languages.items():
+            self.scroll_row_layout = QHBoxLayout()
+            self.sc_checkbox = QCheckBox(lang_name.capitalize())
+            self.sc_button = QPushButton("Download")
+            self.sc_button.setFixedSize(184, 22)
+            self.sc_button.setAutoDefault(False)
+            self.sc_progressbar = QProgressBar()
+            self.sc_progressbar.setFixedSize(184, 22)
+            self.sc_progressbar.setVisible(False)
+            self.sc_progressbar.setTextVisible(False)
 
-        if 'English' in self.scroll_area_checkbox_dict:
-            self.scroll_area_checkbox_dict['English'].setChecked(True)
+            self.scroll_row_layout.addWidget(self.sc_checkbox)
+            self.scroll_row_layout.addWidget(self.sc_button)
+            self.scroll_row_layout.addWidget(self.sc_progressbar)
+            self.scroll_content_layout.addLayout(self.scroll_row_layout)
+
+            self.sc_checkbox_dict[lang_name] = self.sc_checkbox
+            self.sc_button_dict[lang_name] = self.sc_button
+            self.sc_progressbar_dict[lang_name] = self.sc_progressbar
+            self.sc_checkboxes.append(self.sc_checkbox)
+            self.sc_checkbox.stateChanged.connect(self.toggle_apply_button)
+            self.sc_checkbox.clicked.connect(self.get_check_checkbox)
+            self.sc_button.clicked.connect(self.download_from_github)
+
+        if 'english' in self.sc_checkbox_dict:
+            self.sc_checkbox_dict['english'].setChecked(True)
 
         # LABEL - Page segmentation mode:
         self.label_psm_value = QLabel(self.pytesseract_tab)
@@ -228,12 +240,12 @@ class SettingsUI(QDialog):
         self.toggle_checkbox_psm_tooltip(psm_value)
         self.combobox_psm_value.currentIndexChanged.connect(lambda index: (self.toggle_checkbox_psm_tooltip(index), self.toggle_apply_button()))
 
-        # LABEL - OCR Engine Mode
+        # LABEL - OCR Engine mode
         self.label_oem_value = QLabel(self.pytesseract_tab)
         self.label_oem_value.setObjectName("label_oem_value")
         self.label_oem_value.setGeometry(QRect(222, 48, 101, 16))
 
-        # COMBOBOX - OCR Engine Mode
+        # COMBOBOX - OCR Engine mode
         self.combobox_oem_value = QComboBox(self.pytesseract_tab)
         self.combobox_oem_value.setObjectName("combobox_oem_value")
         self.combobox_oem_value.setGeometry(QRect(330, 45, 61, 22))
@@ -409,9 +421,9 @@ class SettingsUI(QDialog):
 
         header_vertical = MyHeader(Qt.Vertical, self.tableWidget)
         self.tableWidget.setVerticalHeader(header_vertical)
-        self.tableWidget.setColumnCount(2)  # Set number of columns
-        self.tableWidget.setRowCount(7)  # Add a row to the table
-        self.tableWidget.setHorizontalHeaderLabels(self.labels)  # Now set the horizontal header labels
+        self.tableWidget.setColumnCount(2)
+        self.tableWidget.setRowCount(7)
+        self.tableWidget.setHorizontalHeaderLabels(self.labels)
         self.tableWidget.setEditTriggers(QAbstractItemView.NoEditTriggers)  # Make the entire table read-only
         self.tableWidget.setSelectionMode(QAbstractItemView.NoSelection)  # No items can be selected
 
@@ -580,6 +592,7 @@ class SettingsUI(QDialog):
         # Tab 1
         self.tab_widget.setTabText(self.tab_widget.indexOf(self.pytesseract_tab), "OCR")
         self.label_ocr_language.setText("OCR Language:")
+        self.button_ocr_language.setText("Show")
         self.label_psm_value.setText("Page segment mode:")
         self.label_oem_value.setText("OCR Engine mode:")
         self.combobox_oem_value.setItemText(0, "0")
@@ -697,9 +710,20 @@ class SettingsUI(QDialog):
         return super().eventFilter(obj, event)
 
     def hide_all_components_in_tab(self):
-        widget_to_exclude = [self.label_ocr_language, self.button_show_all_lang]
+        widget_to_exclude = [self.label_ocr_language, self.button_ocr_language]
         tab_widgets_content = self.pytesseract_tab.findChildren(QWidget)
         scroll_area_widgets_content = self.scroll_area.findChildren(QWidget)
+        tessdata_folder = Path('./tessdata')
+
+        for lang_code, lang_name in self.checkbox_languages.items():
+            file_name = f'{lang_code}.traineddata'
+            file_path = tessdata_folder / file_name
+            if file_path.exists():
+                self.sc_checkbox_dict[f'{lang_name}'].setEnabled(True)
+                self.sc_button_dict[f'{lang_name}'].setVisible(False)
+            else:
+                self.sc_checkbox_dict[f'{lang_name}'].setEnabled(False)
+                self.sc_button_dict[f'{lang_name}'].setVisible(True)
 
         for widget in tab_widgets_content:
             if widget in widget_to_exclude:
@@ -709,13 +733,87 @@ class SettingsUI(QDialog):
             widget.hide() if not self.hidden_widgets else widget.show()
 
         if not self.hidden_widgets:
-            self.button_show_all_lang.setText("Hide")
+            self.button_ocr_language.setText("Hide")
             self.scroll_area.setVisible(True)
         else:
-            self.button_show_all_lang.setText("Show")
+            self.button_ocr_language.setText("Show")
             self.scroll_area.setVisible(False)
 
         self.hidden_widgets = not self.hidden_widgets
+
+    def get_check_checkbox(self):
+        sender_checkbox = self.sender()
+        label = None
+
+        for name, checkbox in self.sc_checkbox_dict.items():
+            if checkbox is sender_checkbox:
+                label = name
+                break
+
+        # Force check the last clicked checkbox if it's unchecked and no other checkboxes are checked
+        if label is not None:
+            if not sender_checkbox.isChecked():
+                all_checked = any(checkbox.isChecked() for checkbox in self.sc_checkboxes)
+                if not all_checked:
+                    sender_checkbox.setChecked(True)
+
+    def download_from_github(self):
+        sender_button = self.sender()
+        label = None
+
+        for name, button in self.sc_button_dict.items():
+            if button is sender_button:
+                label = name
+                break
+
+        for lang_code, lang_name in self.checkbox_languages.items():
+            if label == lang_name:
+                file_name = f'{lang_code}.traineddata'
+                download_url = f'https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/main/{file_name}'
+                download_destination = f'tessdata/{file_name}.tmp'
+
+                self.download_lang_name = lang_name
+                self.sc_progressbar_dict[f'{self.download_lang_name}'].setVisible(True)
+                self.sc_button_dict[f'{self.download_lang_name}'].setVisible(False)
+                self.button_ocr_language.setEnabled(False)
+
+                self.download_thread = DownloadThread(download_url, str(download_destination), file_name)
+                self.download_thread.progress_signal.connect(self.update_progress_bar)
+                self.download_thread.error_signal.connect(self.handle_download_error)
+                self.download_thread.start()
+
+                # Start a separate thread to periodically check for internet connectivity during the download
+                self.check_internet_thread = QThread(self)
+                self.check_internet_thread.run = self.check_internet_connection
+                self.check_internet_thread.start()
+
+    def update_progress_bar(self, value):
+        self.sc_progressbar_dict[f'{self.download_lang_name}'].setValue(value)
+        if value == 100:
+            self.button_ocr_language.setEnabled(True)
+            self.sc_progressbar_dict[f'{self.download_lang_name}'].setVisible(False)
+            self.sc_checkbox_dict[f'{self.download_lang_name}'].setEnabled(True)
+            self.scroll_area.update()
+            logger.info("Download 100%!")
+
+    def handle_download_error(self, error_message):
+        self.reset_download_button()
+        logger.error(f"Download failed: {error_message}")
+
+    def check_internet_connection(self):
+        while not self.download_thread._stop_event:
+            time.sleep(1)
+            if not self.download_thread.is_internet_available():
+                # If internet connection is lost during download, stop the download thread
+                self.download_thread.stop_download()
+                self.reset_download_button()
+                logger.error("Internet connection lost. Download aborted.")
+                break
+
+    def reset_download_button(self):
+        self.button_ocr_language.setEnabled(True)
+        self.sc_button_dict[f'{self.download_lang_name}'].setVisible(True)
+        self.sc_progressbar_dict[f'{self.download_lang_name}'].setVisible(False)
 
     @staticmethod
     def remove_duplicate_chars(line_edit):
@@ -830,7 +928,6 @@ class SettingsUI(QDialog):
                 raise ValueError("Output folder is empty.")
 
         if output_folder_path:
-            logger.info("OUTPUT FOLDER")
             directory = Path(output_folder_path)
             if directory.exists() and directory.is_dir():
                 logger.info(f"Output folder already exist '{output_folder_path}'")
@@ -873,7 +970,7 @@ class SettingsUI(QDialog):
                 'sound_file': self.sound_path_file
             },
             "pytesseract": {
-                'language': self.combobox_ocr_language.currentText().lower(),
+                'language': "english",
                 'page_segmentation_mode': int(self.combobox_psm_value.currentText()),
                 'ocr_engine_mode': int(self.combobox_oem_value.currentText()),
                 'preserve_interword_spaces': self.checkbox_preserve_interword_spaces.isChecked(),
@@ -958,3 +1055,65 @@ class CustomSpinBox(QSpinBox):
                 return QValidator.Acceptable, index
 
         return QValidator.Invalid, index
+
+
+class DownloadThread(QThread):
+    progress_signal = Signal(int)
+    error_signal = Signal(str)
+
+    def __init__(self, url, destination, filename):
+        super().__init__()
+        self.url = url
+        self.destination = destination
+        self.filename = filename
+        self._stop_event = False
+
+    def run(self):
+        try:
+            with requests.get(self.url, stream=True) as response:
+                response.raise_for_status()  # Status code 200 = successful
+                total_size = int(response.headers.get('content-length', 0))
+                downloaded_size = 0
+
+                with open(self.destination, 'wb') as file:
+                    for data in response.iter_content(chunk_size=1024):
+                        if self._stop_event:
+                            break
+                        file.write(data)
+                        downloaded_size += len(data)
+                        progress_percentage = int(downloaded_size / total_size * 100)
+                        self.progress_signal.emit(progress_percentage)
+
+            logger.success(f"Download successful")
+            self.rename_downloaded_file()
+
+        except requests.exceptions.RequestException as e:
+            self.error_signal.emit(str(e))
+
+    def is_internet_available(self):
+        try:
+            logger.info("Checking internet connection")
+            request.urlopen("http://www.google.com", timeout=5)
+            return True
+
+        except (error.URLError, socket.timeout):
+            return False
+
+    def rename_downloaded_file(self):
+        tessdata_folder = 'tessdata/'
+        current_file_name = f'{self.filename}.tmp'
+        new_file_name = self.filename
+        current_file_path = os.path.join(tessdata_folder, current_file_name)
+        new_file_path = os.path.join(tessdata_folder, new_file_name)
+
+        try:
+            os.rename(current_file_path, new_file_path)
+            logger.info(f'The file {current_file_path} has been renamed to {new_file_path}.')
+
+        except Exception as e:
+            logger.error(f"Failed to rename the file: {e}")
+
+        self.stop_download()
+
+    def stop_download(self):
+        self._stop_event = True  # Flag to stop the download thread
