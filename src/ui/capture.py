@@ -1,7 +1,7 @@
 # Standard libraries
+import tempfile
 from datetime import datetime
 from pathlib import Path
-import tempfile
 
 # Third-party libraries
 from loguru import logger
@@ -13,7 +13,7 @@ from PySide6.QtWidgets import QMainWindow
 
 # Sources
 from src.config.config import load_config
-from src.ocr.ocr_processor import perform_pytesseract_ocr
+from src.ocr.ocr_processor import perform_ocr
 from src.ui.ocr_text import OCRTextUI
 from src.utils.message_box import show_message_box
 
@@ -28,9 +28,7 @@ class TransparentOverlayCapture(QMainWindow):
 
         self.returned_text = None
         self.show_formatted_text = None
-        self.config = None
         self.filename = None
-        self.directory_msg = None
         self.drag_area = None
         self.drag_start_pos = None
         self.drag_end_pos = None
@@ -98,19 +96,17 @@ class TransparentOverlayCapture(QMainWindow):
     def capture_selected_area(self, x, y, width, height):
         logger.info(f"x: {x}, y: {y}, width: {width}, height: {height}")
 
-        self.config = load_config()
+        config = load_config()
         current_datetime = get_current_datetime()
-        save_dir = self.config['output']['output_folder_path']
+        directory = Path(config['output']['output_folder_path'])
+        added_name = "pytexractocr_"
 
         # Capture the screenshot of the selected area
         screenshot = ImageGrab.grab(bbox=(x, y, x + width, y + height))
-        added_name = "pytexractocr_"
 
-        if self.config['output']['auto_save_capture']:
+        if config['output']['auto_save_capture']:
             self.filename = added_name + current_datetime + ".png"
 
-            directory = Path(save_dir)
-            self.directory_msg = directory
             if not directory.exists() and not directory.is_dir():
                 try:
                     directory.mkdir()
@@ -127,46 +123,45 @@ class TransparentOverlayCapture(QMainWindow):
             except Exception as e:
                 self.close_overlay_then_show_main()
                 logger.error(f"An error occurred while taking a screenshot {e}")
-                raise ValueError(f"Failed to create a screenshot file in '{self.directory_msg}'")
+                raise ValueError(f"Failed to create a screenshot file in '{directory}'")
         else:
             with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as temp:
                 self.filename = temp.name
                 screenshot.save(self.filename)
                 logger.info(f"Screenshot saved as temporary file '{self.filename}'")
 
-        if self.config['preferences']['enable_sound']:
-            self.play_the_sound_file()
+        if config['preferences']['enable_sound']:
+            play_sound_file(config['preferences']['sound_file'])
 
         self.close_overlay()
-        self.returned_text = perform_pytesseract_ocr(self.filename)
+        self.returned_text = perform_ocr(self.filename)
         self.main_ui_instance.show_main_ui()
         if self.returned_text[0] is not None:
             logger.success("Screenshot taken and OCR completed")
-            self.show_ocr_text_ui()
+            if config['output']['show_popup_window']:
+                self.show_ocr_text_ui()
 
     def show_ocr_text_ui(self):
-        if self.config['output']['show_popup_window']:
-            if not self.ocr_text_ui.isVisible():
-                self.ocr_text_ui.init_ui()
-                self.ocr_text_ui.show()
-            else:
-                self.ocr_text_ui.init_ui()
-                self.ocr_text_ui.raise_()
-            self.ocr_text_ui.set_extracted_text(self.returned_text[0])
-            if self.returned_text[1] is not None:
-                self.ocr_text_ui.set_translated_text(self.returned_text[1])
-
-    def play_the_sound_file(self):
-        sound_file = self.config['preferences']['sound_file']
-        if Path(sound_file).exists():
-            try:
-                sound_file = sound_file.replace('\\', '/')
-                playsound(sound_file, False)
-                logger.success(f"Playing sound '{sound_file}'")
-            except PlaysoundException as e:
-                logger.error(f"An error occurred while playing the sound '{sound_file}' {e} ")
+        self.ocr_text_ui.init_ui()
+        if not self.ocr_text_ui.isVisible():
+            self.ocr_text_ui.show()
         else:
-            logger.error(f"{sound_file} doesnt exist")
+            self.ocr_text_ui.raise_()
+        self.ocr_text_ui.set_extracted_text(self.returned_text[0])
+        if self.returned_text[1] is not None:
+            self.ocr_text_ui.set_translated_text(self.returned_text[1])
+
+
+def play_sound_file(sound_file):
+    if Path(sound_file).exists():
+        try:
+            sound_file = sound_file.replace('\\', '/')
+            playsound(sound_file, False)
+            logger.success(f"Sound file has been played successfully using playsound")
+        except PlaysoundException as e:
+            logger.error(f"An error occurred while playing the sound file '{sound_file}' {e} ")
+    else:
+        logger.error(f"{sound_file} doesnt exist")
 
 
 def get_current_datetime():

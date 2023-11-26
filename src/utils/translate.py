@@ -7,8 +7,21 @@ from src.config.config import load_config
 translator = Translator()
 
 
-def translate_text(extracted_text):
-    languages = {
+def language_set():
+    languages_set = {
+        'eng': 'english',
+        'fra': 'french',
+        'deu': 'german',
+        'jpn': 'japanese',
+        'kor': 'korean',
+        'rus': 'russian',
+        'spa': 'spanish'
+    }
+    return languages_set
+
+
+def language_list():
+    languages_list = {
         'af': 'afrikaans',
         'sq': 'albanian',
         'am': 'amharic',
@@ -117,22 +130,22 @@ def translate_text(extracted_text):
         'yo': 'yoruba',
         'zu': 'zulu'
     }
+    return languages_list
 
+
+def translate_text(extracted_text):
+    languages = language_list()
     config = load_config()
-    selected_language = config['pytesseract']['language']
 
-    source_language = None
-    destination_language = None
+    selected_language = config['ocr']['language']
+    source_language = next((code for code, name in languages.items() if name == selected_language), None)
+    if not source_language:
+        raise ValueError(f"Source language '{selected_language}' not found in the language list.")
 
-    for source_lang_code, source_lang_name in languages.items():
-        if source_lang_name == selected_language:
-            source_language = source_lang_code
-            dest_lang = config['translate'][selected_language]
-
-            for dest_lang_code, dest_lang_name in languages.items():
-                if dest_lang_code == dest_lang:
-                    destination_language = dest_lang_code
-                    break
+    dest_lang = config['translate'][selected_language]
+    destination_language = next((code for code, name in languages.items() if code == dest_lang), None)
+    if not destination_language:
+        raise ValueError(f"Destination language '{dest_lang}' not found in the language list.")
 
     translated_text = translator.translate(extracted_text, src=source_language, dest=destination_language)
     translated_text_result = translated_text.text

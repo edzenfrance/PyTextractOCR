@@ -37,7 +37,7 @@ def load_config():
             'enable_sound': True,
             'sound_file': "assets\\sound\\sound.wav",
         },
-        "pytesseract": {
+        "ocr": {
             'language': "english",
             'page_segmentation_mode': 6,
             'ocr_engine_mode': 3,

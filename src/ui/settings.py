@@ -1,6 +1,6 @@
 # Standard libraries
-import os
 import re
+import shutil
 import socket
 import time
 from pathlib import Path
@@ -36,6 +36,7 @@ from PySide6.QtWidgets import (
 from src.config.config import load_config, update_config
 from src.ui.asset_manager import app_icon
 from src.utils.message_box import show_message_box
+from src.utils.translate import language_list, language_set
 
 
 class SettingsUI(QDialog):
@@ -48,15 +49,10 @@ class SettingsUI(QDialog):
         self.setWindowFlags(Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
 
         self.initialize_settings_components_finish = False
+        self.ocr_tab_hide_widgets = False
         self.output_folder_created = True
-        self.hidden_widgets = False
-        self.sound_path_file = None
-        self.new_output_folder_path = ""
-        self.folder_path_show = None
         self.folder_path = None
-        self.file_path = None
-        self.file_path_show = None
-        self.download_lang_name = None
+        self.widget_language_name = None
 
         # Dictionary to store QLineEdit widgets and their event handling logic
         self.line_edits = {}
@@ -140,30 +136,30 @@ class SettingsUI(QDialog):
         # BUTTON - ...
         self.button_sound_file = QPushButton(self.preferences_tab)
         self.button_sound_file.setObjectName("button_sound_file")
-        self.button_sound_file.setGeometry(QRect(350, 100, 24, 24))
+        self.button_sound_file.setGeometry(QRect(350, 70, 24, 24))
         self.button_sound_file.setAutoDefault(False)
         self.button_sound_file.clicked.connect(self.select_audio_file)
 
         self.tab_widget.addTab(self.preferences_tab, "")
 
-        # ======== PYTESSERACT TAB ========
-        self.pytesseract_tab = QWidget()
-        self.pytesseract_tab.setObjectName("pytesseract_tab")
+        # ======== OCR TAB ========
+        self.ocr_tab = QWidget()
+        self.ocr_tab.setObjectName("ocr_tab")
 
         # LABEL - OCR Language
-        self.label_ocr_language = QLabel(self.pytesseract_tab)
+        self.label_ocr_language = QLabel(self.ocr_tab)
         self.label_ocr_language.setObjectName("label_ocr_language")
         self.label_ocr_language.setGeometry(QRect(15, 16, 85, 16))
 
         # BUTTON - Show all
-        self.button_ocr_language = QPushButton(self.pytesseract_tab)
+        self.button_ocr_language = QPushButton(self.ocr_tab)
         self.button_ocr_language.setObjectName("button__show_all_lang")
         self.button_ocr_language.setGeometry(105, 12, 91, 24)
         self.button_ocr_language.setAutoDefault(False)
-        self.button_ocr_language.clicked.connect(self.hide_all_components_in_tab)
+        self.button_ocr_language.clicked.connect(self.toggle_ocr_tab_widgets_display)
 
         # Create a scrollable area
-        self.scroll_area = QScrollArea(self.pytesseract_tab)
+        self.scroll_area = QScrollArea(self.ocr_tab)
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setGeometry(QRect(5, 41, 399, 217))
         self.scroll_area.setVisible(False)
@@ -177,23 +173,14 @@ class SettingsUI(QDialog):
         self.scroll_content.setLayout(self.scroll_content_layout)
 
         # Add checkboxes for different languages with "Download" button
-        self.checkbox_languages = {
-            'eng': 'english',
-            'fra': 'french',
-            'deu': 'german',
-            'jpn': 'japanese',
-            'kor': 'korean',
-            'rus': 'russian',
-            'spa': 'spanish'
-        }
         self.sc_checkbox_dict = {}
         self.sc_button_dict = {}
         self.sc_progressbar_dict = {}
         self.sc_checkboxes = []
 
-        for lang_code, lang_name in self.checkbox_languages.items():
+        for language_name in language_set().values():
             self.scroll_row_layout = QHBoxLayout()
-            self.sc_checkbox = QCheckBox(lang_name.capitalize())
+            self.sc_checkbox = QCheckBox(language_name.capitalize())
             self.sc_button = QPushButton("Download")
             self.sc_button.setFixedSize(184, 22)
             self.sc_button.setAutoDefault(False)
@@ -207,28 +194,28 @@ class SettingsUI(QDialog):
             self.scroll_row_layout.addWidget(self.sc_progressbar)
             self.scroll_content_layout.addLayout(self.scroll_row_layout)
 
-            self.sc_checkbox_dict[lang_name] = self.sc_checkbox
-            self.sc_button_dict[lang_name] = self.sc_button
-            self.sc_progressbar_dict[lang_name] = self.sc_progressbar
+            self.sc_checkbox_dict[language_name] = self.sc_checkbox
+            self.sc_button_dict[language_name] = self.sc_button
+            self.sc_progressbar_dict[language_name] = self.sc_progressbar
             self.sc_checkboxes.append(self.sc_checkbox)
             self.sc_checkbox.stateChanged.connect(self.toggle_apply_button)
-            self.sc_checkbox.clicked.connect(self.get_check_checkbox)
+            self.sc_checkbox.clicked.connect(self.auto_check_last_checkbox)
             self.sc_button.clicked.connect(self.download_from_github)
 
         if 'english' in self.sc_checkbox_dict:
             self.sc_checkbox_dict['english'].setChecked(True)
 
-        # LABEL - Page segmentation mode:
-        self.label_psm_value = QLabel(self.pytesseract_tab)
+        # LABEL - Page segmentation mode
+        self.label_psm_value = QLabel(self.ocr_tab)
         self.label_psm_value.setObjectName("label_psm_value")
         self.label_psm_value.setGeometry(QRect(15, 48, 119, 16))
 
         # COMBOBOX - Page segmentation mode
-        self.combobox_psm_value = QComboBox(self.pytesseract_tab)
+        self.combobox_psm_value = QComboBox(self.ocr_tab)
         self.combobox_psm_value.setObjectName("combobox_psm_value")
         self.combobox_psm_value.setGeometry(QRect(135, 45, 61, 22))
         self.combobox_psm_value.addItems(['3', '4', '5', '6', '7', '8', '9', '10', '11', '13'])
-        psm_value = self.config['pytesseract']['page_segmentation_mode']
+        psm_value = self.config['ocr']['page_segmentation_mode']
         try:
             psm_value = int(psm_value)
             if psm_value < 3 or psm_value == 12 or psm_value > 13:
@@ -241,16 +228,16 @@ class SettingsUI(QDialog):
         self.combobox_psm_value.currentIndexChanged.connect(lambda index: (self.toggle_checkbox_psm_tooltip(index), self.toggle_apply_button()))
 
         # LABEL - OCR Engine mode
-        self.label_oem_value = QLabel(self.pytesseract_tab)
+        self.label_oem_value = QLabel(self.ocr_tab)
         self.label_oem_value.setObjectName("label_oem_value")
         self.label_oem_value.setGeometry(QRect(222, 48, 101, 16))
 
         # COMBOBOX - OCR Engine mode
-        self.combobox_oem_value = QComboBox(self.pytesseract_tab)
+        self.combobox_oem_value = QComboBox(self.ocr_tab)
         self.combobox_oem_value.setObjectName("combobox_oem_value")
         self.combobox_oem_value.setGeometry(QRect(330, 45, 61, 22))
         self.combobox_oem_value.addItems(['0', '1', '2', '3'])
-        oem_value = self.config['pytesseract']['ocr_engine_mode']
+        oem_value = self.config['ocr']['ocr_engine_mode']
         try:
             oem_value = int(oem_value)
             if oem_value > 3:
@@ -263,24 +250,24 @@ class SettingsUI(QDialog):
         self.combobox_oem_value.currentIndexChanged.connect(lambda index: (self.toggle_checkbox_oem_tooltip(index), self.toggle_apply_button()))
 
         # CHECKBOX - Preserve interword spaces
-        self.checkbox_preserve_interword_spaces = QCheckBox(self.pytesseract_tab)
+        self.checkbox_preserve_interword_spaces = QCheckBox(self.ocr_tab)
         self.checkbox_preserve_interword_spaces.setObjectName("checkbox_preserve_interword_spaces")
         self.checkbox_preserve_interword_spaces.setGeometry(QRect(16, 75, 171, 20))
         self.checkbox_preserve_interword_spaces.stateChanged.connect(self.toggle_apply_button)
 
         # CHECKBOX - Binarize image
-        self.checkbox_image_binarization = QCheckBox(self.pytesseract_tab)
+        self.checkbox_image_binarization = QCheckBox(self.ocr_tab)
         self.checkbox_image_binarization.setObjectName("checkbox_image_binarization")
         self.checkbox_image_binarization.setGeometry(QRect(16, 105, 180, 20))
         self.checkbox_image_binarization.stateChanged.connect(self.toggle_apply_button)
 
         # LABEL - Binarization threshold
-        self.label_binarization_threshold = QLabel(self.pytesseract_tab)
+        self.label_binarization_threshold = QLabel(self.ocr_tab)
         self.label_binarization_threshold.setObjectName("label_binarization_threshold")
         self.label_binarization_threshold.setGeometry(QRect(215, 107, 121, 16))
 
         # SPINBOX - Binarization threshold
-        self.spinbox_binarization_threshold = QSpinBox(self.pytesseract_tab)
+        self.spinbox_binarization_threshold = QSpinBox(self.ocr_tab)
         self.spinbox_binarization_threshold.setObjectName("spinbox_binarization_threshold")
         self.spinbox_binarization_threshold.setGeometry(QRect(340, 105, 51, 22))
         self.spinbox_binarization_threshold.setMinimum(0)
@@ -290,18 +277,18 @@ class SettingsUI(QDialog):
         self.spinbox_binarization_threshold.editingFinished.connect(self.toggle_apply_button)
 
         # CHECKBOX - Deskew image
-        self.checkbox_image_deskewing = QCheckBox(self.pytesseract_tab)
+        self.checkbox_image_deskewing = QCheckBox(self.ocr_tab)
         self.checkbox_image_deskewing.setObjectName("checkbox_image_deskewing")
         self.checkbox_image_deskewing.setGeometry(QRect(16, 135, 180, 20))
         self.checkbox_image_deskewing.stateChanged.connect(self.toggle_apply_button)
 
         # LABEL - Blacklist characters
-        self.label_blacklist_char = QLabel(self.pytesseract_tab)
+        self.label_blacklist_char = QLabel(self.ocr_tab)
         self.label_blacklist_char.setObjectName("label_blacklist_char")
         self.label_blacklist_char.setGeometry(QRect(15, 168, 111, 16))
 
         # LINE EDIT - Blacklist characters
-        self.line_edit_blacklist_char = QLineEdit(self.pytesseract_tab)
+        self.line_edit_blacklist_char = QLineEdit(self.ocr_tab)
         self.line_edit_blacklist_char.setObjectName("line_edit_blacklist_char")
         self.line_edit_blacklist_char.setGeometry(QRect(135, 165, 191, 22))
         self.line_edit_blacklist_char.textChanged.connect(self.toggle_apply_button)
@@ -309,19 +296,19 @@ class SettingsUI(QDialog):
         self.line_edits['line_edit_blacklist_char'] = self.line_edit_blacklist_char  # Add to the dictionary
 
         # CHECKBOX - Enable
-        self.checkbox_blacklist_char = QCheckBox(self.pytesseract_tab)
+        self.checkbox_blacklist_char = QCheckBox(self.ocr_tab)
         self.checkbox_blacklist_char.setObjectName("checkbox_blacklist_char")
         self.checkbox_blacklist_char.setGeometry(QRect(333, 166, 60, 20))
         self.checkbox_blacklist_char.stateChanged.connect(self.toggle_apply_button)
-        self.checkbox_blacklist_char.clicked.connect(lambda: self.toggle_wblist_checkbox(self.checkbox_blacklist_char))
+        self.checkbox_blacklist_char.clicked.connect(lambda: self.toggle_whitelist_blacklist_checkbox(self.checkbox_blacklist_char))
 
         # LABEL - Whitelist characters
-        self.label_whitelist_char = QLabel(self.pytesseract_tab)
+        self.label_whitelist_char = QLabel(self.ocr_tab)
         self.label_whitelist_char.setObjectName("label_whitelist_char")
         self.label_whitelist_char.setGeometry(QRect(15, 198, 111, 16))
 
         # LINE EDIT - Whitelist characters
-        self.line_edit_whitelist_char = QLineEdit(self.pytesseract_tab)
+        self.line_edit_whitelist_char = QLineEdit(self.ocr_tab)
         self.line_edit_whitelist_char.setObjectName("line_edit_whitelist_char")
         self.line_edit_whitelist_char.setGeometry(QRect(135, 196, 191, 22))
         self.line_edit_whitelist_char.textChanged.connect(self.toggle_apply_button)
@@ -329,13 +316,13 @@ class SettingsUI(QDialog):
         self.line_edits['line_edit_whitelist_char'] = self.line_edit_whitelist_char  # Add to the dictionary
 
         # CHECKBOX - Enable
-        self.checkbox_whitelist_char = QCheckBox(self.pytesseract_tab)
+        self.checkbox_whitelist_char = QCheckBox(self.ocr_tab)
         self.checkbox_whitelist_char.setObjectName("checkbox_whitelist_char")
         self.checkbox_whitelist_char.setGeometry(QRect(333, 197, 60, 20))
         self.checkbox_whitelist_char.stateChanged.connect(self.toggle_apply_button)
-        self.checkbox_whitelist_char.clicked.connect(lambda: self.toggle_wblist_checkbox(self.checkbox_whitelist_char))
+        self.checkbox_whitelist_char.clicked.connect(lambda: self.toggle_whitelist_blacklist_checkbox(self.checkbox_whitelist_char))
 
-        self.tab_widget.addTab(self.pytesseract_tab, "")
+        self.tab_widget.addTab(self.ocr_tab, "")
 
         # ======== OUTPUT TAB ========
         self.output_tab = QWidget()
@@ -349,7 +336,7 @@ class SettingsUI(QDialog):
 
         # CHECKBOX - Show popup window (OCR Text)
         self.checkbox_show_popup_window = QCheckBox(self.output_tab)
-        self.checkbox_show_popup_window.setObjectName(u"checkbox_show_popup_window")
+        self.checkbox_show_popup_window.setObjectName("checkbox_show_popup_window")
         self.checkbox_show_popup_window.setGeometry(QRect(16, 40, 190, 20))
         self.checkbox_show_popup_window.stateChanged.connect(self.toggle_apply_button)
 
@@ -411,162 +398,51 @@ class SettingsUI(QDialog):
         self.spinbox_server_timeout.valueChanged.connect(self.toggle_apply_button)
         self.spinbox_server_timeout.editingFinished.connect(self.toggle_apply_button)
 
-        self.tableWidget = QTableWidget(self.translate_tab)
+        self.table_widget = QTableWidget(self.translate_tab)
 
-        # Set table header labels
-        self.labels = ["OCR Language", "Translate To (Using Google Translate)"]
+        table_header_labels = ["OCR Language", "Translate To (Using Google Translate)"]
 
-        header_horizontal = MyHeader(Qt.Horizontal, self.tableWidget)
-        self.tableWidget.setHorizontalHeader(header_horizontal)
+        header_horizontal = MyHeader(Qt.Horizontal, self.table_widget)
+        self.table_widget.setHorizontalHeader(header_horizontal)
 
-        header_vertical = MyHeader(Qt.Vertical, self.tableWidget)
-        self.tableWidget.setVerticalHeader(header_vertical)
-        self.tableWidget.setColumnCount(2)
-        self.tableWidget.setRowCount(7)
-        self.tableWidget.setHorizontalHeaderLabels(self.labels)
-        self.tableWidget.setEditTriggers(QAbstractItemView.NoEditTriggers)  # Make the entire table read-only
-        self.tableWidget.setSelectionMode(QAbstractItemView.NoSelection)  # No items can be selected
+        header_vertical = MyHeader(Qt.Vertical, self.table_widget)
+        self.table_widget.setVerticalHeader(header_vertical)
 
-        combobox_languages = ["English", "French", "German", "Japanese", "Korean", "Russian", "Spanish"]
-        self.languages = {
-            'af': 'afrikaans',
-            'sq': 'albanian',
-            'am': 'amharic',
-            'ar': 'arabic',
-            'hy': 'armenian',
-            'az': 'azerbaijani',
-            'eu': 'basque',
-            'be': 'belarusian',
-            'bn': 'bengali',
-            'bs': 'bosnian',
-            'bg': 'bulgarian',
-            'ca': 'catalan',
-            'ceb': 'cebuano',
-            'ny': 'chichewa',
-            'zh-cn': 'chinese (simplified)',
-            'zh-tw': 'chinese (traditional)',
-            'co': 'corsican',
-            'hr': 'croatian',
-            'cs': 'czech',
-            'da': 'danish',
-            'nl': 'dutch',
-            'en': 'english',
-            'eo': 'esperanto',
-            'et': 'estonian',
-            'tl': 'filipino',
-            'fi': 'finnish',
-            'fr': 'french',
-            'fy': 'frisian',
-            'gl': 'galician',
-            'ka': 'georgian',
-            'de': 'german',
-            'el': 'greek',
-            'gu': 'gujarati',
-            'ht': 'haitian creole',
-            'ha': 'hausa',
-            'haw': 'hawaiian',
-            'iw': 'hebrew',
-            'he': 'hebrew',
-            'hi': 'hindi',
-            'hmn': 'hmong',
-            'hu': 'hungarian',
-            'is': 'icelandic',
-            'ig': 'igbo',
-            'id': 'indonesian',
-            'ga': 'irish',
-            'it': 'italian',
-            'ja': 'japanese',
-            'jw': 'javanese',
-            'kn': 'kannada',
-            'kk': 'kazakh',
-            'km': 'khmer',
-            'ko': 'korean',
-            'ku': 'kurdish (kurmanji)',
-            'ky': 'kyrgyz',
-            'lo': 'lao',
-            'la': 'latin',
-            'lv': 'latvian',
-            'lt': 'lithuanian',
-            'lb': 'luxembourgish',
-            'mk': 'macedonian',
-            'mg': 'malagasy',
-            'ms': 'malay',
-            'ml': 'malayalam',
-            'mt': 'maltese',
-            'mi': 'maori',
-            'mr': 'marathi',
-            'mn': 'mongolian',
-            'my': 'myanmar (burmese)',
-            'ne': 'nepali',
-            'no': 'norwegian',
-            'or': 'odia',
-            'ps': 'pashto',
-            'fa': 'persian',
-            'pl': 'polish',
-            'pt': 'portuguese',
-            'pa': 'punjabi',
-            'ro': 'romanian',
-            'ru': 'russian',
-            'sm': 'samoan',
-            'gd': 'scots gaelic',
-            'sr': 'serbian',
-            'st': 'sesotho',
-            'sn': 'shona',
-            'sd': 'sindhi',
-            'si': 'sinhala',
-            'sk': 'slovak',
-            'sl': 'slovenian',
-            'so': 'somali',
-            'es': 'spanish',
-            'su': 'sundanese',
-            'sw': 'swahili',
-            'sv': 'swedish',
-            'tg': 'tajik',
-            'ta': 'tamil',
-            'te': 'telugu',
-            'th': 'thai',
-            'tr': 'turkish',
-            'uk': 'ukrainian',
-            'ur': 'urdu',
-            'ug': 'uyghur',
-            'uz': 'uzbek',
-            'vi': 'vietnamese',
-            'cy': 'welsh',
-            'xh': 'xhosa',
-            'yi': 'yiddish',
-            'yo': 'yoruba',
-            'zu': 'zulu'
-        }
+        self.table_widget.setColumnCount(2)
+        self.table_widget.setRowCount(7)
+        self.table_widget.setHorizontalHeaderLabels(table_header_labels)
+        self.table_widget.setEditTriggers(QAbstractItemView.NoEditTriggers)  # Make the entire table read-only
+        self.table_widget.setSelectionMode(QAbstractItemView.NoSelection)  # No items can be selected
 
         self.translate_to_comboboxes = []
 
-        for row, cbox_lang in enumerate(combobox_languages):
-            table_widget_lang_item = QTableWidgetItem(cbox_lang)
+        for table_row, combobox_language in enumerate(language_set().values(), start=0):
+            table_widget_language = QTableWidgetItem(combobox_language)
 
-            self.translate_to_combobox = QComboBox()
+            translate_to_combobox = QComboBox()
             # Add the languages with the first letter capitalized to the combo box, excluding the current language
-            for lang_code, lang_name in self.languages.items():
-                if lang_name != cbox_lang:
-                    self.translate_to_combobox.addItem(lang_name.capitalize())
+            for language_name in language_list().values():
+                if language_name != combobox_language:
+                    translate_to_combobox.addItem(language_name.capitalize())
 
-            for lang_code, lang_name in self.languages.items():
-                if lang_code == self.config['translate'][cbox_lang.lower()]:
-                    cbox_lang_index = self.translate_to_combobox.findText(lang_name.capitalize())
-                    if cbox_lang_index >= 0:  # -1 means the text was not found
-                        self.translate_to_combobox.setCurrentIndex(cbox_lang_index)
+            for language_code, language_name in language_list().items():
+                if language_code == self.config['translate'][combobox_language.lower()]:
+                    index = translate_to_combobox.findText(language_name.capitalize())
+                    if index >= 0:  # -1 means the text was not found
+                        translate_to_combobox.setCurrentIndex(index)
 
-            self.tableWidget.setItem(row, 0, table_widget_lang_item)
-            self.tableWidget.setCellWidget(row, 1, self.translate_to_combobox)
-            self.translate_to_comboboxes.append(self.translate_to_combobox)
-            self.translate_to_combobox.currentIndexChanged.connect(self.toggle_apply_button)
+            self.table_widget.setItem(table_row, 0, table_widget_language)
+            self.table_widget.setCellWidget(table_row, 1, translate_to_combobox)
+            self.translate_to_comboboxes.append(translate_to_combobox)
+            translate_to_combobox.currentIndexChanged.connect(self.toggle_apply_button)
 
         # Make 'Translate To' column stretch to fill table width.
         header_horizontal.setSectionResizeMode(0, QHeaderView.ResizeToContents)
         header_horizontal.setSectionResizeMode(1, QHeaderView.Stretch)
 
-        self.tableWidget.setObjectName("tableWidget")
-        self.tableWidget.setGeometry(QRect(5, 70, 399, 189))
-        self.tableWidget.verticalHeader().setVisible(False)
+        self.table_widget.setObjectName("table_widget")
+        self.table_widget.setGeometry(QRect(5, 70, 399, 189))
+        self.table_widget.verticalHeader().setVisible(False)
 
         self.tab_widget.addTab(self.translate_tab, "")
         self.tab_widget.setCurrentIndex(0)
@@ -590,7 +466,7 @@ class SettingsUI(QDialog):
         self.button_sound_file.setText(". . .")
 
         # Tab 1
-        self.tab_widget.setTabText(self.tab_widget.indexOf(self.pytesseract_tab), "OCR")
+        self.tab_widget.setTabText(self.tab_widget.indexOf(self.ocr_tab), "OCR")
         self.label_ocr_language.setText("OCR Language:")
         self.button_ocr_language.setText("Show")
         self.label_psm_value.setText("Page segment mode:")
@@ -666,14 +542,14 @@ class SettingsUI(QDialog):
         self.set_widget_value(self.checkbox_minimize_to_sys_tray, 'preferences', 'minimize_to_system_tray')
         self.set_widget_value(self.checkbox_play_sound, 'preferences', 'enable_sound')
         self.set_widget_value(self.line_edit_sound_file, 'preferences', 'sound_file', True)
-        self.set_widget_value(self.checkbox_preserve_interword_spaces, 'pytesseract', 'preserve_interword_spaces')
-        self.set_widget_value(self.checkbox_preserve_interword_spaces, 'pytesseract', 'image_binarization')
-        self.set_widget_value(self.spinbox_binarization_threshold, 'pytesseract', 'binarization_threshold')
-        self.set_widget_value(self.checkbox_image_deskewing, 'pytesseract', 'image_deskewing')
-        self.set_widget_value(self.line_edit_blacklist_char, 'pytesseract', 'blacklist_char')
-        self.set_widget_value(self.line_edit_whitelist_char, 'pytesseract', 'whitelist_char')
-        self.set_widget_value(self.checkbox_blacklist_char, 'pytesseract', 'enable_blacklist_char')
-        self.set_widget_value(self.checkbox_whitelist_char, 'pytesseract', 'enable_whitelist_char')
+        self.set_widget_value(self.checkbox_preserve_interword_spaces, 'ocr', 'preserve_interword_spaces')
+        self.set_widget_value(self.checkbox_preserve_interword_spaces, 'ocr', 'image_binarization')
+        self.set_widget_value(self.spinbox_binarization_threshold, 'ocr', 'binarization_threshold')
+        self.set_widget_value(self.checkbox_image_deskewing, 'ocr', 'image_deskewing')
+        self.set_widget_value(self.line_edit_blacklist_char, 'ocr', 'blacklist_char')
+        self.set_widget_value(self.line_edit_whitelist_char, 'ocr', 'whitelist_char')
+        self.set_widget_value(self.checkbox_blacklist_char, 'ocr', 'enable_blacklist_char')
+        self.set_widget_value(self.checkbox_whitelist_char, 'ocr', 'enable_whitelist_char')
         self.set_widget_value(self.checkbox_copyto_clipboard, 'output', 'copy_to_clipboard')
         self.set_widget_value(self.checkbox_show_popup_window, 'output', 'show_popup_window')
         self.set_widget_value(self.checkbox_auto_save_output, 'output', 'auto_save_capture')
@@ -683,8 +559,8 @@ class SettingsUI(QDialog):
         self.initialize_settings_components_finish = True
 
     def set_widget_value(self, widget, table_name, key, line_edit_replace=None):
+        value = self.config[table_name][key]
         try:
-            value = self.config[table_name][key]
             if line_edit_replace:
                 formatted_value = re.sub(r'\\+', r'\\', str(value).replace('/', '\\'))
                 widget.setText(formatted_value)
@@ -709,39 +585,35 @@ class SettingsUI(QDialog):
                     line_edit.setStyleSheet("border: 1px solid rgb(115, 115, 115);")
         return super().eventFilter(obj, event)
 
-    def hide_all_components_in_tab(self):
-        widget_to_exclude = [self.label_ocr_language, self.button_ocr_language]
-        tab_widgets_content = self.pytesseract_tab.findChildren(QWidget)
-        scroll_area_widgets_content = self.scroll_area.findChildren(QWidget)
-        tessdata_folder = Path('./tessdata')
+    def toggle_ocr_tab_widgets_display(self):
+        ocr_tab_widgets = self.ocr_tab.findChildren(QWidget)
+        scroll_area_widgets = self.scroll_area.findChildren(QWidget)
+        language_widgets = [self.label_ocr_language, self.button_ocr_language]
 
-        for lang_code, lang_name in self.checkbox_languages.items():
-            file_name = f'{lang_code}.traineddata'
-            file_path = tessdata_folder / file_name
+        for language_code, language_name in language_set().items():
+            file_path = Path('./tessdata') / f'{language_code}.traineddata'
             if file_path.exists():
-                self.sc_checkbox_dict[f'{lang_name}'].setEnabled(True)
-                self.sc_button_dict[f'{lang_name}'].setVisible(False)
+                self.sc_checkbox_dict[f'{language_name}'].setEnabled(True)
+                self.sc_button_dict[f'{language_name}'].setVisible(False)
             else:
-                self.sc_checkbox_dict[f'{lang_name}'].setEnabled(False)
-                self.sc_button_dict[f'{lang_name}'].setVisible(True)
+                self.sc_checkbox_dict[f'{language_name}'].setEnabled(False)
+                self.sc_button_dict[f'{language_name}'].setVisible(True)
 
-        for widget in tab_widgets_content:
-            if widget in widget_to_exclude:
+        for widget in ocr_tab_widgets:
+            if widget in language_widgets or widget in scroll_area_widgets:
                 continue
-            if widget in scroll_area_widgets_content:
-                continue
-            widget.hide() if not self.hidden_widgets else widget.show()
+            widget.hide() if not self.ocr_tab_hide_widgets else widget.show()
 
-        if not self.hidden_widgets:
+        if not self.ocr_tab_hide_widgets:
             self.button_ocr_language.setText("Hide")
             self.scroll_area.setVisible(True)
         else:
             self.button_ocr_language.setText("Show")
             self.scroll_area.setVisible(False)
 
-        self.hidden_widgets = not self.hidden_widgets
+        self.ocr_tab_hide_widgets = not self.ocr_tab_hide_widgets
 
-    def get_check_checkbox(self):
+    def auto_check_last_checkbox(self):
         sender_checkbox = self.sender()
         label = None
 
@@ -766,15 +638,15 @@ class SettingsUI(QDialog):
                 label = name
                 break
 
-        for lang_code, lang_name in self.checkbox_languages.items():
-            if label == lang_name:
-                file_name = f'{lang_code}.traineddata'
+        for language_code, language_name in language_set().items():
+            if label == language_name:
+                file_name = f'{language_code}.traineddata'
                 download_url = f'https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/main/{file_name}'
                 download_destination = f'tessdata/{file_name}.tmp'
 
-                self.download_lang_name = lang_name
-                self.sc_progressbar_dict[f'{self.download_lang_name}'].setVisible(True)
-                self.sc_button_dict[f'{self.download_lang_name}'].setVisible(False)
+                self.widget_language_name = language_name
+                self.sc_progressbar_dict[f'{self.widget_language_name}'].setVisible(True)
+                self.sc_button_dict[f'{self.widget_language_name}'].setVisible(False)
                 self.button_ocr_language.setEnabled(False)
 
                 self.download_thread = DownloadThread(download_url, str(download_destination), file_name)
@@ -788,11 +660,11 @@ class SettingsUI(QDialog):
                 self.check_internet_thread.start()
 
     def update_progress_bar(self, value):
-        self.sc_progressbar_dict[f'{self.download_lang_name}'].setValue(value)
+        self.sc_progressbar_dict[f'{self.widget_language_name}'].setValue(value)
         if value == 100:
             self.button_ocr_language.setEnabled(True)
-            self.sc_progressbar_dict[f'{self.download_lang_name}'].setVisible(False)
-            self.sc_checkbox_dict[f'{self.download_lang_name}'].setEnabled(True)
+            self.sc_progressbar_dict[f'{self.widget_language_name}'].setVisible(False)
+            self.sc_checkbox_dict[f'{self.widget_language_name}'].setEnabled(True)
             self.scroll_area.update()
             logger.info("Download 100%!")
 
@@ -812,8 +684,8 @@ class SettingsUI(QDialog):
 
     def reset_download_button(self):
         self.button_ocr_language.setEnabled(True)
-        self.sc_button_dict[f'{self.download_lang_name}'].setVisible(True)
-        self.sc_progressbar_dict[f'{self.download_lang_name}'].setVisible(False)
+        self.sc_button_dict[f'{self.widget_language_name}'].setVisible(True)
+        self.sc_progressbar_dict[f'{self.widget_language_name}'].setVisible(False)
 
     @staticmethod
     def remove_duplicate_chars(line_edit):
@@ -823,11 +695,9 @@ class SettingsUI(QDialog):
         line_edit.setText(unique_chars)
         line_edit.blockSignals(False)
 
-    def toggle_wblist_checkbox(self, checkbox):
-        if checkbox == self.checkbox_blacklist_char:
-            self.checkbox_whitelist_char.setChecked(False)
-        elif checkbox == self.checkbox_whitelist_char:
-            self.checkbox_blacklist_char.setChecked(False)
+    def toggle_whitelist_blacklist_checkbox(self, clicked_checkbox):
+        target_checkbox = self.checkbox_blacklist_char if clicked_checkbox == self.checkbox_whitelist_char else self.checkbox_whitelist_char
+        target_checkbox.setChecked(False)
 
     def select_audio_file(self):
         options = QFileDialog.Options()
@@ -835,16 +705,12 @@ class SettingsUI(QDialog):
         file_name, _ = QFileDialog.getOpenFileName(self, "Select Audio File", self.folder_path,
                                                    "Audio Files (*.mp3 *.wav)", options=options)
         if file_name:
-            self.file_path = file_name
-            self.file_path_show = file_name.replace('/', '\\')
-            self.line_edit_sound_file.setText(self.file_path_show)
+            self.line_edit_sound_file.setText(file_name.replace('/', '\\'))
 
     def select_autosave_output_folder(self):
         folder_path = QFileDialog.getExistingDirectory(self, "Select Folder", self.folder_path)
         if folder_path:
-            self.folder_path = folder_path
-            self.folder_path_show = folder_path.replace('/', '\\')
-            self.line_edit_output_folder.setText(self.folder_path_show)
+            self.line_edit_output_folder.setText(folder_path.replace('/', '\\'))
 
     def toggle_apply_button(self):
         if not self.initialize_settings_components_finish:
@@ -912,15 +778,15 @@ class SettingsUI(QDialog):
                 self.hide()
 
     def check_sound_file(self):
-        self.sound_path_file = self.line_edit_sound_file.text()
         if self.checkbox_play_sound.isChecked():
-            if not self.sound_path_file:
+            if not self.line_edit_sound_file.text():
                 raise ValueError("Sound file is empty.")
-            if not Path(self.sound_path_file).exists():
+            if not Path(self.line_edit_sound_file.text()).exists():
                 raise ValueError(f"Sound file does not exist.")
 
     def check_and_create_output_folder(self):
-        output_folder_path = self.line_edit_output_folder.text()
+        output_folder_path = self.fix_path(self.line_edit_output_folder)
+        self.line_edit_output_folder.setText(output_folder_path)
 
         if self.checkbox_auto_save_output.isChecked():
             if not output_folder_path:
@@ -932,7 +798,6 @@ class SettingsUI(QDialog):
             if directory.exists() and directory.is_dir():
                 logger.info(f"Output folder already exist '{output_folder_path}'")
                 self.output_folder_created = True
-                self.new_output_folder_path = output_folder_path
                 self.save_settings_config()
             else:
                 self.tab_widget.setCurrentIndex(2)
@@ -945,17 +810,16 @@ class SettingsUI(QDialog):
                     try:
                         logger.info(f"Creating output folder")
                         drive_letter = Path(output_folder_path).drive
-                        if not os.path.exists(drive_letter):
+                        if not Path(drive_letter).exists():
                             logger.error(f"Failed to create output folder. Drive letter does not exist.")
                             raise ValueError("Failed to create output folder.")
                         directory.mkdir(parents=True, exist_ok=True)
                         logger.success(f"Output folder created successfully '{output_folder_path}'")
                         self.output_folder_created = True
-                        self.new_output_folder_path = output_folder_path
                         self.save_settings_config()
 
                     except OSError as e:
-                        logger.error(f"Failed to create output folder. {e}'")
+                        logger.error(f"Failed to create output folder: {e}")
                         raise ValueError("Failed to create output folder.")
                 else:
                     self.output_folder_created = False
@@ -967,9 +831,9 @@ class SettingsUI(QDialog):
             "preferences": {
                 'minimize_to_system_tray': self.checkbox_minimize_to_sys_tray.isChecked(),
                 'enable_sound': self.checkbox_play_sound.isChecked(),
-                'sound_file': self.sound_path_file
+                'sound_file': self.fix_path(self.line_edit_sound_file)
             },
-            "pytesseract": {
+            "ocr": {
                 'language': "english",
                 'page_segmentation_mode': int(self.combobox_psm_value.currentText()),
                 'ocr_engine_mode': int(self.combobox_oem_value.currentText()),
@@ -987,7 +851,7 @@ class SettingsUI(QDialog):
                 'copy_to_clipboard': self.checkbox_copyto_clipboard.isChecked(),
                 'show_popup_window': self.checkbox_show_popup_window.isChecked(),
                 'auto_save_capture': self.checkbox_auto_save_output.isChecked(),
-                'output_folder_path': self.new_output_folder_path
+                'output_folder_path': self.fix_path(self.line_edit_output_folder)
             },
             "translate": {
                 'enable_translation': self.checkbox_show_translation.isChecked(),
@@ -1004,13 +868,13 @@ class SettingsUI(QDialog):
         logger.info("Saving settings in configuration file")
         update_config(settings_config)
 
-    def get_language_code(self, combobox_count):
-        combobox_text = self.translate_to_comboboxes[combobox_count].currentText().lower()
-        lang_code = None
-        for lang_codes, lang_names in self.languages.items():
-            if lang_names == combobox_text.lower():
-                lang_code = lang_codes
-        return lang_code
+    @staticmethod
+    def fix_path(line_edit: QLineEdit):
+        return re.sub(r'\\+', r'\\', str(line_edit.text()).replace('/', '\\'))
+
+    def get_language_code(self, num):
+        combobox_text = self.translate_to_comboboxes[num].currentText().lower()
+        return next((lang_code for lang_code, lang_name in language_list().items() if lang_name == combobox_text), None)
 
     def cancel_button(self):
         self.close()
@@ -1100,18 +964,16 @@ class DownloadThread(QThread):
             return False
 
     def rename_downloaded_file(self):
-        tessdata_folder = 'tessdata/'
-        current_file_name = f'{self.filename}.tmp'
-        new_file_name = self.filename
-        current_file_path = os.path.join(tessdata_folder, current_file_name)
-        new_file_path = os.path.join(tessdata_folder, new_file_name)
+        tessdata_folder = Path('./tessdata')
+        current_file_path = tessdata_folder / f'{self.filename}.tmp'
+        new_file_path = tessdata_folder / self.filename
 
         try:
-            os.rename(current_file_path, new_file_path)
-            logger.info(f'The file {current_file_path} has been renamed to {new_file_path}.')
+            shutil.move(current_file_path, new_file_path)
+            logger.info(f"The file '{current_file_path}' has been renamed to '{new_file_path}'.")
 
         except Exception as e:
-            logger.error(f"Failed to rename the file: {e}")
+            logger.error(f"Failed to rename the file {current_file_path}: {e}")
 
         self.stop_download()
 
