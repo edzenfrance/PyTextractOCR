@@ -51,7 +51,8 @@ class SettingsUI(QDialog):
         self.initialize_settings_components_finish = False
         self.ocr_tab_hide_widgets = False
         self.output_folder_created = True
-        self.folder_path = None
+        self.open_file_dialog_path = None
+        self.open_folder_dialog_path = None
         self.widget_language_name = None
 
         # Dictionary to store QLineEdit widgets and their event handling logic
@@ -340,21 +341,27 @@ class SettingsUI(QDialog):
         self.checkbox_show_popup_window.setGeometry(QRect(16, 40, 190, 20))
         self.checkbox_show_popup_window.stateChanged.connect(self.toggle_apply_button)
 
-        # CHECKBOX - Auto save to output folder
-        self.checkbox_auto_save_output = QCheckBox(self.output_tab)
-        self.checkbox_auto_save_output.setObjectName("checkbox_auto_save_output")
-        self.checkbox_auto_save_output.setGeometry(QRect(16, 70, 171, 20))
-        self.checkbox_auto_save_output.stateChanged.connect(self.toggle_apply_button)
+        # CHECKBOX - Save captured image
+        self.checkbox_save_captured_image = QCheckBox(self.output_tab)
+        self.checkbox_save_captured_image.setObjectName("checkbox_save_captured_image")
+        self.checkbox_save_captured_image.setGeometry(QRect(16, 70, 171, 20))
+        self.checkbox_save_captured_image.stateChanged.connect(self.toggle_apply_button)
+
+        # CHECKBOX - Save enhanced image
+        self.checkbox_save_enhanced_image = QCheckBox(self.output_tab)
+        self.checkbox_save_enhanced_image.setObjectName("checkbox_save_enhanced_image")
+        self.checkbox_save_enhanced_image.setGeometry(QRect(16, 100, 171, 20))
+        self.checkbox_save_enhanced_image.stateChanged.connect(self.toggle_apply_button)
 
         # LABEL - Output folder
         self.label_output_folder = QLabel(self.output_tab)
         self.label_output_folder.setObjectName("label_output_folder")
-        self.label_output_folder.setGeometry(QRect(15, 103, 81, 16))
+        self.label_output_folder.setGeometry(QRect(15, 133, 81, 16))
 
         # LINE EDIT - Output folder
         self.line_edit_output_folder = QLineEdit(self.output_tab)
         self.line_edit_output_folder.setObjectName("line_edit_output_folder")
-        self.line_edit_output_folder.setGeometry(QRect(95, 101, 251, 22))
+        self.line_edit_output_folder.setGeometry(QRect(95, 131, 251, 22))
         self.line_edit_output_folder.setCursorPosition(0)
         self.line_edit_output_folder.textChanged.connect(self.toggle_apply_button)
         self.line_edits['line_edit_output_folder'] = self.line_edit_output_folder  # Add to the dictionary
@@ -362,7 +369,7 @@ class SettingsUI(QDialog):
         # BUTTON - ...
         self.button_output_folder = QPushButton(self.output_tab)
         self.button_output_folder.setObjectName("button_output_folder")
-        self.button_output_folder.setGeometry(QRect(350, 100, 24, 24))
+        self.button_output_folder.setGeometry(QRect(350, 130, 24, 24))
         self.button_output_folder.setAutoDefault(False)
         self.button_output_folder.clicked.connect(self.select_autosave_output_folder)
 
@@ -488,10 +495,9 @@ class SettingsUI(QDialog):
                                                      "this threshold will be set to white, and those below will be black.\n"
                                                      "Adjust the threshold based on the characteristics of your images.")
         self.checkbox_image_deskewing.setText("Deskew image")
-        self.checkbox_image_deskewing.setToolTip("Enable this option to automatically straighten skewed text in the image,\n"
-                                                 "optimizing it for OCR. Improved alignment enhances OCR accuracy, making\n"
-                                                 "text extraction more efficient. Ideal for scanned documents or images with\n"
-                                                 "tilted text.")
+        self.checkbox_image_deskewing.setToolTip("Enable this option to automatically straighten skewed text in the image.\n"
+                                                 "Improved alignment enhances OCR accuracy, making text extraction\n"
+                                                 "more efficient. Ideal for scanned documents or images with tilted text.")
         self.label_blacklist_char.setText("Blacklist characters:")
         self.label_whitelist_char.setText("Whitelist characters:")
         self.checkbox_blacklist_char.setText("Enable")
@@ -500,7 +506,8 @@ class SettingsUI(QDialog):
         # Tab 2
         self.checkbox_copyto_clipboard.setText("Copy to clipboard")
         self.checkbox_show_popup_window.setText("Show popup window (OCR Text)")
-        self.checkbox_auto_save_output.setText("Auto save to output folder")
+        self.checkbox_save_captured_image.setText("Save captured image")
+        self.checkbox_save_enhanced_image.setText("Save enhanced image")
         self.label_output_folder.setText("Output folder:")
         self.button_output_folder.setText(". . .")
 
@@ -552,10 +559,13 @@ class SettingsUI(QDialog):
         self.set_widget_value(self.checkbox_whitelist_char, 'ocr', 'enable_whitelist_char')
         self.set_widget_value(self.checkbox_copyto_clipboard, 'output', 'copy_to_clipboard')
         self.set_widget_value(self.checkbox_show_popup_window, 'output', 'show_popup_window')
-        self.set_widget_value(self.checkbox_auto_save_output, 'output', 'auto_save_capture')
+        self.set_widget_value(self.checkbox_save_captured_image, 'output', 'save_captured_image')
+        self.set_widget_value(self.checkbox_save_enhanced_image, 'output', 'save_enhanced_image')
         self.set_widget_value(self.line_edit_output_folder, 'output', 'output_folder_path', True)
         self.set_widget_value(self.checkbox_show_translation, 'translate', 'enable_translation')
         self.set_widget_value(self.spinbox_server_timeout, 'translate', 'server_timeout')
+        self.open_file_dialog_path = self.config['preferences']['sound_file']
+        self.open_folder_dialog_path = self.config['output']['output_folder_path']
         self.initialize_settings_components_finish = True
 
     def set_widget_value(self, widget, table_name, key, line_edit_replace=None):
@@ -702,15 +712,19 @@ class SettingsUI(QDialog):
     def select_audio_file(self):
         options = QFileDialog.Options()
         options |= QFileDialog.ReadOnly
-        file_name, _ = QFileDialog.getOpenFileName(self, "Select Audio File", self.folder_path,
+        file_path, _ = QFileDialog.getOpenFileName(self, "Select Audio File", self.open_file_dialog_path,
                                                    "Audio Files (*.mp3 *.wav)", options=options)
-        if file_name:
-            self.line_edit_sound_file.setText(file_name.replace('/', '\\'))
+        if file_path:
+            formatted_file_path = file_path.replace('/', '\\')
+            self.line_edit_sound_file.setText(formatted_file_path)
+            self.open_file_dialog_path = formatted_file_path
 
     def select_autosave_output_folder(self):
-        folder_path = QFileDialog.getExistingDirectory(self, "Select Folder", self.folder_path)
+        folder_path = QFileDialog.getExistingDirectory(self, "Select Folder", self.open_folder_dialog_path)
         if folder_path:
-            self.line_edit_output_folder.setText(folder_path.replace('/', '\\'))
+            formatted_folder_path = folder_path.replace('/', '\\')
+            self.line_edit_output_folder.setText(formatted_folder_path)
+            self.open_folder_dialog_path = formatted_folder_path
 
     def toggle_apply_button(self):
         if not self.initialize_settings_components_finish:
@@ -788,7 +802,7 @@ class SettingsUI(QDialog):
         output_folder_path = self.fix_path(self.line_edit_output_folder)
         self.line_edit_output_folder.setText(output_folder_path)
 
-        if self.checkbox_auto_save_output.isChecked():
+        if self.checkbox_save_captured_image.isChecked():
             if not output_folder_path:
                 self.tab_widget.setCurrentIndex(2)
                 raise ValueError("Output folder is empty.")
@@ -807,18 +821,18 @@ class SettingsUI(QDialog):
                     "Output Folder \"" + output_folder_path + "\" does not exist.\n\nDo you want to create it?",
                 )
                 if response == "Yes":
+                    drive_letter = Path(output_folder_path).drive
+                    if not Path(drive_letter).exists():
+                        logger.error(f"Failed to create output folder. Drive letter does not exist.")
+                        raise ValueError("Failed to create output folder. Drive letter does not exist.")
                     try:
                         logger.info(f"Creating output folder")
-                        drive_letter = Path(output_folder_path).drive
-                        if not Path(drive_letter).exists():
-                            logger.error(f"Failed to create output folder. Drive letter does not exist.")
-                            raise ValueError("Failed to create output folder.")
                         directory.mkdir(parents=True, exist_ok=True)
-                        logger.success(f"Output folder created successfully '{output_folder_path}'")
                         self.output_folder_created = True
+                        logger.success(f"Output folder created successfully '{output_folder_path}'")
                         self.save_settings_config()
 
-                    except OSError as e:
+                    except Exception as e:
                         logger.error(f"Failed to create output folder: {e}")
                         raise ValueError("Failed to create output folder.")
                 else:
@@ -850,7 +864,8 @@ class SettingsUI(QDialog):
             "output": {
                 'copy_to_clipboard': self.checkbox_copyto_clipboard.isChecked(),
                 'show_popup_window': self.checkbox_show_popup_window.isChecked(),
-                'auto_save_capture': self.checkbox_auto_save_output.isChecked(),
+                'save_captured_image': self.checkbox_save_captured_image.isChecked(),
+                'save_enhanced_image': self.checkbox_save_enhanced_image.isChecked(),
                 'output_folder_path': self.fix_path(self.line_edit_output_folder)
             },
             "translate": {
@@ -967,7 +982,6 @@ class DownloadThread(QThread):
         tessdata_folder = Path('./tessdata')
         current_file_path = tessdata_folder / f'{self.filename}.tmp'
         new_file_path = tessdata_folder / self.filename
-
         try:
             shutil.move(current_file_path, new_file_path)
             logger.info(f"The file '{current_file_path}' has been renamed to '{new_file_path}'.")

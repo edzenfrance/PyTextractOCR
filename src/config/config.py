@@ -53,7 +53,8 @@ def load_config():
         "output": {
             'copy_to_clipboard': True,
             'show_popup_window': True,
-            'auto_save_capture': False,
+            'save_captured_image': False,
+            'save_enhanced_image': False,
             'output_folder_path': "",
         },
         "translate": {

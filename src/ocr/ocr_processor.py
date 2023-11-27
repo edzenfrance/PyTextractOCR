@@ -1,6 +1,7 @@
 # Standard libraries
 import os
 import math
+import shutil
 from typing import Tuple, Union
 
 # Third-party libraries
@@ -22,41 +23,40 @@ from src.utils.translate import translate_text, language_set
 pytesseract.pytesseract.tesseract_cmd = 'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
 
 
-def perform_ocr(captured_image):
+def perform_ocr(working_image, datetime):
+    # Point to the folder where Tesseract language data is located
+    os.environ['TESSDATA_PREFIX'] = './tessdata/'
+
     config = load_config()
     extracted_text = None
     translated_text = None
 
     try:
-        # Point to the folder where Tesseract language data is located
-        os.environ['TESSDATA_PREFIX'] = './tessdata/'
-
-        auto_save = config['output']['auto_save_capture']
-        image_path = f"{config['output']['output_folder_path']}\\{captured_image}" if auto_save else captured_image
-        logger.info(f"Image path: {image_path}")
-
-        preprocess_image(image_path, config)
+        preprocess_image(working_image, config)
         custom_config = get_pytesseract_configuration(config)
 
         if config['ocr']['preserve_interword_spaces']:
-            ocr_text = perform_ocr_image_to_data(image_path, custom_config)
+            ocr_text = perform_ocr_image_to_data(working_image, custom_config)
         else:
-            ocr_text = perform_ocr_image_to_string(image_path, custom_config)
+            ocr_text = perform_ocr_image_to_string(working_image, custom_config)
 
         if config['output']['copy_to_clipboard']:
             if ocr_text:
                 copy_to_clipboard(ocr_text)
                 extracted_text = ocr_text
 
-        if not config['output']['auto_save_capture']:
-            remove_temp_file(image_path)
+        if config['output']['save_enhanced_image']:
+            folder = config['output']['output_folder_path']
+            save_temporary_image(working_image, datetime, folder)
+        else:
+            remove_temporary_image(working_image)
 
         if config['translate']['enable_translation']:
             if ocr_text:
                 translated_text = translate_extracted_text(extracted_text)
 
     except Exception as e:
-        logger.error(f"An error occurred during Pytesseract OCR process: {e}")
+        logger.error(f"An error occurred during OCR process: {e}")
 
     finally:
         if extracted_text is not None:
@@ -66,14 +66,14 @@ def perform_ocr(captured_image):
         return extracted_text, translated_text
 
 
-def preprocess_image(image_file, config):
+def preprocess_image(image_path, config):
     try:
         if config['ocr']['image_binarization']:
             threshold = config['ocr']['binarization_threshold']
-            binarize_image(image_file, threshold)
+            binarize_image(image_path, threshold)
             logger.success("Binarizing completed")
         if config['ocr']['image_deskewing']:
-            deskew_image(image_file)
+            deskew_image(image_path)
             logger.success("Deskewing completed")
 
     except Exception as e:
@@ -149,10 +149,10 @@ def perform_ocr_image_to_data(image_path, custom_config):
         return text
 
 
-def binarize_image(image_file, threshold):
+def binarize_image(image_path, threshold):
     logger.info("Binarizing the image")
-    binarize_img = binarize(Image.open(image_file), threshold)
-    binarize_img.save(image_file)
+    binarize_img = binarize(Image.open(image_path), threshold)
+    binarize_img.save(image_path)
 
 
 def binarize(image_to_transform, threshold):
@@ -172,13 +172,13 @@ def binarize(image_to_transform, threshold):
     return output_image
 
 
-def deskew_image(image_file):
+def deskew_image(image_path):
     logger.info("Deskewing the image")
-    image = cv2.imread(image_file)
+    image = cv2.imread(image_path)
     grayscale = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     angle = determine_skew(grayscale)
     rotated = rotate(image, angle, (0, 0, 0))
-    cv2.imwrite(image_file, rotated)
+    cv2.imwrite(image_path, rotated)
 
 
 def rotate(
@@ -217,10 +217,20 @@ def translate_extracted_text(extracted_text):
     return google_trans_text
 
 
-def remove_temp_file(image_path):
+def save_temporary_image(image_path, datetime, output_folder_path):
+    new_image_path = os.path.join(output_folder_path, f"{datetime}_enhanced.png")
     try:
-        os.remove(image_path)
-        logger.success(f"Temporary file successfully removed '{image_path}'")
+        shutil.move(image_path, new_image_path)
+        logger.info(f"The file '{image_path}' has been moved to '{new_image_path}'")
 
     except Exception as e:
-        logger.error(f"An error occurred while removing temporary file '{image_path}': {e}")
+        logger.error(f"Failed to move the file '{image_path}' to '{new_image_path}: {e}")
+
+
+def remove_temporary_image(image_path):
+    try:
+        os.remove(image_path)
+        logger.success(f"Temporary image successfully removed '{image_path}'")
+
+    except Exception as e:
+        logger.error(f"An error occurred while removing temporary image '{image_path}': {e}")

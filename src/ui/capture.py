@@ -26,9 +26,8 @@ class TransparentOverlayCapture(QMainWindow):
         self.setWindowState(Qt.WindowFullScreen)
         self.setWindowOpacity(0.1)  # Set the window's opacity to 10% (very transparent)
 
-        self.returned_text = None
-        self.show_formatted_text = None
-        self.filename = None
+        self.config = None
+        self.extracted_text = None
         self.drag_area = None
         self.drag_start_pos = None
         self.drag_end_pos = None
@@ -94,52 +93,54 @@ class TransparentOverlayCapture(QMainWindow):
                 show_message_box("Critical", "Error", str(e))
 
     def capture_selected_area(self, x, y, width, height):
-        logger.info(f"x: {x}, y: {y}, width: {width}, height: {height}")
+        logger.info(f"Selected area: x: {x}, y: {y}, width: {width}, height: {height}")
 
-        config = load_config()
+        self.config = load_config()
         current_datetime = get_current_datetime()
-        directory = Path(config['output']['output_folder_path'])
-        added_name = "pytexractocr_"
 
-        # Capture the screenshot of the selected area
-        screenshot = ImageGrab.grab(bbox=(x, y, x + width, y + height))
+        screenshot = ImageGrab.grab(bbox=(x, y, x + width, y + height))  # Get a screenshot of the selected area
+        output_folder = self.get_output_folder_path()
 
-        if config['output']['auto_save_capture']:
-            self.filename = added_name + current_datetime + ".png"
-
-            if not directory.exists() and not directory.is_dir():
-                try:
-                    directory.mkdir()
-                    logger.success(f"Folder created successfully {directory}")
-
-                except Exception as e:
-                    self.close_overlay_then_show_main()
-                    logger.error(f"An error occurred while creating folder {e}")
-                    raise ValueError(f"Failed to create output folder.\n\nThe system cannot find the path specified: '{directory}'")
+        if self.config['output']['save_captured_image']:
+            captured_file_name = current_datetime + ".png"
             try:
-                screenshot.save(directory / self.filename)
-                logger.info(f"Screenshot saved: {directory}\\{added_name}{current_datetime}.png")
+                screenshot.save(output_folder / captured_file_name)
+                logger.info(f"Screenshot saved: {output_folder}\\{captured_file_name}")
 
             except Exception as e:
                 self.close_overlay_then_show_main()
                 logger.error(f"An error occurred while taking a screenshot {e}")
-                raise ValueError(f"Failed to create a screenshot file in '{directory}'")
-        else:
-            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as temp:
-                self.filename = temp.name
-                screenshot.save(self.filename)
-                logger.info(f"Screenshot saved as temporary file '{self.filename}'")
+                raise ValueError(f"Failed to create a screenshot file in '{output_folder}'")
 
-        if config['preferences']['enable_sound']:
-            play_sound_file(config['preferences']['sound_file'])
+        if self.config['output']['save_enhanced_image']:
+            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as temp:
+                enhanced_file_name = temp.name
+                screenshot.save(enhanced_file_name)
+                logger.info(f"Screenshot saved as temporary file: {enhanced_file_name}")
+
+        if self.config['preferences']['enable_sound']:
+            play_sound_file(self.config['preferences']['sound_file'])
 
         self.close_overlay()
-        self.returned_text = perform_ocr(self.filename)
+        self.extracted_text = perform_ocr(enhanced_file_name, current_datetime)
         self.main_ui_instance.show_main_ui()
-        if self.returned_text[0] is not None:
+        if self.extracted_text[0] is not None:
             logger.success("Screenshot taken and OCR completed")
-            if config['output']['show_popup_window']:
+            if self.config['output']['show_popup_window']:
                 self.show_ocr_text_ui()
+
+    def get_output_folder_path(self):
+        output_folder = Path(self.config['output']['output_folder_path'])
+        if not output_folder.exists() and not output_folder.is_dir():
+            try:
+                output_folder.mkdir(parents=True, exist_ok=True)
+                logger.success(f"Output folder created successfully '{output_folder}'")
+
+            except Exception as e:
+                self.close_overlay_then_show_main()
+                logger.error(f"Failed to create output folder: {e}")
+                raise ValueError("Failed to create output folder.")
+        return output_folder
 
     def show_ocr_text_ui(self):
         self.ocr_text_ui.init_ui()
@@ -147,16 +148,15 @@ class TransparentOverlayCapture(QMainWindow):
             self.ocr_text_ui.show()
         else:
             self.ocr_text_ui.raise_()
-        self.ocr_text_ui.set_extracted_text(self.returned_text[0])
-        if self.returned_text[1] is not None:
-            self.ocr_text_ui.set_translated_text(self.returned_text[1])
+        self.ocr_text_ui.set_extracted_text(self.extracted_text[0])
+        if self.extracted_text[1] is not None:
+            self.ocr_text_ui.set_translated_text(self.extracted_text[1])
 
 
 def play_sound_file(sound_file):
     if Path(sound_file).exists():
         try:
-            sound_file = sound_file.replace('\\', '/')
-            playsound(sound_file, False)
+            playsound(sound_file.replace('\\', '/'), False)
             logger.success(f"Sound file has been played successfully using playsound")
         except PlaysoundException as e:
             logger.error(f"An error occurred while playing the sound file '{sound_file}' {e} ")
