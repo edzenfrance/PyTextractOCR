@@ -112,11 +112,10 @@ class TransparentOverlayCapture(QMainWindow):
                 logger.error(f"An error occurred while taking a screenshot {e}")
                 raise ValueError(f"Failed to create a screenshot file in '{output_folder}'")
 
-        if self.config['output']['save_enhanced_image']:
-            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as temp:
-                enhanced_file_name = temp.name
-                screenshot.save(enhanced_file_name)
-                logger.info(f"Screenshot saved as temporary file: {enhanced_file_name}")
+        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as temp:
+            enhanced_file_name = temp.name
+            screenshot.save(enhanced_file_name)
+            logger.info(f"Screenshot saved as temporary file: {enhanced_file_name}")
 
         if self.config['preferences']['enable_sound']:
             play_sound_file(self.config['preferences']['sound_file'])

@@ -150,26 +150,26 @@ class SettingsUI(QDialog):
         # LABEL - OCR Language
         self.label_ocr_language = QLabel(self.ocr_tab)
         self.label_ocr_language.setObjectName("label_ocr_language")
-        self.label_ocr_language.setGeometry(QRect(15, 16, 85, 16))
+        self.label_ocr_language.setGeometry(QRect(15, 16, 90, 16))
 
-        # BUTTON - Show all
+        # BUTTON - Show | Hide
         self.button_ocr_language = QPushButton(self.ocr_tab)
         self.button_ocr_language.setObjectName("button__show_all_lang")
-        self.button_ocr_language.setGeometry(105, 12, 91, 24)
+        self.button_ocr_language.setGeometry(111, 12, 86, 24)
         self.button_ocr_language.setAutoDefault(False)
         self.button_ocr_language.clicked.connect(self.toggle_ocr_tab_widgets_display)
 
-        # Create a scrollable area
+        # SCROLL AREA
         self.scroll_area = QScrollArea(self.ocr_tab)
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setGeometry(QRect(5, 41, 399, 217))
         self.scroll_area.setVisible(False)
 
-        # Create a widget for the scroll area
+        # Widget for the scroll area
         self.scroll_content = QWidget(self.scroll_area)
         self.scroll_area.setWidget(self.scroll_content)
 
-        # Create a layout for the scroll content
+        # Layout for the scroll content
         self.scroll_content_layout = QVBoxLayout(self.scroll_content)
         self.scroll_content.setLayout(self.scroll_content_layout)
 
@@ -181,12 +181,12 @@ class SettingsUI(QDialog):
 
         for language_name in language_set().values():
             self.scroll_row_layout = QHBoxLayout()
-            self.sc_checkbox = QCheckBox(language_name.capitalize())
+            self.sc_checkbox = QCheckBox(language_name.title())
             self.sc_button = QPushButton("Download")
-            self.sc_button.setFixedSize(184, 22)
+            self.sc_button.setFixedSize(115, 22)
             self.sc_button.setAutoDefault(False)
             self.sc_progressbar = QProgressBar()
-            self.sc_progressbar.setFixedSize(184, 22)
+            self.sc_progressbar.setFixedSize(115, 22)
             self.sc_progressbar.setVisible(False)
             self.sc_progressbar.setTextVisible(False)
 
@@ -416,23 +416,21 @@ class SettingsUI(QDialog):
         self.table_widget.setVerticalHeader(header_vertical)
 
         self.table_widget.setColumnCount(2)
-        self.table_widget.setRowCount(7)
+        self.table_widget.setRowCount(110)
         self.table_widget.setHorizontalHeaderLabels(table_header_labels)
         self.table_widget.setEditTriggers(QAbstractItemView.NoEditTriggers)  # Make the entire table read-only
         self.table_widget.setSelectionMode(QAbstractItemView.NoSelection)  # No items can be selected
 
         self.translate_to_comboboxes = []
 
-        for table_row, combobox_language in enumerate(language_set().values(), start=0):
-            table_widget_language = QTableWidgetItem(combobox_language)
+        for table_row, combobox_language in enumerate(language_list().values(), start=0):
+            table_widget_language = QTableWidgetItem(combobox_language.capitalize())
 
             translate_to_combobox = QComboBox()
             # Add the languages with the first letter capitalized to the combo box, excluding the current language
-            for language_name in language_list().values():
+            for language_code, language_name in language_list().items():
                 if language_name != combobox_language:
                     translate_to_combobox.addItem(language_name.capitalize())
-
-            for language_code, language_name in language_list().items():
                 if language_code == self.config['translate'][combobox_language.lower()]:
                     index = translate_to_combobox.findText(language_name.capitalize())
                     if index >= 0:  # -1 means the text was not found
@@ -474,7 +472,7 @@ class SettingsUI(QDialog):
 
         # Tab 1
         self.tab_widget.setTabText(self.tab_widget.indexOf(self.ocr_tab), "OCR")
-        self.label_ocr_language.setText("OCR Language:")
+        self.label_ocr_language.setText("OCR Languages:")
         self.button_ocr_language.setText("Show")
         self.label_psm_value.setText("Page segment mode:")
         self.label_oem_value.setText("OCR Engine mode:")
@@ -550,7 +548,7 @@ class SettingsUI(QDialog):
         self.set_widget_value(self.checkbox_play_sound, 'preferences', 'enable_sound')
         self.set_widget_value(self.line_edit_sound_file, 'preferences', 'sound_file', True)
         self.set_widget_value(self.checkbox_preserve_interword_spaces, 'ocr', 'preserve_interword_spaces')
-        self.set_widget_value(self.checkbox_preserve_interword_spaces, 'ocr', 'image_binarization')
+        self.set_widget_value(self.checkbox_image_binarization, 'ocr', 'image_binarization')
         self.set_widget_value(self.spinbox_binarization_threshold, 'ocr', 'binarization_threshold')
         self.set_widget_value(self.checkbox_image_deskewing, 'ocr', 'image_deskewing')
         self.set_widget_value(self.line_edit_blacklist_char, 'ocr', 'blacklist_char')
@@ -600,14 +598,7 @@ class SettingsUI(QDialog):
         scroll_area_widgets = self.scroll_area.findChildren(QWidget)
         language_widgets = [self.label_ocr_language, self.button_ocr_language]
 
-        for language_code, language_name in language_set().items():
-            file_path = Path('./tessdata') / f'{language_code}.traineddata'
-            if file_path.exists():
-                self.sc_checkbox_dict[f'{language_name}'].setEnabled(True)
-                self.sc_button_dict[f'{language_name}'].setVisible(False)
-            else:
-                self.sc_checkbox_dict[f'{language_name}'].setEnabled(False)
-                self.sc_button_dict[f'{language_name}'].setVisible(True)
+        self.check_language_file()
 
         for widget in ocr_tab_widgets:
             if widget in language_widgets or widget in scroll_area_widgets:
@@ -622,6 +613,19 @@ class SettingsUI(QDialog):
             self.scroll_area.setVisible(False)
 
         self.ocr_tab_hide_widgets = not self.ocr_tab_hide_widgets
+
+    def check_language_file(self):
+        for language_code, language_name in language_set().items():
+            file_path = Path('./tessdata') / f'{language_code}.traineddata'
+            if file_path.exists():
+                if language_code in self.config['ocr']['language']:
+                    self.sc_checkbox_dict[f'{language_name}'].setChecked(True)
+                self.sc_checkbox_dict[f'{language_name}'].setEnabled(True)
+                self.sc_button_dict[f'{language_name}'].setVisible(False)
+            else:
+                self.sc_checkbox_dict[f'{language_name}'].setChecked(False)
+                self.sc_checkbox_dict[f'{language_name}'].setEnabled(False)
+                self.sc_button_dict[f'{language_name}'].setVisible(True)
 
     def auto_check_last_checkbox(self):
         sender_checkbox = self.sender()
@@ -848,7 +852,6 @@ class SettingsUI(QDialog):
                 'sound_file': self.fix_path(self.line_edit_sound_file)
             },
             "ocr": {
-                'language': "english",
                 'page_segmentation_mode': int(self.combobox_psm_value.currentText()),
                 'ocr_engine_mode': int(self.combobox_oem_value.currentText()),
                 'preserve_interword_spaces': self.checkbox_preserve_interword_spaces.isChecked(),
@@ -871,25 +874,31 @@ class SettingsUI(QDialog):
             "translate": {
                 'enable_translation': self.checkbox_show_translation.isChecked(),
                 'server_timeout': self.spinbox_server_timeout.value(),
-                'english': self.get_language_code(0),
-                'french': self.get_language_code(1),
-                'german': self.get_language_code(2),
-                'japanese': self.get_language_code(3),
-                'korean': self.get_language_code(4),
-                'russian': self.get_language_code(5),
-                'spanish': self.get_language_code(6)
             }
         }
+        # Save check OCR languages
+        save_lang = ""
+        for language_code, language_name in language_set().items():
+            if self.sc_checkbox_dict[f'{language_name}'].isChecked():
+                file_path = Path('./tessdata') / f'{language_code}.traineddata'
+                if file_path.exists():
+                    save_lang = f"{save_lang}+{language_code}" if save_lang else language_code
+        settings_config['ocr']['language'] = f'{save_lang}'
+
+        # Get selected language in every Translate To combobox
+        for count, language_name in enumerate(language_list().values(), start=0):
+            combobox_text = self.translate_to_comboboxes[count].currentText().lower()
+            for language_code, name in language_list().items():
+                if name == combobox_text:
+                    settings_config['translate'][f'{language_name}'] = f'{language_code}'
+
+        self.check_language_file()
         logger.info("Saving settings in configuration file")
         update_config(settings_config)
 
     @staticmethod
     def fix_path(line_edit: QLineEdit):
         return re.sub(r'\\+', r'\\', str(line_edit.text()).replace('/', '\\'))
-
-    def get_language_code(self, num):
-        combobox_text = self.translate_to_comboboxes[num].currentText().lower()
-        return next((lang_code for lang_code, lang_name in language_list().items() if lang_name == combobox_text), None)
 
     def cancel_button(self):
         self.close()

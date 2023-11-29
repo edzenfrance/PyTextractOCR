@@ -93,6 +93,7 @@ class MainUI(QDialog):
     def show_settings_ui_main(self):
         if not self.settings_ui.isVisible():
             self.settings_ui.initialize_settings_components()
+            self.settings_ui.check_language_file()
             self.settings_ui.show()
         else:
             self.settings_ui.showNormal()

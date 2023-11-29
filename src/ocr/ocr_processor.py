@@ -82,11 +82,12 @@ def preprocess_image(image_path, config):
 
 def get_pytesseract_configuration(config):
     psmv = str(config['ocr']['page_segmentation_mode'])
-    piwv = str(int(config['ocr']['preserve_interword_spaces']))
+    oemv = str(config['ocr']['ocr_engine_mode'])
+    pisv = " -c preserve_interword_spaces=1" if config['ocr']['preserve_interword_spaces'] else ""
 
     ocr_lang = config['ocr']['language']
     found_key = [key for key, value in language_set().items() if value == ocr_lang]
-    language_key = ''.join(found_key) if found_key else 'eng'
+    key = ''.join(found_key) if found_key else 'eng'
 
     if config['ocr']['enable_blacklist_char']:
         te_char = f" -c tessedit_char_blacklist={config['ocr']['blacklist_char']}"
@@ -95,15 +96,14 @@ def get_pytesseract_configuration(config):
     else:
         te_char = ""
 
-    custom_config = r'-l ' + language_key + ' --psm ' + psmv + ' --oem 3' + ' -c preserve_interword_spaces=' + piwv + te_char
+    custom_config = r'-l equ+' + key + ' --psm ' + psmv + ' --oem ' + oemv + pisv + te_char
     logger.info(f"Pytesseract custom configuration: {custom_config}")
     return custom_config
 
 
 def perform_ocr_image_to_string(image_path, custom_config):
     logger.info(f"Performing pytesseract image to string '{image_path}'")
-    ocr_text = pytesseract.image_to_string(Image.open(image_path), config=custom_config)
-    return ocr_text
+    return pytesseract.image_to_string(Image.open(image_path), config=custom_config)
 
 
 def perform_ocr_image_to_data(image_path, custom_config):
