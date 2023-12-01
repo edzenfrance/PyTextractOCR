@@ -2,18 +2,9 @@
 from loguru import logger
 from PySide6.QtCore import Signal, Qt, QRect
 from PySide6.QtGui import QFont, QIcon
-from PySide6.QtWidgets import (
-    QCheckBox,
-    QDialog,
-    QFontDialog,
-    QHBoxLayout,
-    QLabel,
-    QPlainTextEdit,
-    QPushButton,
-    QSizePolicy,
-    QSpacerItem,
-    QVBoxLayout,
-)
+from PySide6.QtWidgets import (QCheckBox, QDialog, QFontDialog, QHBoxLayout,
+                               QLabel, QPlainTextEdit, QPushButton, QSizePolicy,
+                               QSpacerItem, QVBoxLayout)
 
 # Sources
 from src.config.config import load_config, update_config

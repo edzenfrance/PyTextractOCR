@@ -38,12 +38,9 @@ class TransparentOverlayCapture(QMainWindow):
     def show_overlay(self):
         self.show()  # Show the overlay window
 
-    def close_overlay(self):
+    def close_overlay_then_show_main(self):
         self.drag_area = None
         self.close()  # Hide the overlay window
-
-    def close_overlay_then_show_main(self):
-        self.close_overlay()
         self.main_ui_instance.show_main_ui()
 
     def paintEvent(self, event):
@@ -69,6 +66,7 @@ class TransparentOverlayCapture(QMainWindow):
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.LeftButton:
+            self.close()
             self.take_screenshot()
 
     def keyPressEvent(self, event):
@@ -120,16 +118,18 @@ class TransparentOverlayCapture(QMainWindow):
         if self.config['preferences']['enable_sound']:
             play_sound_file(self.config['preferences']['sound_file'])
 
-        self.close_overlay()
         self.extracted_text = perform_ocr(enhanced_file_name, current_datetime)
-        self.main_ui_instance.show_main_ui()
-        if self.extracted_text[0] is not None:
-            logger.success("Screenshot taken and OCR completed")
+        self.close_overlay_then_show_main()
+
+        if self.extracted_text[0]:
+            logger.success("OCR completed")
+
             if self.config['output']['show_popup_window']:
                 self.show_ocr_text_ui()
 
     def get_output_folder_path(self):
         output_folder = Path(self.config['output']['output_folder_path'])
+
         if not output_folder.exists() and not output_folder.is_dir():
             try:
                 output_folder.mkdir(parents=True, exist_ok=True)
@@ -139,6 +139,7 @@ class TransparentOverlayCapture(QMainWindow):
                 self.close_overlay_then_show_main()
                 logger.error(f"Failed to create output folder: {e}")
                 raise ValueError("Failed to create output folder.")
+
         return output_folder
 
     def show_ocr_text_ui(self):
@@ -157,6 +158,7 @@ def play_sound_file(sound_file):
         try:
             playsound(sound_file.replace('\\', '/'), False)
             logger.success(f"Sound file has been played successfully using playsound")
+
         except PlaysoundException as e:
             logger.error(f"An error occurred while playing the sound file '{sound_file}' {e} ")
     else:

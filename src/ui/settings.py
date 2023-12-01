@@ -10,27 +10,12 @@ from urllib import request, error
 import requests
 from loguru import logger
 from PySide6.QtCore import Qt, QRect, QTimer, QEvent, QThread, Signal
-from PySide6.QtGui import QColor, QPalette, QIcon, QPainter, QValidator
-from PySide6.QtWidgets import (
-    QAbstractItemView,
-    QCheckBox,
-    QComboBox,
-    QDialog,
-    QFileDialog,
-    QHeaderView,
-    QHBoxLayout,
-    QLabel,
-    QLineEdit,
-    QPushButton,
-    QProgressBar,
-    QScrollArea,
-    QSpinBox,
-    QTableWidget,
-    QTableWidgetItem,
-    QTabWidget,
-    QWidget,
-    QVBoxLayout
-)
+from PySide6.QtGui import QColor, QPalette, QIcon, QPainter
+from PySide6.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDialog,
+                               QDoubleSpinBox, QFileDialog, QHeaderView, QHBoxLayout,
+                               QLabel, QLineEdit, QPushButton, QProgressBar, QScrollArea,
+                               QSpinBox, QTableWidget, QTableWidgetItem, QTabWidget, QVBoxLayout,
+                               QWidget)
 
 # Source
 from src.config.config import load_config, update_config
@@ -65,18 +50,18 @@ class SettingsUI(QDialog):
         self.fade_timer.setInterval(50)  # Adjust the interval for a smoother transition
         self.fade_timer.timeout.connect(self.update_apply_button_state)
 
-        self.horizontalLayoutWidget = QWidget(self)
-        self.horizontalLayoutWidget.setObjectName("horizontalLayoutWidget")
-        self.horizontalLayoutWidget.setGeometry(QRect(180, 300, 244, 31))
+        self.horizontal_layout_widget = QWidget(self)
+        self.horizontal_layout_widget.setObjectName('horizontal_layout_widget')
+        self.horizontal_layout_widget.setGeometry(QRect(180, 300, 244, 31))
 
-        self.horizontal_buttons_layout = QHBoxLayout(self.horizontalLayoutWidget)
-        self.horizontal_buttons_layout.setObjectName("horizontal_buttons_layout")
+        self.horizontal_buttons_layout = QHBoxLayout(self.horizontal_layout_widget)
+        self.horizontal_buttons_layout.setObjectName('horizontal_buttons_layout')
         self.horizontal_buttons_layout.setContentsMargins(0, 0, 0, 0)
 
         # BUTTON - Apply
         self.button_apply_was_enabled = False
-        self.button_apply_settings = QPushButton(self.horizontalLayoutWidget)
-        self.button_apply_settings.setObjectName("button_apply_settings")
+        self.button_apply_settings = QPushButton(self.horizontal_layout_widget)
+        self.button_apply_settings.setObjectName('button_apply_settings')
         self.button_apply_settings.setEnabled(False)
         self.button_apply_settings.setAutoDefault(False)
         palette = QPalette()
@@ -87,48 +72,48 @@ class SettingsUI(QDialog):
         self.horizontal_buttons_layout.addWidget(self.button_apply_settings)
 
         # BUTTON - OK
-        self.button_OK_settings = QPushButton(self.horizontalLayoutWidget)
-        self.button_OK_settings.setObjectName("button_OK_settings")
+        self.button_OK_settings = QPushButton(self.horizontal_layout_widget)
+        self.button_OK_settings.setObjectName('button_OK_settings')
         self.button_OK_settings.setAutoDefault(True)
         self.button_OK_settings.clicked.connect(self.ok_button_clicked)
         self.horizontal_buttons_layout.addWidget(self.button_OK_settings)
 
         # BUTTON - Cancel
-        self.button_cancel_settings = QPushButton(self.horizontalLayoutWidget)
-        self.button_cancel_settings.setObjectName("button_cancel_settings")
+        self.button_cancel_settings = QPushButton(self.horizontal_layout_widget)
+        self.button_cancel_settings.setObjectName('button_cancel_settings')
         self.button_cancel_settings.setAutoDefault(False)
         self.button_cancel_settings.clicked.connect(self.cancel_button)
         self.horizontal_buttons_layout.addWidget(self.button_cancel_settings)
 
         # TAB WIDGET
         self.tab_widget = QTabWidget(self)
-        self.tab_widget.setObjectName("tab_widget")
+        self.tab_widget.setObjectName('tab_widget')
         self.tab_widget.setGeometry(QRect(10, 8, 415, 291))
 
         # ======== PREFERENCES TAB ========
         self.preferences_tab = QWidget()
-        self.preferences_tab.setObjectName("preferences_tab")
+        self.preferences_tab.setObjectName('preferences_tab')
 
         # CHECKBOX - Minimize system tray on close
         self.checkbox_minimize_to_sys_tray = QCheckBox(self.preferences_tab)
-        self.checkbox_minimize_to_sys_tray.setObjectName("checkbox_minimize_to_sys_tray")
+        self.checkbox_minimize_to_sys_tray.setObjectName('checkbox_minimize_to_sys_tray')
         self.checkbox_minimize_to_sys_tray.setGeometry(QRect(16, 10, 210, 20))
         self.checkbox_minimize_to_sys_tray.stateChanged.connect(self.toggle_apply_button)
 
         # CHECKBOX - Play sound on capture
         self.checkbox_play_sound = QCheckBox(self.preferences_tab)
-        self.checkbox_play_sound.setObjectName("checkbox_play_sound")
+        self.checkbox_play_sound.setObjectName('checkbox_play_sound')
         self.checkbox_play_sound.setGeometry(QRect(16, 40, 141, 20))
         self.checkbox_play_sound.stateChanged.connect(self.toggle_apply_button)
 
         # LABEL - Sound file
         self.label_sound_file = QLabel(self.preferences_tab)
-        self.label_sound_file.setObjectName("label_sound_file")
+        self.label_sound_file.setObjectName('label_sound_file')
         self.label_sound_file.setGeometry(QRect(15, 73, 81, 16))
 
         # LINE EDIT - Sound file
         self.line_edit_sound_file = QLineEdit(self.preferences_tab)
-        self.line_edit_sound_file.setObjectName("line_edit_sound_file")
+        self.line_edit_sound_file.setObjectName('line_edit_sound_file')
         self.line_edit_sound_file.setGeometry(QRect(95, 71, 251, 22))
         self.line_edit_sound_file.setCursorPosition(0)
         self.line_edit_sound_file.textChanged.connect(self.toggle_apply_button)
@@ -136,25 +121,25 @@ class SettingsUI(QDialog):
 
         # BUTTON - ...
         self.button_sound_file = QPushButton(self.preferences_tab)
-        self.button_sound_file.setObjectName("button_sound_file")
+        self.button_sound_file.setObjectName('button_sound_file')
         self.button_sound_file.setGeometry(QRect(350, 70, 24, 24))
         self.button_sound_file.setAutoDefault(False)
         self.button_sound_file.clicked.connect(self.select_audio_file)
 
-        self.tab_widget.addTab(self.preferences_tab, "")
+        self.tab_widget.addTab(self.preferences_tab, '')
 
         # ======== OCR TAB ========
         self.ocr_tab = QWidget()
-        self.ocr_tab.setObjectName("ocr_tab")
+        self.ocr_tab.setObjectName('ocr_tab')
 
         # LABEL - OCR Language
         self.label_ocr_language = QLabel(self.ocr_tab)
-        self.label_ocr_language.setObjectName("label_ocr_language")
+        self.label_ocr_language.setObjectName('label_ocr_language')
         self.label_ocr_language.setGeometry(QRect(15, 16, 90, 16))
 
         # BUTTON - Show | Hide
         self.button_ocr_language = QPushButton(self.ocr_tab)
-        self.button_ocr_language.setObjectName("button__show_all_lang")
+        self.button_ocr_language.setObjectName('button__show_all_lang')
         self.button_ocr_language.setGeometry(111, 12, 86, 24)
         self.button_ocr_language.setAutoDefault(False)
         self.button_ocr_language.clicked.connect(self.toggle_ocr_tab_widgets_display)
@@ -200,7 +185,6 @@ class SettingsUI(QDialog):
             self.sc_progressbar_dict[language_name] = self.sc_progressbar
             self.sc_checkboxes.append(self.sc_checkbox)
             self.sc_checkbox.stateChanged.connect(self.toggle_apply_button)
-            self.sc_checkbox.clicked.connect(self.auto_check_last_checkbox)
             self.sc_button.clicked.connect(self.download_from_github)
 
         if 'english' in self.sc_checkbox_dict:
@@ -208,12 +192,12 @@ class SettingsUI(QDialog):
 
         # LABEL - Page segmentation mode
         self.label_psm_value = QLabel(self.ocr_tab)
-        self.label_psm_value.setObjectName("label_psm_value")
+        self.label_psm_value.setObjectName('label_psm_value')
         self.label_psm_value.setGeometry(QRect(15, 48, 119, 16))
 
         # COMBOBOX - Page segmentation mode
         self.combobox_psm_value = QComboBox(self.ocr_tab)
-        self.combobox_psm_value.setObjectName("combobox_psm_value")
+        self.combobox_psm_value.setObjectName('combobox_psm_value')
         self.combobox_psm_value.setGeometry(QRect(135, 45, 61, 22))
         self.combobox_psm_value.addItems(['3', '4', '5', '6', '7', '8', '9', '10', '11', '13'])
         psm_value = self.config['ocr']['page_segmentation_mode']
@@ -230,12 +214,12 @@ class SettingsUI(QDialog):
 
         # LABEL - OCR Engine mode
         self.label_oem_value = QLabel(self.ocr_tab)
-        self.label_oem_value.setObjectName("label_oem_value")
+        self.label_oem_value.setObjectName('label_oem_value')
         self.label_oem_value.setGeometry(QRect(222, 48, 101, 16))
 
         # COMBOBOX - OCR Engine mode
         self.combobox_oem_value = QComboBox(self.ocr_tab)
-        self.combobox_oem_value.setObjectName("combobox_oem_value")
+        self.combobox_oem_value.setObjectName('combobox_oem_value')
         self.combobox_oem_value.setGeometry(QRect(330, 45, 61, 22))
         self.combobox_oem_value.addItems(['0', '1', '2', '3'])
         oem_value = self.config['ocr']['ocr_engine_mode']
@@ -252,158 +236,197 @@ class SettingsUI(QDialog):
 
         # CHECKBOX - Preserve interword spaces
         self.checkbox_preserve_interword_spaces = QCheckBox(self.ocr_tab)
-        self.checkbox_preserve_interword_spaces.setObjectName("checkbox_preserve_interword_spaces")
+        self.checkbox_preserve_interword_spaces.setObjectName('checkbox_preserve_interword_spaces')
         self.checkbox_preserve_interword_spaces.setGeometry(QRect(16, 75, 171, 20))
         self.checkbox_preserve_interword_spaces.stateChanged.connect(self.toggle_apply_button)
 
-        # CHECKBOX - Binarize image
-        self.checkbox_image_binarization = QCheckBox(self.ocr_tab)
-        self.checkbox_image_binarization.setObjectName("checkbox_image_binarization")
-        self.checkbox_image_binarization.setGeometry(QRect(16, 105, 180, 20))
-        self.checkbox_image_binarization.stateChanged.connect(self.toggle_apply_button)
-
-        # LABEL - Binarization threshold
-        self.label_binarization_threshold = QLabel(self.ocr_tab)
-        self.label_binarization_threshold.setObjectName("label_binarization_threshold")
-        self.label_binarization_threshold.setGeometry(QRect(215, 107, 121, 16))
-
-        # SPINBOX - Binarization threshold
-        self.spinbox_binarization_threshold = QSpinBox(self.ocr_tab)
-        self.spinbox_binarization_threshold.setObjectName("spinbox_binarization_threshold")
-        self.spinbox_binarization_threshold.setGeometry(QRect(340, 105, 51, 22))
-        self.spinbox_binarization_threshold.setMinimum(0)
-        self.spinbox_binarization_threshold.setMaximum(255)
-
-        self.spinbox_binarization_threshold.valueChanged.connect(self.toggle_apply_button)
-        self.spinbox_binarization_threshold.editingFinished.connect(self.toggle_apply_button)
-
-        # CHECKBOX - Deskew image
-        self.checkbox_image_deskewing = QCheckBox(self.ocr_tab)
-        self.checkbox_image_deskewing.setObjectName("checkbox_image_deskewing")
-        self.checkbox_image_deskewing.setGeometry(QRect(16, 135, 180, 20))
-        self.checkbox_image_deskewing.stateChanged.connect(self.toggle_apply_button)
-
         # LABEL - Blacklist characters
         self.label_blacklist_char = QLabel(self.ocr_tab)
-        self.label_blacklist_char.setObjectName("label_blacklist_char")
-        self.label_blacklist_char.setGeometry(QRect(15, 168, 111, 16))
+        self.label_blacklist_char.setObjectName('label_blacklist_char')
+        self.label_blacklist_char.setGeometry(QRect(15, 108, 111, 16))
 
         # LINE EDIT - Blacklist characters
         self.line_edit_blacklist_char = QLineEdit(self.ocr_tab)
-        self.line_edit_blacklist_char.setObjectName("line_edit_blacklist_char")
-        self.line_edit_blacklist_char.setGeometry(QRect(135, 165, 191, 22))
+        self.line_edit_blacklist_char.setObjectName('line_edit_blacklist_char')
+        self.line_edit_blacklist_char.setGeometry(QRect(135, 105, 191, 22))
         self.line_edit_blacklist_char.textChanged.connect(self.toggle_apply_button)
         self.line_edit_blacklist_char.editingFinished.connect(lambda: SettingsUI.remove_duplicate_chars(self.line_edit_blacklist_char))
         self.line_edits['line_edit_blacklist_char'] = self.line_edit_blacklist_char  # Add to the dictionary
 
         # CHECKBOX - Enable
         self.checkbox_blacklist_char = QCheckBox(self.ocr_tab)
-        self.checkbox_blacklist_char.setObjectName("checkbox_blacklist_char")
-        self.checkbox_blacklist_char.setGeometry(QRect(333, 166, 60, 20))
+        self.checkbox_blacklist_char.setObjectName('checkbox_blacklist_char')
+        self.checkbox_blacklist_char.setGeometry(QRect(333, 106, 60, 20))
         self.checkbox_blacklist_char.stateChanged.connect(self.toggle_apply_button)
         self.checkbox_blacklist_char.clicked.connect(lambda: self.toggle_whitelist_blacklist_checkbox(self.checkbox_blacklist_char))
 
         # LABEL - Whitelist characters
         self.label_whitelist_char = QLabel(self.ocr_tab)
-        self.label_whitelist_char.setObjectName("label_whitelist_char")
-        self.label_whitelist_char.setGeometry(QRect(15, 198, 111, 16))
+        self.label_whitelist_char.setObjectName('label_whitelist_char')
+        self.label_whitelist_char.setGeometry(QRect(15, 138, 111, 16))
 
         # LINE EDIT - Whitelist characters
         self.line_edit_whitelist_char = QLineEdit(self.ocr_tab)
-        self.line_edit_whitelist_char.setObjectName("line_edit_whitelist_char")
-        self.line_edit_whitelist_char.setGeometry(QRect(135, 196, 191, 22))
+        self.line_edit_whitelist_char.setObjectName('line_edit_whitelist_char')
+        self.line_edit_whitelist_char.setGeometry(QRect(135, 136, 191, 22))
         self.line_edit_whitelist_char.textChanged.connect(self.toggle_apply_button)
         self.line_edit_whitelist_char.editingFinished.connect(lambda: SettingsUI.remove_duplicate_chars(self.line_edit_whitelist_char))
         self.line_edits['line_edit_whitelist_char'] = self.line_edit_whitelist_char  # Add to the dictionary
 
         # CHECKBOX - Enable
         self.checkbox_whitelist_char = QCheckBox(self.ocr_tab)
-        self.checkbox_whitelist_char.setObjectName("checkbox_whitelist_char")
-        self.checkbox_whitelist_char.setGeometry(QRect(333, 197, 60, 20))
+        self.checkbox_whitelist_char.setObjectName('checkbox_whitelist_char')
+        self.checkbox_whitelist_char.setGeometry(QRect(333, 137, 60, 20))
         self.checkbox_whitelist_char.stateChanged.connect(self.toggle_apply_button)
         self.checkbox_whitelist_char.clicked.connect(lambda: self.toggle_whitelist_blacklist_checkbox(self.checkbox_whitelist_char))
 
-        self.tab_widget.addTab(self.ocr_tab, "")
+        self.tab_widget.addTab(self.ocr_tab, '')
+
+        # ======== PREPROCESS TAB ========
+
+        self.preprocess_tab = QWidget()
+        self.preprocess_tab.setObjectName('preprocess_tab')
+
+        # LABEL - Scale Factor
+        self.label_scale_factor = QLabel(self.preprocess_tab)
+        self.label_scale_factor.setObjectName('label_scale_factor')
+        self.label_scale_factor.setGeometry(QRect(16, 12, 121, 16))
+
+        # SPINBOX - Scale Factor
+        self.spinbox_scale_factor = QDoubleSpinBox(self.preprocess_tab)
+        self.spinbox_scale_factor.setObjectName('spinbox_scale_factor')
+        self.spinbox_scale_factor.setGeometry(QRect(90, 10, 51, 22))
+        self.spinbox_scale_factor.setMinimum(1.0)
+        self.spinbox_scale_factor.setMaximum(10.0)
+        self.spinbox_scale_factor.setSingleStep(0.1)
+        self.spinbox_scale_factor.setDecimals(1)
+        self.spinbox_scale_factor.valueChanged.connect(self.toggle_apply_button)
+        self.spinbox_scale_factor.editingFinished.connect(self.toggle_apply_button)
+
+        # CHECKBOX - Grayscale
+        self.checkbox_grayscale = QCheckBox(self.preprocess_tab)
+        self.checkbox_grayscale.setObjectName('checkbox_grayscale')
+        self.checkbox_grayscale.setGeometry(QRect(16, 40, 201, 20))
+        self.checkbox_grayscale.stateChanged.connect(self.toggle_apply_button)
+
+        # CHECKBOX - Gaussian Blur
+        self.checkbox_gaussian_blur = QCheckBox(self.preprocess_tab)
+        self.checkbox_gaussian_blur.setObjectName('checkbox_gaussian_blur')
+        self.checkbox_gaussian_blur.setGeometry(QRect(16, 70, 201, 20))
+        self.checkbox_gaussian_blur.stateChanged.connect(self.toggle_apply_button)
+
+        # CHECKBOX - Median Blur
+        self.checkbox_median_blur = QCheckBox(self.preprocess_tab)
+        self.checkbox_median_blur.setObjectName('checkbox_median_blur')
+        self.checkbox_median_blur.setGeometry(QRect(16, 100, 201, 20))
+        self.checkbox_median_blur.stateChanged.connect(self.toggle_apply_button)
+
+        # CHECKBOX - Remove Noise
+        self.checkbox_remove_noise = QCheckBox(self.preprocess_tab)
+        self.checkbox_remove_noise.setObjectName('checkbox_remove_noise')
+        self.checkbox_remove_noise.setGeometry(QRect(16, 130, 180, 20))
+        self.checkbox_remove_noise.stateChanged.connect(self.toggle_apply_button)
+
+        # CHECKBOX - Adaptive Thresholding
+        self.checkbox_adaptive_thresholding = QCheckBox(self.preprocess_tab)
+        self.checkbox_adaptive_thresholding.setObjectName('checkbox_adaptive_thresholding')
+        self.checkbox_adaptive_thresholding.setGeometry(QRect(16, 160, 180, 20))
+        self.checkbox_adaptive_thresholding.stateChanged.connect(self.toggle_apply_button)
+
+        # CHECKBOX - Global Thresholding
+        self.checkbox_global_thresholding = QCheckBox(self.preprocess_tab)
+        self.checkbox_global_thresholding.setObjectName('checkbox_global_thresholding')
+        self.checkbox_global_thresholding.setGeometry(QRect(16, 190, 180, 20))
+        self.checkbox_global_thresholding.stateChanged.connect(self.toggle_apply_button)
+
+        # SPINBOX - Global Thresholding
+        self.spinbox_global_threshold = QSpinBox(self.preprocess_tab)
+        self.spinbox_global_threshold.setObjectName('spinbox_global_threshold')
+        self.spinbox_global_threshold.setGeometry(QRect(150, 190, 51, 22))
+        self.spinbox_global_threshold.setMinimum(0)
+        self.spinbox_global_threshold.setMaximum(255)
+        self.spinbox_global_threshold.valueChanged.connect(self.toggle_apply_button)
+        self.spinbox_global_threshold.editingFinished.connect(self.toggle_apply_button)
+
+        # CHECKBOX - Deskew
+        self.checkbox_deskew = QCheckBox(self.preprocess_tab)
+        self.checkbox_deskew.setObjectName('checkbox_deskew')
+        self.checkbox_deskew.setGeometry(QRect(16, 220, 180, 20))
+        self.checkbox_deskew.stateChanged.connect(self.toggle_apply_button)
+
+        self.tab_widget.addTab(self.preprocess_tab, '')
 
         # ======== OUTPUT TAB ========
         self.output_tab = QWidget()
-        self.output_tab.setObjectName("output_tab")
+        self.output_tab.setObjectName('output_tab')
 
         # CHECKBOX - Copy to clipboard
         self.checkbox_copyto_clipboard = QCheckBox(self.output_tab)
-        self.checkbox_copyto_clipboard.setObjectName("checkbox_copy_clipboard")
+        self.checkbox_copyto_clipboard.setObjectName('checkbox_copy_clipboard')
         self.checkbox_copyto_clipboard.setGeometry(QRect(16, 10, 141, 20))
         self.checkbox_copyto_clipboard.stateChanged.connect(self.toggle_apply_button)
 
         # CHECKBOX - Show popup window (OCR Text)
         self.checkbox_show_popup_window = QCheckBox(self.output_tab)
-        self.checkbox_show_popup_window.setObjectName("checkbox_show_popup_window")
+        self.checkbox_show_popup_window.setObjectName('checkbox_show_popup_window')
         self.checkbox_show_popup_window.setGeometry(QRect(16, 40, 190, 20))
         self.checkbox_show_popup_window.stateChanged.connect(self.toggle_apply_button)
 
+        # CHECKBOX - Remove empty lines
+        self.checkbox_remove_empty_lines = QCheckBox(self.output_tab)
+        self.checkbox_remove_empty_lines.setObjectName('checkbox_remove_empty_lines')
+        self.checkbox_remove_empty_lines.setGeometry(QRect(16, 70, 190, 20))
+        self.checkbox_remove_empty_lines.stateChanged.connect(self.toggle_apply_button)
+
         # CHECKBOX - Save captured image
         self.checkbox_save_captured_image = QCheckBox(self.output_tab)
-        self.checkbox_save_captured_image.setObjectName("checkbox_save_captured_image")
-        self.checkbox_save_captured_image.setGeometry(QRect(16, 70, 171, 20))
+        self.checkbox_save_captured_image.setObjectName('checkbox_save_captured_image')
+        self.checkbox_save_captured_image.setGeometry(QRect(16, 100, 171, 20))
         self.checkbox_save_captured_image.stateChanged.connect(self.toggle_apply_button)
 
         # CHECKBOX - Save enhanced image
         self.checkbox_save_enhanced_image = QCheckBox(self.output_tab)
-        self.checkbox_save_enhanced_image.setObjectName("checkbox_save_enhanced_image")
-        self.checkbox_save_enhanced_image.setGeometry(QRect(16, 100, 171, 20))
+        self.checkbox_save_enhanced_image.setObjectName('checkbox_save_enhanced_image')
+        self.checkbox_save_enhanced_image.setGeometry(QRect(16, 130, 171, 20))
         self.checkbox_save_enhanced_image.stateChanged.connect(self.toggle_apply_button)
 
         # LABEL - Output folder
         self.label_output_folder = QLabel(self.output_tab)
-        self.label_output_folder.setObjectName("label_output_folder")
-        self.label_output_folder.setGeometry(QRect(15, 133, 81, 16))
+        self.label_output_folder.setObjectName('label_output_folder')
+        self.label_output_folder.setGeometry(QRect(15, 163, 81, 16))
 
         # LINE EDIT - Output folder
         self.line_edit_output_folder = QLineEdit(self.output_tab)
-        self.line_edit_output_folder.setObjectName("line_edit_output_folder")
-        self.line_edit_output_folder.setGeometry(QRect(95, 131, 251, 22))
+        self.line_edit_output_folder.setObjectName('line_edit_output_folder')
+        self.line_edit_output_folder.setGeometry(QRect(95, 161, 251, 22))
         self.line_edit_output_folder.setCursorPosition(0)
         self.line_edit_output_folder.textChanged.connect(self.toggle_apply_button)
         self.line_edits['line_edit_output_folder'] = self.line_edit_output_folder  # Add to the dictionary
 
         # BUTTON - ...
         self.button_output_folder = QPushButton(self.output_tab)
-        self.button_output_folder.setObjectName("button_output_folder")
-        self.button_output_folder.setGeometry(QRect(350, 130, 24, 24))
+        self.button_output_folder.setObjectName('button_output_folder')
+        self.button_output_folder.setGeometry(QRect(350, 160, 24, 24))
         self.button_output_folder.setAutoDefault(False)
         self.button_output_folder.clicked.connect(self.select_autosave_output_folder)
 
-        self.tab_widget.addTab(self.output_tab, "")
+        self.tab_widget.addTab(self.output_tab, '')
 
         # ======== TRANSLATE TAB ========
         self.translate_tab = QWidget()
-        self.translate_tab.setObjectName("translate_tab")
+        self.translate_tab.setObjectName('translate_tab')
 
         # CHECKBOX - Append translation to clipboard
         self.checkbox_append_translation = QCheckBox(self.translate_tab)
-        self.checkbox_append_translation.setObjectName("checkbox_append_translation")
+        self.checkbox_append_translation.setObjectName('checkbox_append_translation')
         self.checkbox_append_translation.setGeometry(QRect(16, 10, 201, 20))
         self.checkbox_append_translation.stateChanged.connect(self.toggle_apply_button)
 
         # CHECKBOX - Show translation in popup window
         self.checkbox_show_translation = QCheckBox(self.translate_tab)
-        self.checkbox_show_translation.setObjectName("checkbox_show_translation")
+        self.checkbox_show_translation.setObjectName('checkbox_show_translation')
         self.checkbox_show_translation.setGeometry(QRect(16, 40, 211, 20))
         self.checkbox_show_translation.stateChanged.connect(self.toggle_apply_button)
-
-        # LABEL - Server timeout
-        self.label_server_timeout = QLabel(self.translate_tab)
-        self.label_server_timeout.setObjectName("label_server_timeout")
-        self.label_server_timeout.setGeometry(QRect(250, 42, 101, 16))
-
-        # CUSTOM QSPINBOX
-        self.spinbox_server_timeout = CustomSpinBox(self.translate_tab)
-        self.spinbox_server_timeout.setObjectName("spinbox_server_timeout")
-        self.spinbox_server_timeout.setGeometry(QRect(333, 40, 71, 22))
-        self.spinbox_server_timeout.setMinimum(100)
-        self.spinbox_server_timeout.setMaximum(10000)
-        self.spinbox_server_timeout.valueChanged.connect(self.toggle_apply_button)
-        self.spinbox_server_timeout.editingFinished.connect(self.toggle_apply_button)
 
         self.table_widget = QTableWidget(self.translate_tab)
 
@@ -429,10 +452,13 @@ class SettingsUI(QDialog):
             translate_to_combobox = QComboBox()
             # Add the languages with the first letter capitalized to the combo box, excluding the current language
             for language_code, language_name in language_list().items():
+
                 if language_name != combobox_language:
                     translate_to_combobox.addItem(language_name.capitalize())
+
                 if language_code == self.config['translate'][combobox_language.lower()]:
                     index = translate_to_combobox.findText(language_name.capitalize())
+
                     if index >= 0:  # -1 means the text was not found
                         translate_to_combobox.setCurrentIndex(index)
 
@@ -445,11 +471,11 @@ class SettingsUI(QDialog):
         header_horizontal.setSectionResizeMode(0, QHeaderView.ResizeToContents)
         header_horizontal.setSectionResizeMode(1, QHeaderView.Stretch)
 
-        self.table_widget.setObjectName("table_widget")
+        self.table_widget.setObjectName('table_widget')
         self.table_widget.setGeometry(QRect(5, 70, 399, 189))
         self.table_widget.verticalHeader().setVisible(False)
 
-        self.tab_widget.addTab(self.translate_tab, "")
+        self.tab_widget.addTab(self.translate_tab, '')
         self.tab_widget.setCurrentIndex(0)
 
         # Connect the focus events to custom slots for all QLineEdit widgets
@@ -483,38 +509,46 @@ class SettingsUI(QDialog):
         self.checkbox_preserve_interword_spaces.setText("Preserve interword spaces")
         self.checkbox_preserve_interword_spaces.setToolTip("Enable this option to preserve interword spaces in the OCR output.\n"
                                                            "This helps maintain the original spacing between words in the recognized text.")
-        self.checkbox_image_binarization.setText("Binarize image")
-        self.checkbox_image_binarization.setToolTip("Enable this option to convert the image to a binary format.\n"
-                                                    "Binarization simplifies the image by separating pixels into black\n"
-                                                    "and white, making it suitable for various image processing tasks.")
-        self.label_binarization_threshold.setText("Binarization threshold:")
-        self.label_binarization_threshold.setToolTip("Threshold minimum = 0, maximum = 255\n"
-                                                     "Set the threshold value for binarization. Pixels with values above\n"
-                                                     "this threshold will be set to white, and those below will be black.\n"
-                                                     "Adjust the threshold based on the characteristics of your images.")
-        self.checkbox_image_deskewing.setText("Deskew image")
-        self.checkbox_image_deskewing.setToolTip("Enable this option to automatically straighten skewed text in the image.\n"
-                                                 "Improved alignment enhances OCR accuracy, making text extraction\n"
-                                                 "more efficient. Ideal for scanned documents or images with tilted text.")
         self.label_blacklist_char.setText("Blacklist characters:")
         self.label_whitelist_char.setText("Whitelist characters:")
         self.checkbox_blacklist_char.setText("Enable")
         self.checkbox_whitelist_char.setText("Enable")
 
         # Tab 2
+        self.tab_widget.setTabText(self.tab_widget.indexOf(self.preprocess_tab), "Preprocess")
+        self.label_scale_factor.setText("Scale Factor:")
+        self.checkbox_grayscale.setText("Grayscale")
+        self.checkbox_gaussian_blur.setText("Gaussian Blur")
+        self.checkbox_median_blur.setText("Median Blur")
+        self.checkbox_remove_noise.setText("Remove Noise")
+        self.checkbox_adaptive_thresholding.setText("Adaptive Thresholding")
+        self.checkbox_global_thresholding.setText("Global Thresholding:")
+        self.checkbox_global_thresholding.setToolTip("Enable this option to convert the image to a binary format.\n"
+                                                     "Binarization simplifies the image by separating pixels into black\n"
+                                                     "and white, making it suitable for various image processing tasks.")
+        self.spinbox_global_threshold.setToolTip("Threshold minimum = 0, maximum = 255\n"
+                                                 "Set the threshold value for binarization. Pixels with values above\n"
+                                                 "this threshold will be set to white, and those below will be black.\n"
+                                                 "Adjust the threshold based on the characteristics of your image.")
+        self.checkbox_deskew.setText("Deskew")
+        self.checkbox_deskew.setToolTip("Enable this option to automatically straighten skewed text in the image.\n"
+                                        "Improved alignment enhances OCR accuracy, making text extraction\n"
+                                        "more efficient. Ideal for scanned document or image with tilted text.")
+
+        # Tab 3
+        self.tab_widget.setTabText(self.tab_widget.indexOf(self.output_tab), "Output")
         self.checkbox_copyto_clipboard.setText("Copy to clipboard")
         self.checkbox_show_popup_window.setText("Show popup window (OCR Text)")
+        self.checkbox_remove_empty_lines.setText("Remove empty lines in OCR text")
         self.checkbox_save_captured_image.setText("Save captured image")
         self.checkbox_save_enhanced_image.setText("Save enhanced image")
         self.label_output_folder.setText("Output folder:")
         self.button_output_folder.setText(". . .")
 
-        # Tab 3
+        # Tab 4
         self.tab_widget.setTabText(self.tab_widget.indexOf(self.translate_tab), "Translate")
         self.checkbox_append_translation.setText("Append translation to clipboard")
         self.checkbox_show_translation.setText("Show translation in popup window")
-        self.label_server_timeout.setText("Server timeout:")
-        self.tab_widget.setTabText(self.tab_widget.indexOf(self.output_tab), "Output")
 
     def toggle_checkbox_psm_tooltip(self, psm_value):
         psm_tooltip_text = {
@@ -529,7 +563,7 @@ class SettingsUI(QDialog):
             8: "Sparse text. Find as much text as possible in\nno particular order. ",
             9: "Raw line. Treat the image as a single text line,\nbypassing hacks that are Tesseract-specific."
         }
-        self.combobox_psm_value.setToolTip(psm_tooltip_text.get(psm_value, ""))
+        self.combobox_psm_value.setToolTip(psm_tooltip_text.get(psm_value, ''))
 
     def toggle_checkbox_oem_tooltip(self, oem_value):
         oem_tooltip_text = {
@@ -538,7 +572,7 @@ class SettingsUI(QDialog):
             2: "Legacy + LSTM engines.",
             3: "Default, based on what is available."
         }
-        self.combobox_oem_value.setToolTip(oem_tooltip_text.get(oem_value, ""))
+        self.combobox_oem_value.setToolTip(oem_tooltip_text.get(oem_value, ''))
 
     def initialize_settings_components(self):
         logger.info("Initializing settings component")
@@ -548,20 +582,25 @@ class SettingsUI(QDialog):
         self.set_widget_value(self.checkbox_play_sound, 'preferences', 'enable_sound')
         self.set_widget_value(self.line_edit_sound_file, 'preferences', 'sound_file', True)
         self.set_widget_value(self.checkbox_preserve_interword_spaces, 'ocr', 'preserve_interword_spaces')
-        self.set_widget_value(self.checkbox_image_binarization, 'ocr', 'image_binarization')
-        self.set_widget_value(self.spinbox_binarization_threshold, 'ocr', 'binarization_threshold')
-        self.set_widget_value(self.checkbox_image_deskewing, 'ocr', 'image_deskewing')
+        self.set_widget_value(self.spinbox_scale_factor, 'preprocess', 'scale_factor')
+        self.set_widget_value(self.checkbox_gaussian_blur, 'preprocess', 'gaussian_blur')
+        self.set_widget_value(self.checkbox_median_blur, 'preprocess', 'median_blur')
+        self.set_widget_value(self.checkbox_remove_noise, 'preprocess', 'remove_noise')
+        self.set_widget_value(self.checkbox_adaptive_thresholding, 'preprocess', 'adaptive_thresholding')
+        self.set_widget_value(self.checkbox_global_thresholding, 'preprocess', 'global_thresholding')
+        self.set_widget_value(self.spinbox_global_threshold, 'preprocess', 'global_threshold')
+        self.set_widget_value(self.checkbox_deskew, 'preprocess', 'deskew')
         self.set_widget_value(self.line_edit_blacklist_char, 'ocr', 'blacklist_char')
         self.set_widget_value(self.line_edit_whitelist_char, 'ocr', 'whitelist_char')
         self.set_widget_value(self.checkbox_blacklist_char, 'ocr', 'enable_blacklist_char')
         self.set_widget_value(self.checkbox_whitelist_char, 'ocr', 'enable_whitelist_char')
         self.set_widget_value(self.checkbox_copyto_clipboard, 'output', 'copy_to_clipboard')
         self.set_widget_value(self.checkbox_show_popup_window, 'output', 'show_popup_window')
+        self.set_widget_value(self.checkbox_remove_empty_lines, 'output', 'remove_empty_lines')
         self.set_widget_value(self.checkbox_save_captured_image, 'output', 'save_captured_image')
         self.set_widget_value(self.checkbox_save_enhanced_image, 'output', 'save_enhanced_image')
         self.set_widget_value(self.line_edit_output_folder, 'output', 'output_folder_path', True)
         self.set_widget_value(self.checkbox_show_translation, 'translate', 'enable_translation')
-        self.set_widget_value(self.spinbox_server_timeout, 'translate', 'server_timeout')
         self.open_file_dialog_path = self.config['preferences']['sound_file']
         self.open_folder_dialog_path = self.config['output']['output_folder_path']
         self.initialize_settings_components_finish = True
@@ -620,28 +659,14 @@ class SettingsUI(QDialog):
             if file_path.exists():
                 if language_code in self.config['ocr']['language']:
                     self.sc_checkbox_dict[f'{language_name}'].setChecked(True)
+                else:
+                    self.sc_checkbox_dict[f'{language_name}'].setChecked(False)
                 self.sc_checkbox_dict[f'{language_name}'].setEnabled(True)
                 self.sc_button_dict[f'{language_name}'].setVisible(False)
             else:
                 self.sc_checkbox_dict[f'{language_name}'].setChecked(False)
                 self.sc_checkbox_dict[f'{language_name}'].setEnabled(False)
                 self.sc_button_dict[f'{language_name}'].setVisible(True)
-
-    def auto_check_last_checkbox(self):
-        sender_checkbox = self.sender()
-        label = None
-
-        for name, checkbox in self.sc_checkbox_dict.items():
-            if checkbox is sender_checkbox:
-                label = name
-                break
-
-        # Force check the last clicked checkbox if it's unchecked and no other checkboxes are checked
-        if label is not None:
-            if not sender_checkbox.isChecked():
-                all_checked = any(checkbox.isChecked() for checkbox in self.sc_checkboxes)
-                if not all_checked:
-                    sender_checkbox.setChecked(True)
 
     def download_from_github(self):
         sender_button = self.sender()
@@ -806,43 +831,42 @@ class SettingsUI(QDialog):
         output_folder_path = self.fix_path(self.line_edit_output_folder)
         self.line_edit_output_folder.setText(output_folder_path)
 
-        if self.checkbox_save_captured_image.isChecked():
-            if not output_folder_path:
-                self.tab_widget.setCurrentIndex(2)
+        if not output_folder_path:
+            if self.checkbox_save_captured_image.isChecked() or self.checkbox_save_enhanced_image.isChecked():
+                self.tab_widget.setCurrentIndex(3)
                 raise ValueError("Output folder is empty.")
 
-        if output_folder_path:
-            directory = Path(output_folder_path)
-            if directory.exists() and directory.is_dir():
-                logger.info(f"Output folder already exist '{output_folder_path}'")
-                self.output_folder_created = True
-                self.save_settings_config()
-            else:
-                self.tab_widget.setCurrentIndex(2)
-                response = show_message_box(
-                    "Question",
-                    "Confirm",
-                    "Output Folder \"" + output_folder_path + "\" does not exist.\n\nDo you want to create it?",
-                )
-                if response == "Yes":
-                    drive_letter = Path(output_folder_path).drive
-                    if not Path(drive_letter).exists():
-                        logger.error(f"Failed to create output folder. Drive letter does not exist.")
-                        raise ValueError("Failed to create output folder. Drive letter does not exist.")
-                    try:
-                        logger.info(f"Creating output folder")
-                        directory.mkdir(parents=True, exist_ok=True)
-                        self.output_folder_created = True
-                        logger.success(f"Output folder created successfully '{output_folder_path}'")
-                        self.save_settings_config()
-
-                    except Exception as e:
-                        logger.error(f"Failed to create output folder: {e}")
-                        raise ValueError("Failed to create output folder.")
-                else:
-                    self.output_folder_created = False
-        else:
+        if Path(output_folder_path).exists() and Path(output_folder_path).is_dir():
+            logger.info(f"Output folder already exist '{output_folder_path}'")
+            self.output_folder_created = True
             self.save_settings_config()
+            return
+
+        self.tab_widget.setCurrentIndex(3)
+        response = show_message_box(
+            "Question",
+            "Confirm",
+            "Output Folder \"" + output_folder_path + "\" does not exist.\n\nDo you want to create it?",
+        )
+        if response == "No":
+            self.output_folder_created = False
+            return
+
+        drive_letter = Path(output_folder_path).drive
+
+        if not Path(drive_letter).exists():
+            logger.error(f"Failed to create output folder. Drive letter does not exist.")
+            raise ValueError("Failed to create output folder. Drive letter does not exist.")
+        try:
+            logger.info(f"Creating output folder")
+            Path(output_folder_path).mkdir(parents=True, exist_ok=True)
+            self.output_folder_created = True
+            logger.success(f"Output folder created successfully '{output_folder_path}'")
+            self.save_settings_config()
+
+        except Exception as e:
+            logger.error(f"Failed to create output folder: {e}")
+            raise ValueError("Failed to create output folder.")
 
     def save_settings_config(self):
         settings_config = {
@@ -855,28 +879,36 @@ class SettingsUI(QDialog):
                 'page_segmentation_mode': int(self.combobox_psm_value.currentText()),
                 'ocr_engine_mode': int(self.combobox_oem_value.currentText()),
                 'preserve_interword_spaces': self.checkbox_preserve_interword_spaces.isChecked(),
-                'image_binarization': self.checkbox_image_binarization.isChecked(),
-                'binarization_threshold': self.spinbox_binarization_threshold.value(),
-                'image_deskewing': self.checkbox_image_deskewing.isChecked(),
                 'enable_blacklist_char': self.checkbox_blacklist_char.isChecked(),
                 'blacklist_char': self.line_edit_blacklist_char.text(),
                 'enable_whitelist_char': self.checkbox_whitelist_char.isChecked(),
                 'whitelist_char': self.line_edit_whitelist_char.text(),
 
             },
+            "preprocess": {
+                'scale_factor': self.spinbox_scale_factor.value(),
+                'grayscale': self.checkbox_grayscale.isChecked(),
+                'gaussian_blur': self.checkbox_gaussian_blur.isChecked(),
+                'median_blur': self.checkbox_median_blur.isChecked(),
+                'remove_noise': self.checkbox_remove_noise.isChecked(),
+                'adaptive_thresholding': self.checkbox_adaptive_thresholding.isChecked(),
+                'global_thresholding': self.checkbox_global_thresholding.isChecked(),
+                'global_threshold': self.spinbox_global_threshold.value(),
+                'deskew': self.checkbox_deskew.isChecked(),
+            },
             "output": {
                 'copy_to_clipboard': self.checkbox_copyto_clipboard.isChecked(),
                 'show_popup_window': self.checkbox_show_popup_window.isChecked(),
+                'remove_empty_lines': self.checkbox_remove_empty_lines.isChecked(),
                 'save_captured_image': self.checkbox_save_captured_image.isChecked(),
                 'save_enhanced_image': self.checkbox_save_enhanced_image.isChecked(),
                 'output_folder_path': self.fix_path(self.line_edit_output_folder)
             },
             "translate": {
-                'enable_translation': self.checkbox_show_translation.isChecked(),
-                'server_timeout': self.spinbox_server_timeout.value(),
+                'enable_translation': self.checkbox_show_translation.isChecked()
             }
         }
-        # Save check OCR languages
+        # Save checked OCR languages
         save_lang = ""
         for language_code, language_name in language_set().items():
             if self.sc_checkbox_dict[f'{language_name}'].isChecked():
@@ -887,9 +919,8 @@ class SettingsUI(QDialog):
 
         # Get selected language in every Translate To combobox
         for count, language_name in enumerate(language_list().values(), start=0):
-            combobox_text = self.translate_to_comboboxes[count].currentText().lower()
             for language_code, name in language_list().items():
-                if name == combobox_text:
+                if name == self.translate_to_comboboxes[count].currentText().lower():
                     settings_config['translate'][f'{language_name}'] = f'{language_code}'
 
         self.check_language_file()
@@ -919,30 +950,6 @@ class MyHeader(QHeaderView):
     def paintSection(self, painter: QPainter, rect: QRect, index: int) -> None:
         painter.setFont(self.font())
         super().paintSection(painter, rect, index)
-
-
-# Custom QSpinBox (Server timeout)
-# Fixed the spin box value that revert to original when it is out of focus
-class CustomSpinBox(QSpinBox):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def textFromValue(self, value):
-        return f"{value} ms"
-
-    def valueFromText(self, text):
-        stripped_text = text.replace(" ms", "")
-        return int(stripped_text) if stripped_text else 100  # Set default value to 100 if stripped_text is empty
-
-    def validate(self, text, index):
-        stripped_text = text.replace(" ms", "")
-
-        if stripped_text.isdigit() or stripped_text == "":
-            value = int(stripped_text) if stripped_text else 100  # Set default value to 100 if stripped_text is empty
-            if 0 <= value <= 10000:
-                return QValidator.Acceptable, index
-
-        return QValidator.Invalid, index
 
 
 class DownloadThread(QThread):

@@ -1,23 +1,20 @@
 # Standard libraries
 import os
-import math
 import shutil
-from typing import Tuple, Union
 
 # Third-party libraries
 import cv2
-import numpy as np
 import pandas as pd
 import pyperclip
 import pytesseract
-from deskew import determine_skew
 from loguru import logger
 from PIL import Image
 from pytesseract import Output
 
 # Source
 from src.config.config import load_config
-from src.utils.translate import translate_text, language_set
+from src.utils.translate import translate_text
+from src.ocr.preprocess import preprocess_image
 
 # Set the Tesseract OCR command path
 pytesseract.pytesseract.tesseract_cmd = 'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
@@ -36,14 +33,16 @@ def perform_ocr(working_image, datetime):
         custom_config = get_pytesseract_configuration(config)
 
         if config['ocr']['preserve_interword_spaces']:
-            ocr_text = perform_ocr_image_to_data(working_image, custom_config)
+            extracted_text = perform_ocr_image_to_data(working_image, custom_config)
         else:
-            ocr_text = perform_ocr_image_to_string(working_image, custom_config)
+            extracted_text = perform_ocr_image_to_string(working_image, custom_config)
+
+        if config['output']['remove_empty_lines']:
+            extracted_text = "\n".join(line for line in extracted_text.split("\n") if line.strip())
 
         if config['output']['copy_to_clipboard']:
-            if ocr_text:
-                copy_to_clipboard(ocr_text)
-                extracted_text = ocr_text
+            if extracted_text:
+                copy_to_clipboard(extracted_text)
 
         if config['output']['save_enhanced_image']:
             folder = config['output']['output_folder_path']
@@ -52,53 +51,35 @@ def perform_ocr(working_image, datetime):
             remove_temporary_image(working_image)
 
         if config['translate']['enable_translation']:
-            if ocr_text:
+            if extracted_text:
                 translated_text = translate_extracted_text(extracted_text)
 
     except Exception as e:
         logger.error(f"An error occurred during OCR process: {e}")
 
     finally:
-        if extracted_text is not None:
-            logger.info(f"OCR Text:\n{extracted_text}\nTranslated Text:\n{translated_text}")
+        if extracted_text:
+            logger.info(f"OCR Text:\n[{extracted_text}]\nTranslated Text:\n{translated_text}")
         else:
             logger.info("OCR Text is empty")
         return extracted_text, translated_text
 
 
-def preprocess_image(image_path, config):
-    try:
-        if config['ocr']['image_binarization']:
-            threshold = config['ocr']['binarization_threshold']
-            binarize_image(image_path, threshold)
-            logger.success("Binarizing completed")
-        if config['ocr']['image_deskewing']:
-            deskew_image(image_path)
-            logger.success("Deskewing completed")
-
-    except Exception as e:
-        logger.error(f"An error occurred while preprocessing the image [{e}]")
-
-
 def get_pytesseract_configuration(config):
-    psmv = str(config['ocr']['page_segmentation_mode'])
-    oemv = str(config['ocr']['ocr_engine_mode'])
-    pisv = " -c preserve_interword_spaces=1" if config['ocr']['preserve_interword_spaces'] else ""
-
-    ocr_lang = config['ocr']['language']
-    found_key = [key for key, value in language_set().items() if value == ocr_lang]
-    key = ''.join(found_key) if found_key else 'eng'
+    key = f"-l {config['ocr']['language']} " if config['ocr']['language'] else ""
+    psmv = f"--psm {str(config['ocr']['page_segmentation_mode'])} "
+    oemv = f"--oem {str(config['ocr']['ocr_engine_mode'])} "
+    pisv = "-c preserve_interword_spaces=1 " if config['ocr']['preserve_interword_spaces'] else ""
 
     if config['ocr']['enable_blacklist_char']:
-        te_char = f" -c tessedit_char_blacklist={config['ocr']['blacklist_char']}"
+        te_char = fr"-c tessedit_char_blacklist={config['ocr']['blacklist_char']}"
     elif config['ocr']['enable_whitelist_char']:
-        te_char = f" -c tessedit_char_whitelist={config['ocr']['whitelist_char']}"
+        te_char = fr"-c tessedit_char_whitelist={config['ocr']['whitelist_char']}"
     else:
         te_char = ""
 
-    custom_config = r'-l equ+' + key + ' --psm ' + psmv + ' --oem ' + oemv + pisv + te_char
-    logger.info(f"Pytesseract custom configuration: {custom_config}")
-    return custom_config
+    logger.info(f"Pytesseract custom configuration: {key}{psmv}{oemv}{pisv}{te_char}")
+    return f"{key}{psmv}{oemv}{pisv}{te_char}"
 
 
 def perform_ocr_image_to_string(image_path, custom_config):
@@ -149,53 +130,6 @@ def perform_ocr_image_to_data(image_path, custom_config):
         return text
 
 
-def binarize_image(image_path, threshold):
-    logger.info("Binarizing the image")
-    binarize_img = binarize(Image.open(image_path), threshold)
-    binarize_img.save(image_path)
-
-
-def binarize(image_to_transform, threshold):
-    output_image = image_to_transform.convert("L")  # Convert to greyscale image
-    '''
-    The threshold value is usually provided as a number between 0 and 255, which is the number of bits in a byte.
-    The algorithm for the binarization is pretty simple, go through every pixel in the image and, if it's greater
-    than the threshold, turn it all the way up (255), and if it's lower than the threshold, turn it all the way down (0).
-    '''
-    for x in range(output_image.width):
-        for y in range(output_image.height):
-            # For the given pixel at w,h, check the value against the threshold
-            if output_image.getpixel((x, y)) < threshold:  # Note that the first parameter is actually a tuple object
-                output_image.putpixel((x, y), 0)
-            else:
-                output_image.putpixel((x, y), 255)
-    return output_image
-
-
-def deskew_image(image_path):
-    logger.info("Deskewing the image")
-    image = cv2.imread(image_path)
-    grayscale = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    angle = determine_skew(grayscale)
-    rotated = rotate(image, angle, (0, 0, 0))
-    cv2.imwrite(image_path, rotated)
-
-
-def rotate(
-        image: np.ndarray, angle: float, background: Union[int, Tuple[int, int, int]]
-) -> np.ndarray:
-    old_width, old_height = image.shape[:2]
-    angle_radian = math.radians(angle)
-    width = abs(np.sin(angle_radian) * old_height) + abs(np.cos(angle_radian) * old_width)
-    height = abs(np.sin(angle_radian) * old_width) + abs(np.cos(angle_radian) * old_height)
-
-    image_center = tuple(np.array(image.shape[1::-1]) / 2)
-    rot_mat = cv2.getRotationMatrix2D(image_center, angle, 1.0)
-    rot_mat[1, 2] += (width - old_width) / 2
-    rot_mat[0, 2] += (height - old_height) / 2
-    return cv2.warpAffine(image, rot_mat, (int(round(height)), int(round(width))), borderValue=background)
-
-
 def copy_to_clipboard(text):
     try:
         pyperclip.copy(text)
@@ -230,7 +164,7 @@ def save_temporary_image(image_path, datetime, output_folder_path):
 def remove_temporary_image(image_path):
     try:
         os.remove(image_path)
-        logger.success(f"Temporary image successfully removed '{image_path}'")
+        logger.success(f"Temporary image successfully removed: {image_path}")
 
     except Exception as e:
         logger.error(f"An error occurred while removing temporary image '{image_path}': {e}")
