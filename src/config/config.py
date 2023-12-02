@@ -38,6 +38,7 @@ def load_config():
             'sound_file': "assets\\sound\\sound.wav",
         },
         "ocr": {
+            'tesseract_path': "C:\\Program Files\\Tesseract-OCR\\tesseract.exe",
             'language': "eng",
             'page_segmentation_mode': 6,
             'ocr_engine_mode': 3,

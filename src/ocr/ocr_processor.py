@@ -1,6 +1,7 @@
 # Standard libraries
 import os
 import shutil
+from pathlib import Path
 
 # Third-party libraries
 import cv2
@@ -16,21 +17,28 @@ from src.config.config import load_config
 from src.utils.translate import translate_text
 from src.ocr.preprocess import preprocess_image
 
-# Set the Tesseract OCR command path
-pytesseract.pytesseract.tesseract_cmd = 'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
-
 
 def perform_ocr(working_image, datetime):
-    # Point to the folder where Tesseract language data is located
-    os.environ['TESSDATA_PREFIX'] = './tessdata/'
-
     config = load_config()
     extracted_text = None
     translated_text = None
 
+    tesseract_path = Path(fr"{config['ocr']['tesseract_path']}")
+    if tesseract_path.exists():
+        logger.info(f"Tesseract Path: {tesseract_path}")
+        pytesseract.pytesseract.tesseract_cmd = str(tesseract_path)
+    else:
+        logger.error(f"Tesseract installation path not found: {tesseract_path}")
+        return
+
+    if config['ocr']['language']:
+        os.environ['TESSDATA_PREFIX'] = './tessdata/'
+    else:
+        os.environ['TESSDATA_PREFIX'] = f"{tesseract_path.parent}/tessdata"
+
     try:
         preprocess_image(working_image, config)
-        custom_config = get_pytesseract_configuration(config)
+        custom_config = get_pytesseract_configuration(config, tesseract_path)
 
         if config['ocr']['preserve_interword_spaces']:
             extracted_text = perform_ocr_image_to_data(working_image, custom_config)
@@ -65,7 +73,7 @@ def perform_ocr(working_image, datetime):
         return extracted_text, translated_text
 
 
-def get_pytesseract_configuration(config):
+def get_pytesseract_configuration(config, tesseract_path):
     key = f"-l {config['ocr']['language']} " if config['ocr']['language'] else ""
     psmv = f"--psm {str(config['ocr']['page_segmentation_mode'])} "
     oemv = f"--oem {str(config['ocr']['ocr_engine_mode'])} "
@@ -83,8 +91,8 @@ def get_pytesseract_configuration(config):
 
 
 def perform_ocr_image_to_string(image_path, custom_config):
-    logger.info(f"Performing pytesseract image to string '{image_path}'")
-    return pytesseract.image_to_string(Image.open(image_path), config=custom_config)
+    logger.info(f"Performing pytesseract image to string: {image_path}")
+    return pytesseract.image_to_string(Image.open(image_path), config="--psm 3 --oem 3 -c tessedit_char_blacklist=a")
 
 
 def perform_ocr_image_to_data(image_path, custom_config):

@@ -83,18 +83,18 @@ def start_preprocess(image_path,
 
     if adaptive_threshold:
         logger.info("Applying adaptive threshold")
-        image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)  # Fix this
+        # image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)  # Fix this
         image = cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 31, 2)
 
     if global_thresholding:
         logger.info("Applying global threshold")
-        image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)  # Fix this
+        # image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)  # Fix this
         _, image = cv2.threshold(image, global_threshold, 255, cv2.THRESH_BINARY)
 
-    if adaptive_threshold:
-        kernel = np.ones((1, 1), np.uint8)
-        image = cv2.dilate(image, kernel, iterations=1)
-        image = cv2.erode(image, kernel, iterations=1)
+    # if adaptive_threshold:
+        # kernel = np.ones((1, 1), np.uint8)
+        # image = cv2.dilate(image, kernel, iterations=1)
+        # image = cv2.erode(image, kernel, iterations=1)
 
     cv2.imwrite(image_path, image)
 

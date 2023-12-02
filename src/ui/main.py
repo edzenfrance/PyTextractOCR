@@ -112,8 +112,9 @@ class MainUI(QDialog):
         if self.saved_position is not None:
             self.move(self.saved_position)
         self.show()
+
         if not self.overlay_capture.isHidden():
-            self.overlay_capture.close_overlay()
+            self.overlay_capture.close_overlay_then_show_main()
 
     # Ignore the closing the MainUI window if OCR Text window is currently open
     def closeEvent(self, event):
@@ -130,11 +131,10 @@ class MainUI(QDialog):
             return
 
         self.config = load_config()
-        system_tray = self.config['preferences']['minimize_to_system_tray']
-        tray_notif = self.config['miscellaneous']['tray_notification_shown']
-        if system_tray:
+        if self.config['preferences']['minimize_to_system_tray']:
             logger.info("Minimizing application to system tray")
-            if not tray_notif:
+
+            if not self.config['miscellaneous']['tray_notification_shown']:
                 self.tray_icon.showMessage('Hey there!', 'PyTextractOCR has been minimized to the system tray. ',
                                            QSystemTrayIcon.Information, 2000)
                 update_config({"miscellaneous": {'tray_notification_shown': True}})
@@ -148,12 +148,7 @@ class MainUI(QDialog):
     def save_main_window_position(self):
         window_position_x = self.pos().x()
         window_position_y = self.pos().y()
-        self_pos_xy = {
-            "miscellaneous": {
-                'main_window_position_x': window_position_x,
-                'main_window_position_y': window_position_y
-            }
-        }
+        self_pos_xy = {"miscellaneous": {'main_window_position_x': window_position_x, 'main_window_position_y': window_position_y}}
         logger.info(f"Main window saved position: X: {window_position_x} Y: {window_position_y}")
         update_config(self_pos_xy)
 
