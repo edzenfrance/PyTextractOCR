@@ -654,7 +654,6 @@ class SettingsUI(QDialog):
                                                  selection-background-color: white;
                                                  selection-color: black
                                                  }""")
-        self.spinboxes[name].clearFocus()
         self.spinboxes[name].lineEdit().setReadOnly(True)
 
     def eventFilter(self, obj, event):
