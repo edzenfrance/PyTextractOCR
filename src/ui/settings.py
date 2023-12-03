@@ -22,6 +22,7 @@ from src.config.config import load_config, update_config
 from src.ui.asset_manager import app_icon
 from src.utils.message_box import show_message_box
 from src.utils.translate import language_list, language_set
+from src.ocr.ocr_processor import tesseract_check, tesseract_version
 
 
 class SettingsUI(QDialog):
@@ -39,6 +40,7 @@ class SettingsUI(QDialog):
         self.output_folder_created = True
         self.open_file_dialog_path = None
         self.open_folder_dialog_path = None
+        self.open_executable_dialog_path = None
         self.widget_language_name = None
 
         # Dictionary to store QLineEdit widgets and their event handling logic
@@ -301,25 +303,24 @@ class SettingsUI(QDialog):
         self.checkbox_whitelist_char.clicked.connect(lambda: self.toggle_whitelist_blacklist_checkbox(self.checkbox_whitelist_char))
 
         # LABEL - Tesseract Install Path
-        self.label_tesseract_install_path = QLabel("Tesseract Installation Path:", self.ocr_tab)
-        self.label_tesseract_install_path.setObjectName('label_tesseract_install_path')
-        self.label_tesseract_install_path.setGeometry(QRect(15, 180, 160, 16))
+        self.label_tesseract_version = QLabel("Tesseract Version: Not found", self.ocr_tab)
+        self.label_tesseract_version.setObjectName('label_tesseract_version')
+        self.label_tesseract_version.setGeometry(QRect(15, 180, 250, 16))
 
         # LINE EDIT - Tesseract Install Path
-        self.line_edit_tesseract_install_path = QLineEdit(self.ocr_tab)
-        self.line_edit_tesseract_install_path.setObjectName('line_edit_tesseract_install_path')
-        self.line_edit_tesseract_install_path.setGeometry(QRect(15, 200, 311, 22))
-        self.line_edit_tesseract_install_path.setCursorPosition(0)
-        self.line_edit_tesseract_install_path.textChanged.connect(self.toggle_apply_button)
-        self.line_edits['line_edit_tesseract_install_path'] = self.line_edit_tesseract_install_path  # Add to the dictionary
-        self.line_edit_tesseract_install_path.setText(self.config['ocr']['tesseract_path'])
+        self.line_edit_tesseract_path = QLineEdit(self.ocr_tab)
+        self.line_edit_tesseract_path.setObjectName('line_edit_tesseract_path')
+        self.line_edit_tesseract_path.setGeometry(QRect(15, 200, 311, 22))
+        self.line_edit_tesseract_path.setCursorPosition(0)
+        self.line_edit_tesseract_path.textChanged.connect(self.toggle_apply_button)
+        self.line_edits['line_edit_tesseract_path'] = self.line_edit_tesseract_path  # Add to the dictionary
 
         # BUTTON - ...
-        self.button_tesseract_install_path = QPushButton(". . .", self.ocr_tab)
-        self.button_tesseract_install_path.setObjectName('button_tesseract_install_path')
-        self.button_tesseract_install_path.setGeometry(QRect(330, 198, 24, 24))
-        self.button_tesseract_install_path.setAutoDefault(False)
-        self.button_tesseract_install_path.clicked.connect(self.select_audio_file)
+        self.button_tesseract_path = QPushButton(". . .", self.ocr_tab)
+        self.button_tesseract_path.setObjectName('button_tesseract_path')
+        self.button_tesseract_path.setGeometry(QRect(330, 198, 24, 24))
+        self.button_tesseract_path.setAutoDefault(False)
+        self.button_tesseract_path.clicked.connect(self.select_tesseract_executable_file)
 
         self.settings_tab_widget.addTab(self.ocr_tab, '')
 
@@ -609,6 +610,7 @@ class SettingsUI(QDialog):
         self.init_widget(self.line_edit_whitelist_char, 'ocr', 'whitelist_char')
         self.init_widget(self.checkbox_blacklist_char, 'ocr', 'enable_blacklist_char')
         self.init_widget(self.checkbox_whitelist_char, 'ocr', 'enable_whitelist_char')
+        self.init_widget(self.line_edit_tesseract_path, 'ocr', 'tesseract_path')
         self.init_widget(self.spinbox_scale_factor, 'preprocess', 'scale_factor')
         self.init_widget(self.checkbox_gaussian_blur, 'preprocess', 'gaussian_blur')
         self.init_widget(self.checkbox_median_blur, 'preprocess', 'median_blur')
@@ -628,6 +630,8 @@ class SettingsUI(QDialog):
         self.init_widget(self.checkbox_show_translation, 'translate', 'enable_translation')
         self.open_file_dialog_path = self.config['preferences']['sound_file']
         self.open_folder_dialog_path = self.config['output']['output_folder_path']
+        if tesseract_check(self.config['ocr']['tesseract_path']):
+            self.label_tesseract_version.setText(f"Tesseract Version: {tesseract_version()}")
         self.initialize_settings_components_finish = True
 
     def init_widget(self, widget, table_name, key, line_edit_replace=None):
@@ -727,6 +731,18 @@ class SettingsUI(QDialog):
     def toggle_whitelist_blacklist_checkbox(self, clicked_checkbox):
         target_checkbox = self.checkbox_blacklist_char if clicked_checkbox == self.checkbox_whitelist_char else self.checkbox_whitelist_char
         target_checkbox.setChecked(False)
+
+    def select_tesseract_executable_file(self):
+        options = QFileDialog.Options()
+        options |= QFileDialog.ReadOnly
+        file_path, _ = QFileDialog.getOpenFileName(self, "Select Tesseract Executable", self.open_executable_dialog_path,
+                                                   "Tesseract (tesseract.exe)", options=options)
+        if file_path:
+            formatted_file_path = file_path.replace('/', '\\')
+            self.line_edit_tesseract_path.setText(formatted_file_path)
+            self.open_executable_dialog_path = formatted_file_path
+            if tesseract_check(formatted_file_path):
+                self.label_tesseract_version.setText(f"Tesseract Version: {tesseract_version()}")
 
     def select_audio_file(self):
         options = QFileDialog.Options()
@@ -926,14 +942,14 @@ class SettingsUI(QDialog):
                 'sound_file': self.fix_path(self.line_edit_sound_file)
             },
             "ocr": {
+                'tesseract_path': self.line_edit_tesseract_path.text(),
                 'page_segmentation_mode': int(self.combobox_psm_value.currentText()),
                 'ocr_engine_mode': int(self.combobox_oem_value.currentText()),
                 'preserve_interword_spaces': self.checkbox_preserve_interword_spaces.isChecked(),
                 'enable_blacklist_char': self.checkbox_blacklist_char.isChecked(),
                 'blacklist_char': self.line_edit_blacklist_char.text(),
                 'enable_whitelist_char': self.checkbox_whitelist_char.isChecked(),
-                'whitelist_char': self.line_edit_whitelist_char.text(),
-
+                'whitelist_char': self.line_edit_whitelist_char.text()
             },
             "preprocess": {
                 'scale_factor': self.spinbox_scale_factor.value(),
@@ -946,7 +962,7 @@ class SettingsUI(QDialog):
                 'global_threshold': self.spinbox_global_threshold.value(),
                 'dilate': self.checkbox_dilate.isChecked(),
                 'erode': self.checkbox_erode.isChecked(),
-                'deskew': self.checkbox_deskew.isChecked(),
+                'deskew': self.checkbox_deskew.isChecked()
             },
             "output": {
                 'copy_to_clipboard': self.checkbox_copy_to_clipboard.isChecked(),

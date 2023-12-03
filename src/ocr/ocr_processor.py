@@ -23,18 +23,8 @@ def perform_ocr(working_image, datetime):
     extracted_text = None
     translated_text = None
 
-    tesseract_path = Path(fr"{config['ocr']['tesseract_path']}")
-    if tesseract_path.exists():
-        logger.info(f"Tesseract Path: {tesseract_path}")
-        pytesseract.pytesseract.tesseract_cmd = str(tesseract_path)
-    else:
-        logger.error(f"Tesseract installation path not found: {tesseract_path}")
-        return
-
-    if config['ocr']['language']:
-        os.environ['TESSDATA_PREFIX'] = './tessdata/'
-    else:
-        os.environ['TESSDATA_PREFIX'] = f"{tesseract_path.parent}/tessdata"
+    tesseract_path = tesseract_check(config['ocr']['tesseract_path'])
+    tessdata_path(config, tesseract_path)
 
     try:
         preprocess_image(working_image, config)
@@ -176,3 +166,21 @@ def remove_temporary_image(image_path):
 
     except Exception as e:
         logger.error(f"An error occurred while removing temporary image '{image_path}': {e}")
+
+
+def tesseract_check(tesseract_path):
+    if Path(tesseract_path).exists():
+        logger.info(f"Tesseract Path: {tesseract_path}")
+        pytesseract.pytesseract.tesseract_cmd = str(tesseract_path)
+        return tesseract_path
+    else:
+        logger.error(f"Tesseract installation path not found: {tesseract_path}")
+        return None
+
+
+def tesseract_version():
+    return pytesseract.get_tesseract_version()
+
+
+def tessdata_path(config, tesseract_path):
+    os.environ['TESSDATA_PREFIX'] = './tessdata/' if config['ocr']['language'] else f"{tesseract_path.parent}/tessdata"
