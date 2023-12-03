@@ -14,8 +14,8 @@ from pytesseract import Output
 
 # Source
 from src.config.config import load_config
-from src.utils.translate import translate_text
 from src.ocr.preprocess import preprocess_image
+from src.utils.translate import translate_text
 
 
 def perform_ocr(working_image, datetime):

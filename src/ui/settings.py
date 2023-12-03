@@ -19,10 +19,10 @@ from PySide6.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDialog,
 
 # Source
 from src.config.config import load_config, update_config
+from src.ocr.ocr_processor import tesseract_check, tesseract_version
 from src.ui.asset_manager import app_icon
 from src.utils.message_box import show_message_box
 from src.utils.translate import language_list, language_set
-from src.ocr.ocr_processor import tesseract_check, tesseract_version
 
 
 class SettingsUI(QDialog):
@@ -662,6 +662,8 @@ class SettingsUI(QDialog):
                 widget.setText(value)
             elif isinstance(widget, QSpinBox):
                 widget.setValue(int(value))
+            elif isinstance(widget, QDoubleSpinBox):
+                widget.setValue(float(value))
             elif isinstance(widget, QCheckBox):
                 widget.setChecked(value)
         except (TypeError, ValueError, AttributeError):
@@ -852,7 +854,7 @@ class SettingsUI(QDialog):
                 raise ValueError(f"Sound file does not exist.")
 
     def check_and_create_output_folder(self):
-        output_folder_path = self.fix_path(self.line_edit_output_folder)
+        output_folder_path = self.fix_line_edit_path(self.line_edit_output_folder)
         self.line_edit_output_folder.setText(output_folder_path)
 
         if not output_folder_path:
@@ -958,7 +960,7 @@ class SettingsUI(QDialog):
             "preferences": {
                 'minimize_to_system_tray': self.checkbox_minimize_to_sys_tray.isChecked(),
                 'enable_sound': self.checkbox_play_sound.isChecked(),
-                'sound_file': self.fix_path(self.line_edit_sound_file)
+                'sound_file': self.fix_line_edit_path(self.line_edit_sound_file)
             },
             "ocr": {
                 'tesseract_path': self.line_edit_tesseract_path.text(),
@@ -971,7 +973,7 @@ class SettingsUI(QDialog):
                 'whitelist_char': self.line_edit_whitelist_char.text()
             },
             "preprocess": {
-                'scale_factor': self.spinbox_scale_factor.value(),
+                'scale_factor': self.fix_double_spinbox_zeros(self.spinbox_scale_factor.value()),
                 'grayscale': self.checkbox_grayscale.isChecked(),
                 'gaussian_blur': self.checkbox_gaussian_blur.isChecked(),
                 'median_blur': self.checkbox_median_blur.isChecked(),
@@ -992,7 +994,7 @@ class SettingsUI(QDialog):
                 'remove_empty_lines': self.checkbox_remove_empty_lines.isChecked(),
                 'save_captured_image': self.checkbox_save_captured_image.isChecked(),
                 'save_enhanced_image': self.checkbox_save_enhanced_image.isChecked(),
-                'output_folder_path': self.fix_path(self.line_edit_output_folder)
+                'output_folder_path': self.fix_line_edit_path(self.line_edit_output_folder)
             },
             "translate": {
                 'enable_translation': self.checkbox_show_translation.isChecked()
@@ -1018,8 +1020,12 @@ class SettingsUI(QDialog):
         update_config(settings_config)
 
     @staticmethod
-    def fix_path(line_edit: QLineEdit):
+    def fix_line_edit_path(line_edit: QLineEdit):
         return re.sub(r'\\+', r'\\', str(line_edit.text()).replace('/', '\\'))
+
+    @staticmethod
+    def fix_double_spinbox_zeros(value):
+        return float(format(value, '.7f').rstrip('0').rstrip('.'))
 
     def cancel_button(self):
         self.close()

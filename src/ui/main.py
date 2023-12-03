@@ -8,10 +8,10 @@ from PySide6.QtWidgets import QDialog, QHBoxLayout, QPushButton, QSystemTrayIcon
 from loguru import logger
 
 # Sources
+from src.config.config import load_config, update_config
 from src.ui.asset_manager import app_icon, main_icon, settings_icon, about_icon, exit_icon
 from src.ui.capture import TransparentOverlayCapture
 from src.ui.settings import SettingsUI
-from src.config.config import load_config, update_config
 
 
 class MainUI(QDialog):
