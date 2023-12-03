@@ -183,4 +183,4 @@ def tesseract_version():
 
 
 def tessdata_path(config, tesseract_path):
-    os.environ['TESSDATA_PREFIX'] = './tessdata/' if config['ocr']['language'] else f"{tesseract_path.parent}/tessdata"
+    os.environ['TESSDATA_PREFIX'] = './tessdata/' if config['ocr']['language'] else f"{Path(tesseract_path).parent}/tessdata"

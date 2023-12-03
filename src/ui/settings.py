@@ -346,7 +346,6 @@ class SettingsUI(QDialog):
                                                        self.disable_spinbox_highlight(value, name))
         self.spinbox_scale_factor.valueChanged.connect(self.toggle_apply_button)
         self.spinbox_scale_factor.editingFinished.connect(self.toggle_apply_button)
-        self.spinbox_scale_factor.setFocusPolicy(Qt.NoFocus)
         self.spinbox_scale_factor.lineEdit().installEventFilter(self)
         self.spinboxes['spinbox_scale_factor'] = self.spinbox_scale_factor  # Add to the dictionary
 
@@ -397,7 +396,6 @@ class SettingsUI(QDialog):
                                                              self.disable_spinbox_highlight(value, name))
         self.spinbox_adaptive_threshold.valueChanged.connect(self.toggle_apply_button)
         self.spinbox_adaptive_threshold.editingFinished.connect(self.toggle_apply_button)
-        self.spinbox_adaptive_threshold.setFocusPolicy(Qt.NoFocus)
         self.spinbox_adaptive_threshold.lineEdit().installEventFilter(self)
         self.spinboxes['spinbox_adaptive_threshold'] = self.spinbox_adaptive_threshold
 
@@ -424,7 +422,6 @@ class SettingsUI(QDialog):
                                                            self.disable_spinbox_highlight(value, name))
         self.spinbox_global_threshold.valueChanged.connect(self.toggle_apply_button)
         self.spinbox_global_threshold.editingFinished.connect(self.toggle_apply_button)
-        self.spinbox_global_threshold.setFocusPolicy(Qt.NoFocus)
         self.spinbox_global_threshold.lineEdit().installEventFilter(self)
         self.spinboxes['spinbox_global_threshold'] = self.spinbox_global_threshold
 
@@ -612,10 +609,12 @@ class SettingsUI(QDialog):
         self.init_widget(self.checkbox_whitelist_char, 'ocr', 'enable_whitelist_char')
         self.init_widget(self.line_edit_tesseract_path, 'ocr', 'tesseract_path')
         self.init_widget(self.spinbox_scale_factor, 'preprocess', 'scale_factor')
+        self.init_widget(self.checkbox_grayscale, 'preprocess', 'grayscale')
         self.init_widget(self.checkbox_gaussian_blur, 'preprocess', 'gaussian_blur')
         self.init_widget(self.checkbox_median_blur, 'preprocess', 'median_blur')
         self.init_widget(self.checkbox_remove_noise, 'preprocess', 'remove_noise')
         self.init_widget(self.checkbox_adaptive_thresholding, 'preprocess', 'adaptive_thresholding')
+        self.init_widget(self.spinbox_adaptive_threshold, 'preprocess', 'adaptive_threshold')
         self.init_widget(self.checkbox_global_thresholding, 'preprocess', 'global_thresholding')
         self.init_widget(self.spinbox_global_threshold, 'preprocess', 'global_threshold')
         self.init_widget(self.checkbox_dilate, 'preprocess', 'dilate')
@@ -655,13 +654,15 @@ class SettingsUI(QDialog):
                                                  selection-background-color: white;
                                                  selection-color: black
                                                  }""")
+        self.spinboxes[name].clearFocus()
+        self.spinboxes[name].lineEdit().setReadOnly(True)
 
     def eventFilter(self, obj, event):
         # Clear the stylesheet when a mouse button is pressed inside the QLineEdit of any spin box
         for spinbox in self.spinboxes.values():
             if obj == spinbox.lineEdit() and event.type() == QEvent.MouseButtonPress:
-                logger.info("SPINBOX HIGHLIGHTED")
                 spinbox.lineEdit().setStyleSheet("")
+                spinbox.setReadOnly(False)
 
         for object_name, line_edit in self.line_edits.items():
             if obj is line_edit:
@@ -958,6 +959,7 @@ class SettingsUI(QDialog):
                 'median_blur': self.checkbox_median_blur.isChecked(),
                 'remove_noise': self.checkbox_remove_noise.isChecked(),
                 'adaptive_thresholding': self.checkbox_adaptive_thresholding.isChecked(),
+                'adaptive_threshold': self.spinbox_adaptive_threshold.value(),
                 'global_thresholding': self.checkbox_global_thresholding.isChecked(),
                 'global_threshold': self.spinbox_global_threshold.value(),
                 'dilate': self.checkbox_dilate.isChecked(),
