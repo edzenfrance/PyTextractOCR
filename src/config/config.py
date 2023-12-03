@@ -60,6 +60,8 @@ def load_config():
             'global_threshold': 64,
             'dilate': False,
             'erode': False,
+            'dilate_erode_kernel': 1,
+            'dilate_erode_iteration': 1,
             'deskew': False,
         },
         "output": {

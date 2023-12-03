@@ -82,7 +82,7 @@ def get_pytesseract_configuration(config, tesseract_path):
 
 def perform_ocr_image_to_string(image_path, custom_config):
     logger.info(f"Performing pytesseract image to string: {image_path}")
-    return pytesseract.image_to_string(Image.open(image_path), config="--psm 3 --oem 3 -c tessedit_char_blacklist=a")
+    return pytesseract.image_to_string(Image.open(image_path), config=custom_config)
 
 
 def perform_ocr_image_to_data(image_path, custom_config):

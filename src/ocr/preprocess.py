@@ -21,6 +21,8 @@ def preprocess_image(image_path, config):
         global_threshold = config['preprocess']['global_threshold']
         dilate = config['preprocess']['dilate']
         erode = config['preprocess']['erode']
+        dilate_erode_kernel = config['preprocess']['dilate_erode_kernel']
+        dilate_erode_iteration = config['preprocess']['dilate_erode_iteration']
         deskew = config['preprocess']['deskew']
 
         start_preprocess(image_path,
@@ -35,6 +37,8 @@ def preprocess_image(image_path, config):
                          global_threshold,
                          dilate,
                          erode,
+                         dilate_erode_kernel,
+                         dilate_erode_iteration,
                          deskew)
 
     except Exception as e:
@@ -53,6 +57,8 @@ def start_preprocess(image_path,
                      global_threshold=None,
                      dilate=None,
                      erode=None,
+                     dilate_erode_kernel=None,
+                     dilate_erode_iteration=None,
                      deskew=None):
 
     image = cv2.imread(image_path)
@@ -100,13 +106,13 @@ def start_preprocess(image_path,
         # image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)  # Fix this
         _, image = cv2.threshold(image, global_threshold, 255, cv2.THRESH_BINARY)
 
-    kernel = np.ones((1, 1), np.uint8)
+    kernel = np.ones((dilate_erode_kernel, dilate_erode_kernel), np.uint8)
 
     if dilate:
-        image = cv2.dilate(image, kernel, iterations=1)
+        image = cv2.dilate(image, kernel, iterations=dilate_erode_iteration)
 
     if erode:
-        image = cv2.erode(image, kernel, iterations=1)
+        image = cv2.erode(image, kernel, iterations=dilate_erode_iteration)
 
     cv2.imwrite(image_path, image)
 

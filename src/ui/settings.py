@@ -96,6 +96,7 @@ class SettingsUI(QDialog):
 
         self.preferences_tab = QWidget()
         self.preferences_tab.setObjectName('preferences_tab')
+        self.settings_tab_widget.addTab(self.preferences_tab, "Preferences")
 
         # CHECKBOX - Minimize system tray on close
         self.checkbox_minimize_to_sys_tray = QCheckBox("Minimize to system tray on close", self.preferences_tab)
@@ -129,12 +130,11 @@ class SettingsUI(QDialog):
         self.button_sound_file.setAutoDefault(False)
         self.button_sound_file.clicked.connect(self.select_audio_file)
 
-        self.settings_tab_widget.addTab(self.preferences_tab, '')
-
         # ======== OCR TAB ========
 
         self.ocr_tab = QWidget()
         self.ocr_tab.setObjectName('ocr_tab')
+        self.settings_tab_widget.addTab(self.ocr_tab, "OCR")
 
         # LABEL - OCR Languages
         self.label_ocr_language = QLabel("OCR Languages:", self.ocr_tab)
@@ -322,12 +322,11 @@ class SettingsUI(QDialog):
         self.button_tesseract_path.setAutoDefault(False)
         self.button_tesseract_path.clicked.connect(self.select_tesseract_executable_file)
 
-        self.settings_tab_widget.addTab(self.ocr_tab, '')
-
         # ======== PREPROCESS TAB ========
 
         self.preprocess_tab = QWidget()
         self.preprocess_tab.setObjectName('preprocess_tab')
+        self.settings_tab_widget.addTab(self.preprocess_tab, "Preprocess")
 
         # LABEL - Scale Factor
         self.label_scale_factor = QLabel("Scale Factor:", self.preprocess_tab)
@@ -337,22 +336,31 @@ class SettingsUI(QDialog):
         # SPINBOX - Scale Factor
         self.spinbox_scale_factor = QDoubleSpinBox(self.preprocess_tab)
         self.spinbox_scale_factor.setObjectName('spinbox_scale_factor')
-        self.spinbox_scale_factor.setGeometry(QRect(90, 10, 45, 22))
+        self.spinbox_scale_factor.setGeometry(QRect(90, 11, 45, 20))
         self.spinbox_scale_factor.setMinimum(1.0)
         self.spinbox_scale_factor.setMaximum(10.0)
         self.spinbox_scale_factor.setSingleStep(0.1)
         self.spinbox_scale_factor.setDecimals(1)
         self.spinbox_scale_factor.valueChanged.connect(lambda value, name='spinbox_scale_factor':
-                                                       self.disable_spinbox_highlight(value, name))
-        self.spinbox_scale_factor.valueChanged.connect(self.toggle_apply_button)
+                                                       (self.disable_spinbox_highlight(value, name),
+                                                        self.toggle_apply_button()))
         self.spinbox_scale_factor.editingFinished.connect(self.toggle_apply_button)
         self.spinbox_scale_factor.lineEdit().installEventFilter(self)
         self.spinboxes['spinbox_scale_factor'] = self.spinbox_scale_factor  # Add to the dictionary
 
+        # CHECKBOX - Deskew
+        self.checkbox_deskew = QCheckBox("Deskew", self.preprocess_tab)
+        self.checkbox_deskew.setObjectName('checkbox_deskew')
+        self.checkbox_deskew.setGeometry(QRect(160, 10, 180, 20))
+        self.checkbox_deskew.setToolTip("Enable this option to automatically straighten skewed text in the image.\n"
+                                        "Improved alignment enhances OCR accuracy, making text extraction\n"
+                                        "more efficient. Ideal for scanned document or image with tilted text.")
+        self.checkbox_deskew.stateChanged.connect(self.toggle_apply_button)
+
         # CHECKBOX - Grayscale
         self.checkbox_grayscale = QCheckBox("Grayscale", self.preprocess_tab)
         self.checkbox_grayscale.setObjectName('checkbox_grayscale')
-        self.checkbox_grayscale.setGeometry(QRect(16, 40, 201, 20))
+        self.checkbox_grayscale.setGeometry(QRect(250, 10, 201, 20))
         self.checkbox_grayscale.stateChanged.connect(self.toggle_apply_button)
 
         # CHECKBOX - Gaussian Blur
@@ -388,13 +396,12 @@ class SettingsUI(QDialog):
         # SPINBOX - Adaptive Threshold
         self.spinbox_adaptive_threshold = QSpinBox(threshold_group_box)
         self.spinbox_adaptive_threshold.setObjectName('spinbox_adaptive_threshold')
-        self.spinbox_adaptive_threshold.setGeometry(QRect(98, 19, 45, 22))
+        self.spinbox_adaptive_threshold.setGeometry(QRect(98, 21, 45, 20))
         self.spinbox_adaptive_threshold.setMinimum(1)
         self.spinbox_adaptive_threshold.setMaximum(101)
         self.spinbox_adaptive_threshold.setSingleStep(2)
         self.spinbox_adaptive_threshold.valueChanged.connect(lambda value, name='spinbox_adaptive_threshold':
-                                                             self.disable_spinbox_highlight(value, name))
-        self.spinbox_adaptive_threshold.valueChanged.connect(self.toggle_apply_button)
+                                                             (self.disable_spinbox_highlight(value, name), self.toggle_apply_button()))
         self.spinbox_adaptive_threshold.editingFinished.connect(self.toggle_apply_button)
         self.spinbox_adaptive_threshold.lineEdit().installEventFilter(self)
         self.spinboxes['spinbox_adaptive_threshold'] = self.spinbox_adaptive_threshold
@@ -411,7 +418,7 @@ class SettingsUI(QDialog):
         # SPINBOX - Global Threshold
         self.spinbox_global_threshold = QSpinBox(threshold_group_box)
         self.spinbox_global_threshold.setObjectName('spinbox_global_threshold')
-        self.spinbox_global_threshold.setGeometry(QRect(250, 19, 45, 22))
+        self.spinbox_global_threshold.setGeometry(QRect(250, 21, 45, 20))
         self.spinbox_global_threshold.setMinimum(0)
         self.spinbox_global_threshold.setMaximum(255)
         self.spinbox_global_threshold.setToolTip("Threshold minimum = 0, maximum = 255\n"
@@ -419,8 +426,7 @@ class SettingsUI(QDialog):
                                                  "this threshold will be set to white, and those below will be black.\n"
                                                  "Adjust the threshold based on the characteristics of your image.")
         self.spinbox_global_threshold.valueChanged.connect(lambda value, name='spinbox_global_threshold':
-                                                           self.disable_spinbox_highlight(value, name))
-        self.spinbox_global_threshold.valueChanged.connect(self.toggle_apply_button)
+                                                           (self.disable_spinbox_highlight(value, name), self.toggle_apply_button()))
         self.spinbox_global_threshold.editingFinished.connect(self.toggle_apply_button)
         self.spinbox_global_threshold.lineEdit().installEventFilter(self)
         self.spinboxes['spinbox_global_threshold'] = self.spinbox_global_threshold
@@ -445,27 +451,47 @@ class SettingsUI(QDialog):
         self.checkbox_erode.setGeometry(QRect(90, 21, 180, 20))
         self.checkbox_erode.stateChanged.connect(self.toggle_apply_button)
 
-        self.label_struct_man_kernel = QLabel("Kernel:", structure_manipulation_group_box)
-        self.label_struct_man_kernel.setObjectName('label_struct_man_kernel')
-        self.label_struct_man_kernel.setGeometry(QRect(150, 23, 121, 16))
+        # LABEL - Kernel
+        self.label_dilate_erode_kernel = QLabel("K:", structure_manipulation_group_box)
+        self.label_dilate_erode_kernel.setObjectName('label_dilate_erode_kernel')
+        self.label_dilate_erode_kernel.setGeometry(QRect(150, 23, 121, 16))
+
+        # SPINBOX - Kernel
+        self.spinbox_dilate_erode_kernel = QSpinBox(structure_manipulation_group_box)
+        self.spinbox_dilate_erode_kernel.setObjectName('spinbox_dilate_erode_kernel')
+        self.spinbox_dilate_erode_kernel.setGeometry(QRect(165, 21, 40, 20))
+        self.spinbox_dilate_erode_kernel.setMinimum(1)
+        self.spinbox_dilate_erode_kernel.setMaximum(10)
+        self.spinbox_dilate_erode_kernel.valueChanged.connect(lambda value, name='spinbox_dilate_erode_kernel':
+                                                              (self.disable_spinbox_highlight(value, name), self.toggle_apply_button()))
+        self.spinbox_dilate_erode_kernel.editingFinished.connect(self.toggle_apply_button)
+        self.spinbox_dilate_erode_kernel.lineEdit().installEventFilter(self)
+        self.spinboxes['spinbox_dilate_erode_kernel'] = self.spinbox_dilate_erode_kernel
+
+        # LABEL - Iteration
+        self.label_dilate_erode_iteration = QLabel("I:", structure_manipulation_group_box)
+        self.label_dilate_erode_iteration.setObjectName('label_dilate_erode_iteration')
+        self.label_dilate_erode_iteration.setGeometry(QRect(220, 23, 121, 16))
+
+        # SPINBOX - Iteration
+        self.spinbox_dilate_erode_iteration = QSpinBox(structure_manipulation_group_box)
+        self.spinbox_dilate_erode_iteration.setObjectName('spinbox_dilate_erode_iteration')
+        self.spinbox_dilate_erode_iteration.setGeometry(QRect(235, 21, 40, 20))
+        self.spinbox_dilate_erode_iteration.setMinimum(1)
+        self.spinbox_dilate_erode_iteration.setMaximum(10)
+        self.spinbox_dilate_erode_iteration.valueChanged.connect(lambda value, name='spinbox_dilate_erode_iteration':
+                                                                 (self.disable_spinbox_highlight(value, name), self.toggle_apply_button()))
+        self.spinbox_dilate_erode_iteration.editingFinished.connect(self.toggle_apply_button)
+        self.spinbox_dilate_erode_iteration.lineEdit().installEventFilter(self)
+        self.spinboxes['spinbox_dilate_erode_iteration'] = self.spinbox_dilate_erode_iteration
 
         structure_manipulation_layout.addWidget(structure_manipulation_group_box)
-
-        # CHECKBOX - Deskew
-        self.checkbox_deskew = QCheckBox("Deskew", self.preprocess_tab)
-        self.checkbox_deskew.setObjectName('checkbox_deskew')
-        self.checkbox_deskew.setGeometry(QRect(16, 220, 180, 20))
-        self.checkbox_deskew.setToolTip("Enable this option to automatically straighten skewed text in the image.\n"
-                                        "Improved alignment enhances OCR accuracy, making text extraction\n"
-                                        "more efficient. Ideal for scanned document or image with tilted text.")
-        self.checkbox_deskew.stateChanged.connect(self.toggle_apply_button)
-
-        self.settings_tab_widget.addTab(self.preprocess_tab, '')
 
         # ======== OUTPUT TAB ========
 
         self.output_tab = QWidget()
         self.output_tab.setObjectName('output_tab')
+        self.settings_tab_widget.addTab(self.output_tab, "Output")
 
         # CHECKBOX - Copy to clipboard
         self.checkbox_copy_to_clipboard = QCheckBox("Copy to clipboard", self.output_tab)
@@ -517,12 +543,11 @@ class SettingsUI(QDialog):
         self.button_output_folder.setAutoDefault(False)
         self.button_output_folder.clicked.connect(self.select_autosave_output_folder)
 
-        self.settings_tab_widget.addTab(self.output_tab, '')
-
         # ======== TRANSLATE TAB ========
 
         self.translate_tab = QWidget()
         self.translate_tab.setObjectName('translate_tab')
+        self.settings_tab_widget.addTab(self.translate_tab, "Translate")
 
         # CHECKBOX - Append translation to clipboard
         self.checkbox_append_translation = QCheckBox("Append translation to clipboard", self.translate_tab)
@@ -579,21 +604,13 @@ class SettingsUI(QDialog):
         header_horizontal.setSectionResizeMode(0, QHeaderView.ResizeToContents)
         header_horizontal.setSectionResizeMode(1, QHeaderView.Stretch)
 
-        self.translate_table_widget.setObjectName('table_widget')
+        self.translate_table_widget.setObjectName('translate_table_widget')
         self.translate_table_widget.setGeometry(QRect(5, 70, 399, 189))
         self.translate_table_widget.verticalHeader().setVisible(False)
-
-        self.settings_tab_widget.addTab(self.translate_tab, '')
 
         # Connect the focus events to custom slots for all QLineEdit widgets
         for line_edit in self.line_edits.values():
             line_edit.installEventFilter(self)
-
-        self.settings_tab_widget.setTabText(self.settings_tab_widget.indexOf(self.preferences_tab), "Preferences")
-        self.settings_tab_widget.setTabText(self.settings_tab_widget.indexOf(self.ocr_tab), "OCR")
-        self.settings_tab_widget.setTabText(self.settings_tab_widget.indexOf(self.preprocess_tab), "Preprocess")
-        self.settings_tab_widget.setTabText(self.settings_tab_widget.indexOf(self.output_tab), "Output")
-        self.settings_tab_widget.setTabText(self.settings_tab_widget.indexOf(self.translate_tab), "Translate")
 
     def initialize_settings_components(self):
         logger.info("Initializing settings component")
@@ -619,6 +636,8 @@ class SettingsUI(QDialog):
         self.init_widget(self.spinbox_global_threshold, 'preprocess', 'global_threshold')
         self.init_widget(self.checkbox_dilate, 'preprocess', 'dilate')
         self.init_widget(self.checkbox_erode, 'preprocess', 'erode')
+        self.init_widget(self.spinbox_dilate_erode_kernel, 'preprocess', 'dilate_erode_kernel')
+        self.init_widget(self.spinbox_dilate_erode_iteration, 'preprocess', 'dilate_erode_iteration')
         self.init_widget(self.checkbox_deskew, 'preprocess', 'deskew')
         self.init_widget(self.checkbox_copy_to_clipboard, 'output', 'copy_to_clipboard')
         self.init_widget(self.checkbox_show_popup_window, 'output', 'show_popup_window')
@@ -963,6 +982,8 @@ class SettingsUI(QDialog):
                 'global_threshold': self.spinbox_global_threshold.value(),
                 'dilate': self.checkbox_dilate.isChecked(),
                 'erode': self.checkbox_erode.isChecked(),
+                'dilate_erode_kernel': self.spinbox_dilate_erode_kernel.value(),
+                'dilate_erode_iteration': self.spinbox_dilate_erode_iteration.value(),
                 'deskew': self.checkbox_deskew.isChecked()
             },
             "output": {
