@@ -16,8 +16,11 @@ def preprocess_image(image_path, config):
         median_blur = config['preprocess']['median_blur']
         remove_noise = config['preprocess']['remove_noise']
         adaptive_thresholding = config['preprocess']['adaptive_thresholding']
+        adaptive_threshold = config['preprocess']['adaptive_threshold']
         global_thresholding = config['preprocess']['global_thresholding']
         global_threshold = config['preprocess']['global_threshold']
+        dilate = config['preprocess']['dilate']
+        erode = config['preprocess']['erode']
         deskew = config['preprocess']['deskew']
 
         start_preprocess(image_path,
@@ -27,8 +30,11 @@ def preprocess_image(image_path, config):
                          median_blur,
                          remove_noise,
                          adaptive_thresholding,
+                         adaptive_threshold,
                          global_thresholding,
                          global_threshold,
+                         dilate,
+                         erode,
                          deskew)
 
     except Exception as e:
@@ -41,9 +47,12 @@ def start_preprocess(image_path,
                      gaussian_blur=None,
                      median_blur=None,
                      remove_noise=None,
+                     adaptive_thresholding=None,
                      adaptive_threshold=None,
                      global_thresholding=None,
                      global_threshold=None,
+                     dilate=None,
+                     erode=None,
                      deskew=None):
 
     image = cv2.imread(image_path)
@@ -81,20 +90,23 @@ def start_preprocess(image_path,
 
         image = cv2.bitwise_not(empty_image)
 
-    if adaptive_threshold:
+    if adaptive_thresholding:
         logger.info("Applying adaptive threshold")
         # image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)  # Fix this
-        image = cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 31, 2)
+        image = cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, adaptive_threshold, 2)
 
     if global_thresholding:
         logger.info("Applying global threshold")
         # image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)  # Fix this
         _, image = cv2.threshold(image, global_threshold, 255, cv2.THRESH_BINARY)
 
-    # if adaptive_threshold:
-        # kernel = np.ones((1, 1), np.uint8)
-        # image = cv2.dilate(image, kernel, iterations=1)
-        # image = cv2.erode(image, kernel, iterations=1)
+    kernel = np.ones((1, 1), np.uint8)
+
+    if dilate:
+        image = cv2.dilate(image, kernel, iterations=1)
+
+    if erode:
+        image = cv2.erode(image, kernel, iterations=1)
 
     cv2.imwrite(image_path, image)
 

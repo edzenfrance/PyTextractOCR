@@ -49,14 +49,17 @@ def load_config():
             'whitelist_char': ""
         },
         "preprocess": {
-            'scale_factor': 1.5,
+            'scale_factor': 1.0,
             'grayscale': True,
             'gaussian_blur': False,
             'median_blur': False,
             'remove_noise': False,
             'adaptive_thresholding': False,
+            'adaptive_threshold': 31,
             'global_thresholding': False,
             'global_threshold': 64,
+            'dilate': False,
+            'erode': False,
             'deskew': False,
         },
         "output": {
