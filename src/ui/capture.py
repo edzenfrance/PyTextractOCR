@@ -28,9 +28,9 @@ class TransparentOverlayCapture(QMainWindow):
 
         self.config = None
         self.extracted_text = None
-        self.drag_area = None
-        self.drag_start_pos = None
-        self.drag_end_pos = None
+        self.selection_area = None
+        self.start_pos = None
+        self.end_pos = None
 
         self.ocr_text_ui = OCRTextUI()
         self.main_ui_instance = main_ui_instance
@@ -39,34 +39,33 @@ class TransparentOverlayCapture(QMainWindow):
         self.show()  # Show the overlay window
 
     def close_overlay_then_show_main(self):
-        self.drag_area = None
+        self.selection_area = None
         self.close()  # Hide the overlay window
         self.main_ui_instance.show_main_ui()
 
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.fillRect(self.rect(), QColor(0, 0, 0, 0))  # Make the overlay transparent
-        if self.drag_area:
+        if self.selection_area:
             painter.setOpacity(0.0)
             painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
             painter.setBrush(QColor('white'))
-            painter.drawRect(self.drag_area)
+            painter.drawRect(self.selection_area)
 
     def mousePressEvent(self, event):
         if event.buttons() & Qt.LeftButton:
-            self.drag_start_pos = event.globalPosition().toPoint()
-            self.drag_area = QRect(self.drag_start_pos, self.drag_start_pos)
+            self.start_pos = event.globalPosition().toPoint()
+            self.selection_area = QRect(self.start_pos, self.start_pos)
             self.update()
 
     def mouseMoveEvent(self, event):
         if event.buttons() & Qt.LeftButton:
-            self.drag_end_pos = event.globalPosition().toPoint()
-            self.drag_area = QRect(self.drag_start_pos, self.drag_end_pos)
+            self.end_pos = event.globalPosition().toPoint()
+            self.selection_area = QRect(self.start_pos, self.end_pos)
             self.update()
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.LeftButton:
-            self.close()
             self.take_screenshot()
 
     def keyPressEvent(self, event):
@@ -74,21 +73,22 @@ class TransparentOverlayCapture(QMainWindow):
             self.close_overlay_then_show_main()
 
     def take_screenshot(self):
-        if self.drag_area:
-            try:
-                # Get the coordinates of the selected area
-                if self.drag_start_pos is not None and self.drag_end_pos is not None:
-                    x = min(self.drag_start_pos.x(), self.drag_end_pos.x())
-                    y = min(self.drag_start_pos.y(), self.drag_end_pos.y())
-                    width = abs(self.drag_start_pos.x() - self.drag_end_pos.x())
-                    height = abs(self.drag_start_pos.y() - self.drag_end_pos.y())
+        if self.selection_area.width() == 1 or self.selection_area.height() == 1:
+            self.selection_area = None
+            return
+        self.close()
+        try:
+            # Get the coordinates of the selected area
+            x = self.selection_area.left()
+            y = self.selection_area.top()
+            width = self.selection_area.width()
+            height = self.selection_area.height()
 
-                    self.capture_selected_area(x, y, width, height)
-                    self.drag_start_pos = None
-                    self.drag_end_pos = None
+            self.capture_selected_area(x, y, width, height)
+            self.selection_area = None
 
-            except ValueError as e:
-                show_message_box("Critical", "Error", str(e))
+        except ValueError as e:
+            show_message_box("Critical", "Error", str(e))
 
     def capture_selected_area(self, x, y, width, height):
         logger.info(f"Selected area: x: {x}, y: {y}, width: {width}, height: {height}")
