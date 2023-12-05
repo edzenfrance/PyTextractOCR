@@ -73,19 +73,22 @@ class TransparentOverlayCapture(QMainWindow):
             self.close_overlay_then_show_main()
 
     def take_screenshot(self):
-        if self.selection_area.width() == 1 or self.selection_area.height() == 1:
-            self.selection_area = None
+        if not self.end_pos or self.start_pos.x() == self.end_pos.x() or self.start_pos.y() == self.end_pos.y():
+            self.start_pos = None
+            self.end_pos = None
             return
-        self.close()
+
         try:
             # Get the coordinates of the selected area
-            x = self.selection_area.left()
-            y = self.selection_area.top()
-            width = self.selection_area.width()
-            height = self.selection_area.height()
+            x = min(self.start_pos.x(), self.end_pos.x())
+            y = min(self.start_pos.y(), self.end_pos.y())
+            width = abs(self.start_pos.x() - self.end_pos.x())
+            height = abs(self.start_pos.y() - self.end_pos.y())
 
+            self.close()
             self.capture_selected_area(x, y, width, height)
-            self.selection_area = None
+            self.start_pos = None
+            self.end_pos = None
 
         except ValueError as e:
             show_message_box("Critical", "Error", str(e))
