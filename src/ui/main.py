@@ -1,4 +1,5 @@
 # Standard library
+import time
 from pathlib import Path
 
 # Third-party libraries
@@ -10,7 +11,7 @@ from loguru import logger
 # Sources
 from src.config.config import load_config, update_config
 from src.ui.asset_manager import app_icon, main_icon, settings_icon, about_icon, exit_icon
-from src.ui.capture import TransparentOverlayCapture
+from src.ui.capture import GetScreenshot
 from src.ui.settings import SettingsUI
 
 
@@ -88,7 +89,7 @@ class MainUI(QDialog):
 
         self.setLayout(horizontal_layout)
 
-        self.overlay_capture = TransparentOverlayCapture(self)  # Create an instance of TransparentOverlay
+        self.overlay_capture = GetScreenshot(self)  # GetScreenshot Instance
 
     def show_settings_ui_main(self):
         if not self.settings_ui.isVisible():
@@ -105,7 +106,8 @@ class MainUI(QDialog):
         self.saved_position = self.pos()
         logger.info(f"Main window saved position before screenshot: X: {self.saved_position.x()} Y: {self.saved_position.y()}")
         self.hide()
-        self.overlay_capture.show_overlay()  # Show the TransparentOverlay
+        time.sleep(0.3)
+        self.overlay_capture.capture_screenshot()  # Show the TransparentOverlay
 
     # Show the MainUI window at the saved position
     def show_main_ui(self):
@@ -114,7 +116,7 @@ class MainUI(QDialog):
         self.show()
 
         if not self.overlay_capture.isHidden():
-            self.overlay_capture.close_overlay_then_show_main()
+            self.overlay_capture.close_fullscreen_show_main()
 
     # Ignore the closing the MainUI window if OCR Text window is currently open
     def closeEvent(self, event):
