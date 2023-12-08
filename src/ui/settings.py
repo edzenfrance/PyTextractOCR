@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDialog,
                                QSpinBox, QTableWidget, QTableWidgetItem, QTabWidget, QVBoxLayout,
                                QWidget, QGroupBox)
 
-# Source
+# Sources
 from src.config.config import load_config, update_config
 from src.ocr.ocr_processor import tesseract_check, tesseract_version
 from src.ui.asset_manager import app_icon
@@ -170,10 +170,13 @@ class SettingsUI(QDialog):
         # Add checkboxes for different languages with "Download" button
         for language_name in language_set().values():
             self.scroll_row_layout = QHBoxLayout()
+
             self.sc_checkbox = QCheckBox(language_name.title())
+
             self.sc_button = QPushButton("Download")
             self.sc_button.setFixedSize(115, 22)
             self.sc_button.setAutoDefault(False)
+
             self.sc_progressbar = QProgressBar()
             self.sc_progressbar.setFixedSize(115, 22)
             self.sc_progressbar.setVisible(False)
@@ -214,16 +217,14 @@ class SettingsUI(QDialog):
         }
         for index, tooltip in self.psm_tooltip.items():
             self.combobox_psm_value.addItem(str(index))
-        psm_value = self.config['ocr']['page_segmentation_mode']
         try:
-            psm_value = int(psm_value)
+            psm_value = int(self.config['ocr']['page_segmentation_mode'])
             if psm_value < 3 or psm_value == 12 or psm_value > 13:
-                self.combobox_psm_value.setCurrentIndex(3)
+                self.combobox_psm_value.setCurrentIndex(0)
             else:
                 self.combobox_psm_value.setCurrentText(str(psm_value))
         except ValueError as e:
             logger.error(f"Error converting psm value to integer: {e}")
-        self.update_combobox_psm_tooltip(psm_value)
         self.combobox_psm_value.currentIndexChanged.connect(lambda index: (self.update_combobox_psm_tooltip(index), self.toggle_apply_button()))
 
         # LABEL - OCR Engine mode
@@ -242,17 +243,14 @@ class SettingsUI(QDialog):
             2: "Legacy + LSTM engines.",
             3: "Default, based on what is available."
         }
-        oem_value = self.config['ocr']['ocr_engine_mode']
         try:
-            oem_value = int(oem_value)
-            if oem_value > 3:
-                self.combobox_oem_value.setCurrentIndex(3)
-            elif oem_value >= 0:  # -1 means the text was not found
-                self.combobox_oem_value.setCurrentIndex(oem_value)
+            oem_value = int(self.config['ocr']['ocr_engine_mode'])
+            valid_oem_value = max(0, min(oem_value, 3))
+            self.combobox_oem_value.setCurrentIndex(valid_oem_value)
         except ValueError as e:
             logger.error(f"Error converting oem value to integer: {e}")
-        self.update_combobox_oem_tooltip(oem_value)
-        self.combobox_oem_value.currentIndexChanged.connect(lambda index: (self.update_combobox_oem_tooltip(index), self.toggle_apply_button()))
+        self.combobox_oem_value.currentIndexChanged.connect(lambda index: (self.update_combobox_oem_tooltip(index),
+                                                                           self.toggle_apply_button()))
 
         # CHECKBOX - Preserve interword spaces
         self.checkbox_preserve_interword_spaces = QCheckBox("Preserve interword spaces", self.ocr_tab)
@@ -398,10 +396,11 @@ class SettingsUI(QDialog):
         self.spinbox_adaptive_threshold.setObjectName('spinbox_adaptive_threshold')
         self.spinbox_adaptive_threshold.setGeometry(QRect(98, 21, 45, 20))
         self.spinbox_adaptive_threshold.setMinimum(1)
-        self.spinbox_adaptive_threshold.setMaximum(101)
+        self.spinbox_adaptive_threshold.setMaximum(255)
         self.spinbox_adaptive_threshold.setSingleStep(2)
         self.spinbox_adaptive_threshold.valueChanged.connect(lambda value, name='spinbox_adaptive_threshold':
-                                                             (self.disable_spinbox_highlight(value, name), self.toggle_apply_button()))
+                                                             (self.disable_spinbox_highlight(value, name),
+                                                              self.toggle_apply_button()))
         self.spinbox_adaptive_threshold.editingFinished.connect(self.toggle_apply_button)
         self.spinbox_adaptive_threshold.lineEdit().installEventFilter(self)
         self.spinboxes['spinbox_adaptive_threshold'] = self.spinbox_adaptive_threshold
@@ -426,7 +425,8 @@ class SettingsUI(QDialog):
                                                  "this threshold will be set to white, and those below will be black.\n"
                                                  "Adjust the threshold based on the characteristics of your image.")
         self.spinbox_global_threshold.valueChanged.connect(lambda value, name='spinbox_global_threshold':
-                                                           (self.disable_spinbox_highlight(value, name), self.toggle_apply_button()))
+                                                           (self.disable_spinbox_highlight(value, name),
+                                                            self.toggle_apply_button()))
         self.spinbox_global_threshold.editingFinished.connect(self.toggle_apply_button)
         self.spinbox_global_threshold.lineEdit().installEventFilter(self)
         self.spinboxes['spinbox_global_threshold'] = self.spinbox_global_threshold
@@ -463,7 +463,8 @@ class SettingsUI(QDialog):
         self.spinbox_dilate_erode_kernel.setMinimum(1)
         self.spinbox_dilate_erode_kernel.setMaximum(10)
         self.spinbox_dilate_erode_kernel.valueChanged.connect(lambda value, name='spinbox_dilate_erode_kernel':
-                                                              (self.disable_spinbox_highlight(value, name), self.toggle_apply_button()))
+                                                              (self.disable_spinbox_highlight(value, name),
+                                                               self.toggle_apply_button()))
         self.spinbox_dilate_erode_kernel.editingFinished.connect(self.toggle_apply_button)
         self.spinbox_dilate_erode_kernel.lineEdit().installEventFilter(self)
         self.spinboxes['spinbox_dilate_erode_kernel'] = self.spinbox_dilate_erode_kernel
@@ -480,7 +481,8 @@ class SettingsUI(QDialog):
         self.spinbox_dilate_erode_iteration.setMinimum(1)
         self.spinbox_dilate_erode_iteration.setMaximum(10)
         self.spinbox_dilate_erode_iteration.valueChanged.connect(lambda value, name='spinbox_dilate_erode_iteration':
-                                                                 (self.disable_spinbox_highlight(value, name), self.toggle_apply_button()))
+                                                                 (self.disable_spinbox_highlight(value, name),
+                                                                  self.toggle_apply_button()))
         self.spinbox_dilate_erode_iteration.editingFinished.connect(self.toggle_apply_button)
         self.spinbox_dilate_erode_iteration.lineEdit().installEventFilter(self)
         self.spinboxes['spinbox_dilate_erode_iteration'] = self.spinbox_dilate_erode_iteration
@@ -648,6 +650,8 @@ class SettingsUI(QDialog):
         self.init_widget(self.checkbox_show_translation, 'translate', 'enable_translation')
         self.open_file_dialog_path = self.config['preferences']['sound_file']
         self.open_folder_dialog_path = self.config['output']['output_folder_path']
+        self.update_combobox_psm_tooltip()
+        self.update_combobox_oem_tooltip()
         if tesseract_check(self.config['ocr']['tesseract_path']):
             self.label_tesseract_version.setText(f"Tesseract Version: {tesseract_version()}")
         self.initialize_settings_components_finish = True
@@ -696,12 +700,12 @@ class SettingsUI(QDialog):
 
         return super().eventFilter(obj, event)
 
-    def update_combobox_psm_tooltip(self, index):
-        tooltip = self.psm_tooltip.get(int(self.combobox_psm_value.itemText(index)), '')
+    def update_combobox_psm_tooltip(self):
+        tooltip = self.psm_tooltip.get(int(self.combobox_psm_value.currentText()))
         self.combobox_psm_value.setToolTip(tooltip)
 
-    def update_combobox_oem_tooltip(self, index):
-        tooltip = self.oem_tooltip.get(int(self.combobox_oem_value.itemText(index)), '')
+    def update_combobox_oem_tooltip(self):
+        tooltip = self.oem_tooltip.get(int(self.combobox_oem_value.currentText()))
         self.combobox_oem_value.setToolTip(tooltip)
 
     def toggle_ocr_tab_widgets_display(self):

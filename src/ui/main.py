@@ -1,4 +1,4 @@
-# Standard library
+# Standard libraries
 import time
 from pathlib import Path
 
@@ -11,7 +11,7 @@ from loguru import logger
 # Sources
 from src.config.config import load_config, update_config
 from src.ui.asset_manager import app_icon, main_icon, settings_icon, about_icon, exit_icon
-from src.ui.capture import GetScreenshot
+from src.ui.capture import FullscreenCapture
 from src.ui.settings import SettingsUI
 
 
@@ -35,6 +35,9 @@ class MainUI(QDialog):
         # Create an instance of Settings UI
         self.settings_ui = SettingsUI()
         self.settings_ui.finished.connect(self.on_settings_ui_closed)
+
+        # Create an intance of Fullscreen Capture
+        self.fullscreen_capture = FullscreenCapture(self)
 
         # Create an instance of System Tray Icon
         self.tray_icon = QSystemTrayIcon(self)
@@ -78,18 +81,17 @@ class MainUI(QDialog):
         self.capture_button.setToolTip("Capture Rectangular Region")
         self.capture_button.setEnabled(True)
         self.capture_button.setAutoDefault(False)
-        horizontal_layout.addWidget(self.capture_button)
         self.capture_button.clicked.connect(self.start_transparent_overlay)
 
         self.setting_button = QPushButton("Settings", self)
         self.setting_button.setEnabled(True)
         self.setting_button.setAutoDefault(False)
-        horizontal_layout.addWidget(self.setting_button)
         self.setting_button.clicked.connect(self.show_settings_ui_main)
 
-        self.setLayout(horizontal_layout)
+        horizontal_layout.addWidget(self.capture_button)
+        horizontal_layout.addWidget(self.setting_button)
 
-        self.overlay_capture = GetScreenshot(self)  # GetScreenshot Instance
+        self.setLayout(horizontal_layout)
 
     def show_settings_ui_main(self):
         if not self.settings_ui.isVisible():
@@ -107,7 +109,7 @@ class MainUI(QDialog):
         logger.info(f"Main window saved position before screenshot: X: {self.saved_position.x()} Y: {self.saved_position.y()}")
         self.hide()
         time.sleep(0.3)
-        self.overlay_capture.capture_screenshot()  # Show the TransparentOverlay
+        self.fullscreen_capture.get_fullscreen_capture()  # Start capturing in fullscreen
 
     # Show the MainUI window at the saved position
     def show_main_ui(self):
@@ -115,20 +117,21 @@ class MainUI(QDialog):
             self.move(self.saved_position)
         self.show()
 
-        if not self.overlay_capture.isHidden():
-            self.overlay_capture.close_fullscreen_show_main()
+        if not self.fullscreen_capture.isHidden():
+            self.fullscreen_capture.close_fullscreen_show_main()
 
-    # Ignore the closing the MainUI window if OCR Text window is currently open
     def closeEvent(self, event):
+        # Ignore the closing the MainUI window if settings window is currently open
         if self.settings_ui.isVisible():
             self.settings_ui.showNormal()
             self.settings_ui.raise_()
             event.ignore()
             return
 
-        if self.overlay_capture.ocr_text_ui.isVisible():
-            self.overlay_capture.ocr_text_ui.showNormal()
-            self.overlay_capture.ocr_text_ui.raise_()
+        # Ignore the closing the MainUI window if ocr text window is currently open
+        if self.fullscreen_capture.ocr_text_ui.isVisible():
+            self.fullscreen_capture.ocr_text_ui.showNormal()
+            self.fullscreen_capture.ocr_text_ui.raise_()
             event.ignore()
             return
 

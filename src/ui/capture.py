@@ -1,5 +1,4 @@
 # Standard libraries
-import sys
 import tempfile
 from datetime import datetime
 from pathlib import Path
@@ -47,11 +46,13 @@ class ImageLabel(QLabel):
                 self.selection_area = QRect(self.start_pos, self.start_pos)
                 self.label_dimensions.hide()
                 self.start_capture_mode = False
+                self.capture_mode = True
                 self.timer.start(10)
                 self.update()
             else:
-                self.start_capture_mode = True
-            self.capture_mode = not self.capture_mode
+                if not (self.start_pos.x() == self.end_pos.x() and self.start_pos.y() == self.end_pos.y()):
+                    self.start_capture_mode = True
+                    self.capture_mode = False
 
     def paintEvent(self, event):
         super().paintEvent(event)
@@ -64,7 +65,6 @@ class ImageLabel(QLabel):
 
     def check_mouse_movement(self):
         self.end_pos = QCursor.pos()
-
         if self.end_pos != self.previous_pos:
             self.selection_area = QRect(self.start_pos, self.end_pos)
             self.previous_pos = self.end_pos
@@ -84,7 +84,7 @@ class ImageLabel(QLabel):
         self.label_dimensions.show()
 
 
-class GetScreenshot(QMainWindow):
+class FullscreenCapture(QMainWindow):
     def __init__(self, main_ui_instance):
         super().__init__()
 
@@ -145,7 +145,7 @@ class GetScreenshot(QMainWindow):
         self.close()
         self.main_ui_instance.show_main_ui()
 
-    def capture_screenshot(self):
+    def get_fullscreen_capture(self):
         self.image_label.label_dimensions.hide()
 
         screen = QApplication.primaryScreen()
@@ -165,7 +165,7 @@ class GetScreenshot(QMainWindow):
         if event.button() == Qt.LeftButton:
             if self.image_label.start_capture_mode:
                 self.image_label.timer.stop()
-                self.take_screenshot()
+                self.process_selected_area()
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:
@@ -176,7 +176,7 @@ class GetScreenshot(QMainWindow):
             self.image_label.end_pos = None
             self.close_fullscreen_show_main()
 
-    def take_screenshot(self):
+    def process_selected_area(self):
         if (self.image_label.start_pos.x() == self.image_label.end_pos.x() and self.image_label.start_pos.y() == self.image_label.end_pos.y()
                 or not self.image_label.end_pos):
             self.image_label.start_pos = None
@@ -207,26 +207,27 @@ class GetScreenshot(QMainWindow):
         current_datetime = self.get_current_datetime()
         output_folder = self.get_output_folder_path()
 
-        screenshot = ImageGrab.grab(bbox=(x, y, x + width, y + height))  # Get a screenshot of the selected area
+        # Get a capture of the selected area
+        capture_area = ImageGrab.grab(bbox=(x, y, x + width, y + height))
 
         if self.config['output']['save_captured_image']:
-            captured_file_name = current_datetime + ".png"
+            capture_file_name = current_datetime + ".png"
 
             try:
-                screenshot.save(output_folder / captured_file_name)
-                logger.info(f"Screenshot saved: {output_folder}\\{captured_file_name}")
+                capture_area.save(output_folder / capture_file_name)
+                logger.success(f"Captured image saved: {output_folder}\\{capture_file_name}")
 
             except Exception as e:
                 self.close_fullscreen_show_main()
-                logger.error(f"An error occurred while taking a screenshot {e}")
-                raise ValueError(f"Failed to create a screenshot file in '{output_folder}'")
+                logger.error(f"An error occurred while capturing {e}")
+                raise ValueError(f"Failed to create a capture file in '{output_folder}'")
 
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as temp:
-            enhanced_file_name = temp.name
-            screenshot.save(enhanced_file_name)
-            logger.info(f"Screenshot saved as temporary file: {enhanced_file_name}")
+            temporary_file_name = temp.name
+            capture_area.save(temporary_file_name)
+            logger.success(f"Captured image saved as temporary file: {temporary_file_name}")
 
-        self.extracted_text = perform_ocr(enhanced_file_name, current_datetime)
+        self.extracted_text = perform_ocr(temporary_file_name, current_datetime)
 
         self.play_sound_file()
         self.close_fullscreen_show_main()
@@ -234,7 +235,6 @@ class GetScreenshot(QMainWindow):
 
     def get_output_folder_path(self):
         output_folder = Path(self.config['output']['output_folder_path'])
-
         if not output_folder.exists() and not output_folder.is_dir():
             try:
                 output_folder.mkdir(parents=True, exist_ok=True)
@@ -250,20 +250,18 @@ class GetScreenshot(QMainWindow):
     def show_ocr_text_ui(self):
         if self.extracted_text[0]:
             logger.success("OCR completed")
-
             if self.config['output']['show_popup_window']:
                 self.ocr_text_ui.init_ui()
                 self.ocr_text_ui.show() if not self.ocr_text_ui.isVisible() else self.ocr_text_ui.raise_()
                 self.ocr_text_ui.set_extracted_text(self.extracted_text[0])
-                self.ocr_text_ui.set_translated_text(self.extracted_text[1])
+                if self.extracted_text[1]:
+                    self.ocr_text_ui.set_translated_text(self.extracted_text[1])
 
     def play_sound_file(self):
         if not self.extracted_text[0]:
             return
-
         if self.config['preferences']['enable_sound']:
             sound_file = self.config['preferences']['sound_file']
-
             if Path(sound_file).exists():
                 try:
                     playsound(sound_file.replace('\\', '/'), False)
@@ -272,10 +270,10 @@ class GetScreenshot(QMainWindow):
                 except PlaysoundException as e:
                     logger.error(f"An error occurred while playing the sound file '{sound_file}' {e} ")
             else:
-                logger.error(f"{sound_file} doesnt exist")
+                logger.error(f"{sound_file} does not exist")
 
     @staticmethod
     def get_current_datetime():
         now = datetime.now()
         # The hour is in a 24-hour format (military time)
-        return f"{now.year}{now.month:02d}{now.day:02d}_{now.hour:02d}{now.minute:02d}{now.second:02d}"
+        return f"{now.year}_{now.month:02d}_{now.day:02d}_{now.hour:02d}{now.minute:02d}{now.second:02d}"
