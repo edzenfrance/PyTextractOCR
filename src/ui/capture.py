@@ -54,6 +54,13 @@ class ImageLabel(QLabel):
                     self.start_capture_mode = True
                     self.capture_mode = False
 
+        if event.buttons() & Qt.RightButton:
+            self.capture_mode = False
+            self.selection_area = QRect()
+            self.label_dimensions.hide()
+            self.timer.stop()
+            self.update()
+
     def paintEvent(self, event):
         super().paintEvent(event)
         if self.selection_area:
