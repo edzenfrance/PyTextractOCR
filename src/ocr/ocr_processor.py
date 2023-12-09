@@ -28,29 +28,26 @@ def perform_ocr(working_image, datetime):
 
     try:
         preprocess_image(working_image, config)
-        custom_config = get_pytesseract_configuration(config, tesseract_path)
+        custom_config = get_pytesseract_configuration(config)
 
         if config['ocr']['preserve_interword_spaces']:
             extracted_text = perform_ocr_image_to_data(working_image, custom_config)
         else:
             extracted_text = perform_ocr_image_to_string(working_image, custom_config)
 
-        if config['output']['remove_empty_lines']:
-            extracted_text = "\n".join(line for line in extracted_text.split("\n") if line.strip())
-
-        if config['output']['copy_to_clipboard']:
-            if extracted_text:
+        if extracted_text:
+            if config['output']['remove_empty_lines']:
+                extracted_text = "\n".join(line for line in extracted_text.split("\n") if line.strip())
+            if config['output']['copy_to_clipboard']:
                 copy_to_clipboard(extracted_text)
+            if config['translate']['enable_translation']:
+                translated_text = translate_extracted_text(extracted_text)
 
         if config['output']['save_enhanced_image']:
             folder = config['output']['output_folder_path']
             save_temporary_image(working_image, datetime, folder)
         else:
             remove_temporary_image(working_image)
-
-        if config['translate']['enable_translation']:
-            if extracted_text:
-                translated_text = translate_extracted_text(extracted_text)
 
     except Exception as e:
         logger.error(f"An error occurred during OCR process: {e}")
@@ -63,7 +60,7 @@ def perform_ocr(working_image, datetime):
         return extracted_text, translated_text
 
 
-def get_pytesseract_configuration(config, tesseract_path):
+def get_pytesseract_configuration(config):
     key = f"-l {config['ocr']['language']} " if config['ocr']['language'] else ""
     psmv = f"--psm {str(config['ocr']['page_segmentation_mode'])} "
     oemv = f"--oem {str(config['ocr']['ocr_engine_mode'])} "

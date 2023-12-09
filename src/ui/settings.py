@@ -225,7 +225,8 @@ class SettingsUI(QDialog):
                 self.combobox_psm_value.setCurrentText(str(psm_value))
         except ValueError as e:
             logger.error(f"Error converting psm value to integer: {e}")
-        self.combobox_psm_value.currentIndexChanged.connect(lambda index: (self.update_combobox_psm_tooltip(index), self.toggle_apply_button()))
+        self.combobox_psm_value.currentIndexChanged.connect(lambda: (self.update_combobox_psm_tooltip(),
+                                                                     self.toggle_apply_button()))
 
         # LABEL - OCR Engine mode
         self.label_oem_value = QLabel("OCR Engine mode:", self.ocr_tab)
@@ -249,8 +250,8 @@ class SettingsUI(QDialog):
             self.combobox_oem_value.setCurrentIndex(valid_oem_value)
         except ValueError as e:
             logger.error(f"Error converting oem value to integer: {e}")
-        self.combobox_oem_value.currentIndexChanged.connect(lambda index: (self.update_combobox_oem_tooltip(index),
-                                                                           self.toggle_apply_button()))
+        self.combobox_oem_value.currentIndexChanged.connect(lambda: (self.update_combobox_oem_tooltip(),
+                                                                     self.toggle_apply_button()))
 
         # CHECKBOX - Preserve interword spaces
         self.checkbox_preserve_interword_spaces = QCheckBox("Preserve interword spaces", self.ocr_tab)
@@ -641,6 +642,7 @@ class SettingsUI(QDialog):
         self.init_widget(self.spinbox_dilate_erode_kernel, 'preprocess', 'dilate_erode_kernel')
         self.init_widget(self.spinbox_dilate_erode_iteration, 'preprocess', 'dilate_erode_iteration')
         self.init_widget(self.checkbox_deskew, 'preprocess', 'deskew')
+
         self.init_widget(self.checkbox_copy_to_clipboard, 'output', 'copy_to_clipboard')
         self.init_widget(self.checkbox_show_popup_window, 'output', 'show_popup_window')
         self.init_widget(self.checkbox_remove_empty_lines, 'output', 'remove_empty_lines')
