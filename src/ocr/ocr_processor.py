@@ -48,13 +48,13 @@ def perform_ocr(working_image, datetime):
             save_temporary_image(working_image, datetime, folder)
         else:
             remove_temporary_image(working_image)
-
     except Exception as e:
         logger.error(f"An error occurred during OCR process: {e}")
 
     finally:
         if extracted_text:
             logger.info(f"OCR Text:\n[{extracted_text}]\nTranslated Text:\n{translated_text}")
+            logger.success("OCR Completed")
         else:
             logger.info("OCR Text is empty")
         return extracted_text, translated_text
@@ -66,15 +66,15 @@ def get_pytesseract_configuration(config):
     oemv = f"--oem {str(config['ocr']['ocr_engine_mode'])} "
     pisv = "-c preserve_interword_spaces=1 " if config['ocr']['preserve_interword_spaces'] else ""
 
+    te_char = ""
     if config['ocr']['enable_blacklist_char']:
         te_char = fr"-c tessedit_char_blacklist={config['ocr']['blacklist_char']}"
     elif config['ocr']['enable_whitelist_char']:
         te_char = fr"-c tessedit_char_whitelist={config['ocr']['whitelist_char']}"
-    else:
-        te_char = ""
 
-    logger.info(f"Pytesseract custom configuration: {key}{psmv}{oemv}{pisv}{te_char}")
-    return f"{key}{psmv}{oemv}{pisv}{te_char}"
+    custom_config = f"{key}{psmv}{oemv}{pisv}{te_char}"
+    logger.info(f"Pytesseract custom configuration: {custom_config}")
+    return custom_config
 
 
 def perform_ocr_image_to_string(image_path, custom_config):
@@ -85,10 +85,8 @@ def perform_ocr_image_to_string(image_path, custom_config):
 def perform_ocr_image_to_data(image_path, custom_config):
     logger.info(f"Performing pytesseract image to data '{image_path}'")
     img = cv2.imread(image_path)
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    gauss = cv2.GaussianBlur(gray, (3, 3), 0)
 
-    d = pytesseract.image_to_data(gauss, config=custom_config, output_type=Output.DICT)
+    d = pytesseract.image_to_data(img, config=custom_config, output_type=Output.DICT)
     df = pd.DataFrame(d)
 
     # Clean up blanks
@@ -129,7 +127,6 @@ def copy_to_clipboard(text):
     try:
         pyperclip.copy(text)
         logger.success("Text successfully copied to clipboard using pyperclip")
-
     except Exception as e:
         logger.error(f"An error occurred while copying text to clipboard: {e}")
 
@@ -139,10 +136,8 @@ def translate_extracted_text(extracted_text):
     try:
         google_trans_text = translate_text(extracted_text)
         logger.success("Text successfully translated using google translate")
-
     except Exception as e:
         logger.error(f"An error occurred while translating text: {e}")
-
     return google_trans_text
 
 
@@ -151,7 +146,6 @@ def save_temporary_image(image_path, datetime, output_folder_path):
     try:
         shutil.move(image_path, new_image_path)
         logger.info(f"The file '{image_path}' has been moved to '{new_image_path}'")
-
     except Exception as e:
         logger.error(f"Failed to move the file '{image_path}' to '{new_image_path}: {e}")
 
@@ -160,19 +154,18 @@ def remove_temporary_image(image_path):
     try:
         os.remove(image_path)
         logger.success(f"Temporary image successfully removed: {image_path}")
-
     except Exception as e:
         logger.error(f"An error occurred while removing temporary image '{image_path}': {e}")
 
 
 def tesseract_check(tesseract_path):
-    if Path(tesseract_path).exists():
-        logger.info(f"Tesseract Path: {tesseract_path}")
-        pytesseract.pytesseract.tesseract_cmd = str(tesseract_path)
-        return tesseract_path
-    else:
+    if not Path(tesseract_path).exists():
         logger.error(f"Tesseract installation path not found: {tesseract_path}")
         return None
+
+    logger.info(f"Tesseract Path: {tesseract_path}")
+    pytesseract.pytesseract.tesseract_cmd = str(tesseract_path)
+    return tesseract_path
 
 
 def tesseract_version():

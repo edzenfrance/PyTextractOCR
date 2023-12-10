@@ -41,25 +41,37 @@ class ImageLabel(QLabel):
 
     def mousePressEvent(self, event):
         if event.buttons() & Qt.LeftButton:
-            if not self.capture_mode:
-                self.start_pos = QCursor.pos()
-                self.selection_area = QRect(self.start_pos, self.start_pos)
-                self.label_dimensions.hide()
-                self.start_capture_mode = False
-                self.capture_mode = True
-                self.timer.start(10)
-                self.update()
-            else:
-                if not (self.start_pos.x() == self.end_pos.x() and self.start_pos.y() == self.end_pos.y()):
-                    self.start_capture_mode = True
-                    self.capture_mode = False
+            self.handle_left_button_event()
 
         if event.buttons() & Qt.RightButton:
+            self.handle_right_button_event()
+
+    def handle_left_button_event(self):
+        if not self.capture_mode:
+            self.initiate_capture_mode()
+        else:
+            self.update_capture_mode()
+
+    def handle_right_button_event(self):
+        self.capture_mode = False
+        self.selection_area = QRect()
+        self.label_dimensions.hide()
+        self.timer.stop()
+        self.update()
+
+    def initiate_capture_mode(self):
+        self.start_pos = QCursor.pos()
+        self.selection_area = QRect(self.start_pos, self.start_pos)
+        self.label_dimensions.hide()
+        self.start_capture_mode = False
+        self.capture_mode = True
+        self.timer.start(10)
+        self.update()
+
+    def update_capture_mode(self):
+        if not (self.start_pos.x() == self.end_pos.x() and self.start_pos.y() == self.end_pos.y()):
+            self.start_capture_mode = True
             self.capture_mode = False
-            self.selection_area = QRect()
-            self.label_dimensions.hide()
-            self.timer.stop()
-            self.update()
 
     def paintEvent(self, event):
         super().paintEvent(event)
@@ -153,17 +165,15 @@ class FullscreenCapture(QMainWindow):
         self.main_ui_instance.show_main_ui()
 
     def get_fullscreen_capture(self):
-        self.image_label.label_dimensions.hide()
-
         screen = QApplication.primaryScreen()
         screenshot = screen.grabWindow(0)
-
         pixmap = QPixmap(screenshot)
 
         # Display pixmap without margins or borders
         self.image_label.setPixmap(pixmap)
         self.image_label.setFixedSize(pixmap.size())
 
+        self.image_label.label_dimensions.hide()
         self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
         self.showFullScreen()
         self.setCursor(self.crosshair_cursor)
@@ -197,7 +207,6 @@ class FullscreenCapture(QMainWindow):
             self.image_label.selection_area = None
             self.image_label.start_pos = None
             self.image_label.end_pos = None
-
         except ValueError as e:
             show_message_box("Critical", "Error", str(e))
 
@@ -218,12 +227,10 @@ class FullscreenCapture(QMainWindow):
         capture_area = ImageGrab.grab(bbox=(x, y, x + width, y + height))
 
         if self.config['output']['save_captured_image']:
-            capture_file_name = current_datetime + ".png"
-
             try:
+                capture_file_name = current_datetime + ".png"
                 capture_area.save(output_folder / capture_file_name)
                 logger.success(f"Captured image saved: {output_folder}\\{capture_file_name}")
-
             except Exception as e:
                 self.close_fullscreen_show_main()
                 logger.error(f"An error occurred while capturing {e}")
@@ -246,38 +253,38 @@ class FullscreenCapture(QMainWindow):
             try:
                 output_folder.mkdir(parents=True, exist_ok=True)
                 logger.success(f"Output folder created successfully '{output_folder}'")
-
             except Exception as e:
                 self.close_fullscreen_show_main()
                 logger.error(f"Failed to create output folder: {e}")
                 raise ValueError("Failed to create output folder.")
-
         return output_folder
 
     def show_ocr_text_ui(self):
-        if self.extracted_text[0]:
-            logger.success("OCR completed")
-            if self.config['output']['show_popup_window']:
-                self.ocr_text_ui.init_ui()
-                self.ocr_text_ui.show() if not self.ocr_text_ui.isVisible() else self.ocr_text_ui.raise_()
-                self.ocr_text_ui.set_extracted_text(self.extracted_text[0])
-                if self.extracted_text[1]:
-                    self.ocr_text_ui.set_translated_text(self.extracted_text[1])
+        if not self.extracted_text[0] or not self.config['output']['show_popup_window']:
+            return
+
+        self.ocr_text_ui.init_ui()
+        self.ocr_text_ui.show() if not self.ocr_text_ui.isVisible() else self.ocr_text_ui.raise_()
+        self.ocr_text_ui.set_extracted_text(self.extracted_text[0])
+
+        if self.extracted_text[1]:
+            self.ocr_text_ui.set_translated_text(self.extracted_text[1])
 
     def play_sound_file(self):
-        if not self.extracted_text[0]:
+        if not self.extracted_text[0] or not self.config['preferences']['enable_sound']:
             return
-        if self.config['preferences']['enable_sound']:
-            sound_file = self.config['preferences']['sound_file']
-            if Path(sound_file).exists():
-                try:
-                    playsound(sound_file.replace('\\', '/'), False)
-                    logger.success(f"Sound file has been played successfully using playsound")
 
-                except PlaysoundException as e:
-                    logger.error(f"An error occurred while playing the sound file '{sound_file}' {e} ")
-            else:
-                logger.error(f"{sound_file} does not exist")
+        sound_file = self.config['preferences']['sound_file']
+
+        if not Path(sound_file).exists():
+            logger.error(f"{sound_file} does not exist")
+            return
+
+        try:
+            playsound(sound_file.replace('\\', '/'), False)
+            logger.success(f"Sound file has been played successfully using playsound")
+        except PlaysoundException as e:
+            logger.error(f"An error occurred while playing the sound file '{sound_file}' {e} ")
 
     @staticmethod
     def get_current_datetime():

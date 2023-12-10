@@ -26,7 +26,5 @@ def show_message_box(msg_type, title, text):
     msgbox.setWindowFlags(msgbox.windowFlags() | Qt.WindowStaysOnTopHint)
     return_value = msgbox.exec()
 
-    if return_value == QMessageBox.Yes:
-        return 'Yes'
-    else:
-        return 'No'
+    return 'Yes' if return_value == QMessageBox.Yes else 'No'
+

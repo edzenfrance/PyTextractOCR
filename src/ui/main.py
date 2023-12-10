@@ -32,14 +32,14 @@ class MainUI(QDialog):
         self.config = None
         self.saved_position = None
 
-        # Create an instance of Settings UI
+        # Settings UI instance
         self.settings_ui = SettingsUI()
         self.settings_ui.finished.connect(self.on_settings_ui_closed)
 
-        # Create an intance of Fullscreen Capture
+        # Fullscreen Capture instance
         self.fullscreen_capture = FullscreenCapture(self)
 
-        # Create an instance of System Tray Icon
+        # System Tray Icon instance
         self.tray_icon = QSystemTrayIcon(self)
         self.tray_icon.activated.connect(self.tray_icon_activated)
 
@@ -77,39 +77,36 @@ class MainUI(QDialog):
 
         horizontal_layout = QHBoxLayout()
 
-        self.capture_button = QPushButton("Capture", self)
-        self.capture_button.setToolTip("Capture Rectangular Region")
-        self.capture_button.setEnabled(True)
-        self.capture_button.setAutoDefault(False)
-        self.capture_button.clicked.connect(self.start_transparent_overlay)
+        capture_button = QPushButton("Capture", self)
+        capture_button.setToolTip("Capture Rectangular Region")
+        capture_button.setEnabled(True)
+        capture_button.setAutoDefault(False)
+        capture_button.clicked.connect(self.start_fullscreen_capture)
 
-        self.setting_button = QPushButton("Settings", self)
-        self.setting_button.setEnabled(True)
-        self.setting_button.setAutoDefault(False)
-        self.setting_button.clicked.connect(self.show_settings_ui_main)
+        setting_button = QPushButton("Settings", self)
+        setting_button.setEnabled(True)
+        setting_button.setAutoDefault(False)
+        setting_button.clicked.connect(self.show_settings_ui_main)
 
-        horizontal_layout.addWidget(self.capture_button)
-        horizontal_layout.addWidget(self.setting_button)
+        horizontal_layout.addWidget(capture_button)
+        horizontal_layout.addWidget(setting_button)
 
         self.setLayout(horizontal_layout)
 
     def show_settings_ui_main(self):
         if not self.settings_ui.isVisible():
             self.settings_ui.initialize_settings_components()
-            self.settings_ui.check_language_file()
             self.settings_ui.show()
         else:
             self.settings_ui.showNormal()
             self.settings_ui.raise_()
 
-    # Automatically save the current position of window before screenshot
-    # Use for show_main_ui function
-    def start_transparent_overlay(self):
-        self.saved_position = self.pos()
-        logger.info(f"Main window saved position before screenshot: X: {self.saved_position.x()} Y: {self.saved_position.y()}")
+    def start_fullscreen_capture(self):
+        self.saved_position = self.pos()  # Save the current position of window before capturing. Use for show_main_ui function
+        logger.info(f"Main window saved position before capture: X: {self.saved_position.x()} Y: {self.saved_position.y()}")
         self.hide()
-        time.sleep(0.3)
-        self.fullscreen_capture.get_fullscreen_capture()  # Start capturing in fullscreen
+        time.sleep(0.3)  # Add a sleep to wait for the Main UI to be fully hidden before capturing
+        self.fullscreen_capture.get_fullscreen_capture()  # Start capturing of fullscreen
 
     # Show the MainUI window at the saved position
     def show_main_ui(self):
@@ -119,6 +116,10 @@ class MainUI(QDialog):
 
         if not self.fullscreen_capture.isHidden():
             self.fullscreen_capture.close_fullscreen_show_main()
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Escape:
+            event.ignore()
 
     def closeEvent(self, event):
         # Ignore the closing the MainUI window if settings window is currently open
@@ -181,7 +182,8 @@ class MainUI(QDialog):
 
     def show_settings_from_tray(self):
         if not self.settings_ui.isVisible():
-            # self.main_menu_action.setEnabled(False)
+            logger.info("Show settings using system tray")
+            self.settings_action.setEnabled(False)
             self.settings_ui.initialize_settings_components()
             self.settings_ui.show()
 
@@ -194,5 +196,6 @@ class MainUI(QDialog):
         QCoreApplication.quit()
 
     def on_settings_ui_closed(self):
-        logger.info("Settings window closed")
+        self.settings_action.setEnabled(True)
+        logger.info("Emit - Settings window closed")
         # self.main_menu_action.setEnabled(True)

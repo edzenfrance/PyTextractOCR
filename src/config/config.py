@@ -51,8 +51,13 @@ def load_config():
         "preprocess": {
             'scale_factor': 1.0,
             'grayscale': True,
-            'gaussian_blur': False,
-            'median_blur': False,
+            'image_smoothing': 0,
+            'blur_kernel': 1,
+            'gaussian_blur_kernel': 0,
+            'median_blur_kernel': 0,
+            'bilateral_filtering_diameter': 1,
+            'bilateral_filtering_sigmacolor': 75,
+            'bilateral_filtering_sigmaspace': 75,
             'remove_noise': False,
             'adaptive_thresholding': False,
             'adaptive_threshold': 31,
@@ -60,8 +65,8 @@ def load_config():
             'global_threshold': 64,
             'dilate': False,
             'erode': False,
-            'dilate_erode_kernel': 1,
-            'dilate_erode_iteration': 1,
+            'structure_manipulation_kernel': 1,
+            'structure_manipulation_iteration': 1,
             'deskew': False,
         },
         "output": {
@@ -210,7 +215,6 @@ def load_config():
             config = toml.load('config.toml')
         else:
             config = default_config
-
     except TomlDecodeError:
         logger.error("An error occurred while loading the configuration file. Using default settings")
         config = default_config
@@ -248,6 +252,5 @@ def update_config(new_config):
             toml.dump(existing_config, f)
 
         logger.success("Configuration file successfully updated")
-
     except TomlDecodeError:
         logger.error("An error occurred while updating the configuration file 'config.toml'")

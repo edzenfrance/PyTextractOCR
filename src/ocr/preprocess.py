@@ -12,8 +12,8 @@ def preprocess_image(image_path, config):
     try:
         scale_factor = config['preprocess']['scale_factor']
         grayscale = config['preprocess']['grayscale']
-        gaussian_blur = config['preprocess']['gaussian_blur']
-        median_blur = config['preprocess']['median_blur']
+        gaussian_blur = config['preprocess']['gaussian_blur_kernel']
+        median_blur = config['preprocess']['median_blur_kernel']
         remove_noise = config['preprocess']['remove_noise']
         adaptive_thresholding = config['preprocess']['adaptive_thresholding']
         adaptive_threshold = config['preprocess']['adaptive_threshold']
@@ -21,8 +21,8 @@ def preprocess_image(image_path, config):
         global_threshold = config['preprocess']['global_threshold']
         dilate = config['preprocess']['dilate']
         erode = config['preprocess']['erode']
-        dilate_erode_kernel = config['preprocess']['dilate_erode_kernel']
-        dilate_erode_iteration = config['preprocess']['dilate_erode_iteration']
+        dilate_erode_kernel = config['preprocess']['structure_manipulation_kernel']
+        dilate_erode_iteration = config['preprocess']['structure_manipulation_iteration']
         deskew = config['preprocess']['deskew']
 
         start_preprocess(image_path,
@@ -40,7 +40,6 @@ def preprocess_image(image_path, config):
                          dilate_erode_kernel,
                          dilate_erode_iteration,
                          deskew)
-
     except Exception as e:
         logger.error(f"An error occurred while preprocessing the image [{e}]")
 
@@ -48,7 +47,7 @@ def preprocess_image(image_path, config):
 def start_preprocess(image_path,
                      scale_factor=None,
                      grayscale=None,
-                     gaussian_blur=None,
+                     gaussian_blur_kernel=None,
                      median_blur=None,
                      remove_noise=None,
                      adaptive_thresholding=None,
@@ -71,9 +70,9 @@ def start_preprocess(image_path,
         logger.info("Applying grayscale")
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-    if gaussian_blur:
+    if gaussian_blur_kernel:
         logger.info("Applying gaussian blur")
-        image = cv2.GaussianBlur(image, (5, 5), 0)
+        image = cv2.GaussianBlur(image, (gaussian_blur_kernel, gaussian_blur_kernel), 0)
 
     if median_blur:
         logger.info('Applying median blur')

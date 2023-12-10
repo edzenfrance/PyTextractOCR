@@ -24,15 +24,14 @@ class OCRTextUI(QDialog):
         self.layout.setContentsMargins(5, 5, 5, 5)
 
         self.config = load_config()
-        self.save_position = None
         self.initial_font = None
         self.pos_x = None
         self.pos_y = None
-        self.text_edit = None
+        self.text_edit_extracted = None
         self.text_edit_translated = None
-        self.windows_on_top = None
-        self.font_label = None
-        self.close_button = None
+        self.checkbox_always_on_top = None
+        self.label_font = None
+        self.button_close = None
         self.button_layout = None
 
         self.load_popup_window_position()
@@ -45,12 +44,11 @@ class OCRTextUI(QDialog):
                 if child.widget():
                     child.widget().deleteLater()
 
-        # Create a QPlainTextEdit
-        self.text_edit = QPlainTextEdit(self)
+        self.text_edit_extracted = QPlainTextEdit(self)
         self.load_font_config()
-        self.text_edit.setFont(self.initial_font)
-        self.text_edit.setPlainText("")
-        self.layout.addWidget(self.text_edit)
+        self.text_edit_extracted.setFont(self.initial_font)
+        self.text_edit_extracted.setPlainText("")
+        self.layout.addWidget(self.text_edit_extracted)
 
         # Add new QPlainTextEdit if translation is enabled
         self.config = load_config()
@@ -63,52 +61,52 @@ class OCRTextUI(QDialog):
 
         self.button_layout = QHBoxLayout()
 
-        if self.windows_on_top:
-            self.button_layout.removeWidget(self.windows_on_top)
-            self.windows_on_top.deleteLater()
-            self.windows_on_top = None
+        if self.checkbox_always_on_top:
+            self.button_layout.removeWidget(self.checkbox_always_on_top)
+            self.checkbox_always_on_top.deleteLater()
+            self.checkbox_always_on_top = None
 
-        if self.font_label:
-            self.button_layout.removeWidget(self.font_label)
-            self.font_label.deleteLater()
-            self.font_label = None
+        if self.label_font:
+            self.button_layout.removeWidget(self.label_font)
+            self.label_font.deleteLater()
+            self.label_font = None
 
-        if self.close_button:
-            self.button_layout.removeWidget(self.close_button)
-            self.close_button.deleteLater()
-            self.close_button = None
+        if self.button_close:
+            self.button_layout.removeWidget(self.button_close)
+            self.button_close.deleteLater()
+            self.button_close = None
 
-        self.windows_on_top = QCheckBox("Always on top", self)
-        self.windows_on_top.setGeometry(QRect(16, 110, 190, 20))
+        self.checkbox_always_on_top = QCheckBox("Always on top", self)
+        self.checkbox_always_on_top.setGeometry(QRect(16, 110, 190, 20))
         if self.config['ocr_window']['always_on_top']:
-            self.windows_on_top.setChecked(True)
+            self.checkbox_always_on_top.setChecked(True)
             self.setWindowFlag(Qt.WindowStaysOnTopHint)
-        self.windows_on_top.stateChanged.connect(self.set_always_on_top)
-        self.button_layout.addWidget(self.windows_on_top)
+        self.checkbox_always_on_top.stateChanged.connect(self.set_always_on_top)
+        self.button_layout.addWidget(self.checkbox_always_on_top)
 
         spacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
         self.button_layout.addItem(spacer)
 
-        # Create a ClickableLabel for changing the font
-        self.font_label = ClickableLabel("Font", self)
-        self.font_label.setStyleSheet("color: blue; text-decoration: underline;")
-        self.font_label.setToolTip("<html><head/><body><p style='color: rgb(87, 87, 87);"
+        # ClickableLabel for changing the font
+        self.label_font = ClickableLabel("Font", self)
+        self.label_font.setStyleSheet("color: blue; text-decoration: underline;")
+        self.label_font.setToolTip("<html><head/><body><p style='color: rgb(87, 87, 87);"
                                    "text-decoration: none;'>Customize text font</p></body></html>")
-        self.font_label.clicked.connect(self.change_font)
-        self.button_layout.addWidget(self.font_label)
+        self.label_font.clicked.connect(self.change_font)
+        self.button_layout.addWidget(self.label_font)
 
-        self.close_button = QPushButton("OK", self)
-        self.close_button.setFixedSize(75, 23)
-        self.close_button.setAutoDefault(False)
-        self.close_button.setToolTip("Close window and save window position")
-        self.button_layout.addWidget(self.close_button)
-        self.close_button.clicked.connect(self.ok_button)
+        self.button_close = QPushButton("OK", self)
+        self.button_close.setFixedSize(75, 23)
+        self.button_close.setAutoDefault(False)
+        self.button_close.setToolTip("Close window and save window position")
+        self.button_layout.addWidget(self.button_close)
+        self.button_close.clicked.connect(self.ok_button)
 
         self.layout.addLayout(self.button_layout)
         self.setLayout(self.layout)
 
     def set_extracted_text(self, text):
-        self.text_edit.setPlainText(text)
+        self.text_edit_extracted.setPlainText(text)
 
     def set_translated_text(self, text):
         self.text_edit_translated.setPlainText(text)
@@ -153,11 +151,8 @@ class OCRTextUI(QDialog):
                     f" Underline: {initial_font_underline}")
 
     def set_always_on_top(self):
-        if self.windows_on_top.isChecked():
-            self.setWindowFlag(Qt.WindowStaysOnTopHint)
-        else:
-            self.setWindowFlag(Qt.WindowStaysOnTopHint, False)
-        on_top_config = {"ocr_window": {'always_on_top': self.windows_on_top.isChecked()}}
+        self.setWindowFlag(Qt.WindowStaysOnTopHint, self.checkbox_always_on_top.isChecked())
+        on_top_config = {"ocr_window": {'always_on_top': self.checkbox_always_on_top.isChecked()}}
         update_config(on_top_config)
         self.show()
 
@@ -166,30 +161,36 @@ class OCRTextUI(QDialog):
         font_dialog = QFontDialog(self.initial_font)
         font_dialog.setWindowIcon(QIcon(app_icon))
 
-        if font_dialog.exec() == QDialog.Accepted:
-            selected_font = font_dialog.selectedFont()
-            font_name = selected_font.family()
-            font_size = selected_font.pointSize()
-            font_weight = selected_font.weight()
-            font_strikeout = selected_font.strikeOut()
-            font_underline = selected_font.underline()
-            font_style_bold = "Bold" if selected_font.bold() else "Regular"
-            font_style_italic = "Italic" if selected_font.italic() else ""
-            self.text_edit.setFont(selected_font)
-            font_config = {
-                "ocr_window": {
-                    'font_name': font_name,
-                    'font_size': font_size,
-                    'font_weight': int(font_weight),
-                    'font_style': f"{font_style_bold} {font_style_italic}".strip(),
-                    'font_strikeout': font_strikeout,
-                    'font_underline': font_underline
-                }
+        if font_dialog.exec() != QDialog.Accepted:
+            return
+
+        selected_font = font_dialog.selectedFont()
+        self.text_edit_extracted.setFont(selected_font)
+        self.text_edit_translated.setFont(selected_font)
+
+        font_name = selected_font.family()
+        font_size = selected_font.pointSize()
+        font_weight = selected_font.weight()
+        font_strikeout = selected_font.strikeOut()
+        font_underline = selected_font.underline()
+        font_style_bold = "Bold" if selected_font.bold() else "Regular"
+        font_style_italic = "Italic" if selected_font.italic() else ""
+        font_style_strip = f"{font_style_bold} {font_style_italic}".strip()
+
+        font_config = {
+            "ocr_window": {
+                'font_name': font_name,
+                'font_size': font_size,
+                'font_weight': int(font_weight),
+                'font_style': font_style_strip,
+                'font_strikeout': font_strikeout,
+                'font_underline': font_underline
             }
-            update_config(font_config)
-            font_style_strip = f"{font_style_bold} {font_style_italic}".strip()
-            logger.info(f"Font: {font_name}, Font Style: {font_style_strip}, Size: {font_size},"
-                        f" Weight: {font_weight}, Strikeout: {font_strikeout}, Underline: {font_underline}")
+        }
+        update_config(font_config)
+
+        logger.info(f"Font: {font_name}, Font Style: {font_style_strip}, Size: {font_size},"
+                    f" Weight: {font_weight}, Strikeout: {font_strikeout}, Underline: {font_underline}")
 
     def ok_button(self):
         self.save_popup_window_position()
