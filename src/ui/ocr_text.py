@@ -20,61 +20,59 @@ class OCRTextUI(QDialog):
         self.setGeometry(0, 0, 500, 300)  # Initial dialog size
         self.setMinimumSize(300, 200)
 
-        self.layout = QVBoxLayout(self)
-        self.layout.setContentsMargins(5, 5, 5, 5)
-
-        self.config = load_config()
+        self.config = None
         self.initial_font = None
         self.pos_x = None
         self.pos_y = None
         self.text_edit_extracted = None
         self.text_edit_translated = None
         self.checkbox_always_on_top = None
-        self.label_font = None
-        self.button_close = None
-        self.button_layout = None
+        self.clickable_label_font = None
+        self.button_ok = None
+        self.horizontal_bottom_layout = None
+
+        self.vertical_layout = QVBoxLayout(self)
+        self.vertical_layout.setContentsMargins(5, 5, 5, 5)
 
         self.load_popup_window_position()
 
     def init_ui(self):
         # Clear existing layout
-        if hasattr(self, 'layout'):
-            while self.layout.count():
-                child = self.layout.takeAt(0)
+        if hasattr(self, 'vertical_layout'):
+            while self.vertical_layout.count():
+                child = self.vertical_layout.takeAt(0)
                 if child.widget():
                     child.widget().deleteLater()
 
-        self.text_edit_extracted = QPlainTextEdit(self)
+        self.config = load_config()
         self.load_font_config()
+
+        self.text_edit_extracted = QPlainTextEdit(self)
         self.text_edit_extracted.setFont(self.initial_font)
         self.text_edit_extracted.setPlainText("")
-        self.layout.addWidget(self.text_edit_extracted)
+        self.vertical_layout.addWidget(self.text_edit_extracted)
 
         # Add new QPlainTextEdit if translation is enabled
-        self.config = load_config()
         if self.config['translate']['enable_translation']:
             self.text_edit_translated = QPlainTextEdit(self)
-            self.load_font_config()
             self.text_edit_translated.setFont(self.initial_font)
             self.text_edit_translated.setPlainText("")
-            self.layout.addWidget(self.text_edit_translated)
+            self.vertical_layout.addWidget(self.text_edit_translated)
+        else:
+            self.text_edit_translated = None
 
-        self.button_layout = QHBoxLayout()
+        self.horizontal_bottom_layout = QHBoxLayout()
 
-        if self.checkbox_always_on_top:
-            self.button_layout.removeWidget(self.checkbox_always_on_top)
-            self.checkbox_always_on_top.deleteLater()
-            self.checkbox_always_on_top = None
-
-        if self.label_font:
-            self.button_layout.removeWidget(self.label_font)
-            self.label_font.deleteLater()
-            self.label_font = None
-
-        if self.button_close:
-            self.button_layout.removeWidget(self.button_close)
-            self.button_close.deleteLater()
-            self.button_close = None
+        widgets = {
+            'checkbox_always_on_top': self.checkbox_always_on_top,
+            'clickable_label_font': self.clickable_label_font,
+            'button_ok': self.button_ok
+        }
+        for widget_name, widget in widgets.items():
+            if widget:
+                self.horizontal_bottom_layout.removeWidget(widget)
+                widget.deleteLater()
+                setattr(self, widget_name, None)
 
         self.checkbox_always_on_top = QCheckBox("Always on top", self)
         self.checkbox_always_on_top.setGeometry(QRect(16, 110, 190, 20))
@@ -82,28 +80,28 @@ class OCRTextUI(QDialog):
             self.checkbox_always_on_top.setChecked(True)
             self.setWindowFlag(Qt.WindowStaysOnTopHint)
         self.checkbox_always_on_top.stateChanged.connect(self.set_always_on_top)
-        self.button_layout.addWidget(self.checkbox_always_on_top)
+        self.horizontal_bottom_layout.addWidget(self.checkbox_always_on_top)
 
         spacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
-        self.button_layout.addItem(spacer)
+        self.horizontal_bottom_layout.addItem(spacer)
 
         # ClickableLabel for changing the font
-        self.label_font = ClickableLabel("Font", self)
-        self.label_font.setStyleSheet("color: blue; text-decoration: underline;")
-        self.label_font.setToolTip("<html><head/><body><p style='color: rgb(87, 87, 87);"
-                                   "text-decoration: none;'>Customize text font</p></body></html>")
-        self.label_font.clicked.connect(self.change_font)
-        self.button_layout.addWidget(self.label_font)
+        self.clickable_label_font = ClickableLabel("Font", self)
+        self.clickable_label_font.setStyleSheet("color: blue; text-decoration: underline;")
+        self.clickable_label_font.setToolTip("<html><head/><body><p style='color: rgb(87, 87, 87);"
+                                             "text-decoration: none;'>Customize text font</p></body></html>")
+        self.clickable_label_font.clicked.connect(self.change_font)
+        self.horizontal_bottom_layout.addWidget(self.clickable_label_font)
 
-        self.button_close = QPushButton("OK", self)
-        self.button_close.setFixedSize(75, 23)
-        self.button_close.setAutoDefault(False)
-        self.button_close.setToolTip("Close window and save window position")
-        self.button_layout.addWidget(self.button_close)
-        self.button_close.clicked.connect(self.ok_button)
+        self.button_ok = QPushButton("OK", self)
+        self.button_ok.setFixedSize(75, 23)
+        self.button_ok.setAutoDefault(False)
+        self.button_ok.setToolTip("Close window and save window position")
+        self.horizontal_bottom_layout.addWidget(self.button_ok)
+        self.button_ok.clicked.connect(self.ok_button_clicked)
 
-        self.layout.addLayout(self.button_layout)
-        self.setLayout(self.layout)
+        self.vertical_layout.addLayout(self.horizontal_bottom_layout)
+        self.setLayout(self.vertical_layout)
 
     def set_extracted_text(self, text):
         self.text_edit_extracted.setPlainText(text)
@@ -166,7 +164,8 @@ class OCRTextUI(QDialog):
 
         selected_font = font_dialog.selectedFont()
         self.text_edit_extracted.setFont(selected_font)
-        self.text_edit_translated.setFont(selected_font)
+        if self.text_edit_translated is not None:
+            self.text_edit_translated.setFont(selected_font)
 
         font_name = selected_font.family()
         font_size = selected_font.pointSize()
@@ -192,7 +191,7 @@ class OCRTextUI(QDialog):
         logger.info(f"Font: {font_name}, Font Style: {font_style_strip}, Size: {font_size},"
                     f" Weight: {font_weight}, Strikeout: {font_strikeout}, Underline: {font_underline}")
 
-    def ok_button(self):
+    def ok_button_clicked(self):
         self.save_popup_window_position()
         self.close()
 

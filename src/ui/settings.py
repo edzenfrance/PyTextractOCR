@@ -42,6 +42,8 @@ class SettingsUI(QDialog):
         self.open_folder_dialog_path = None
         self.open_executable_dialog_path = None
         self.widget_language_name = None
+        self.download_thread = None
+        self.check_internet_thread = None
 
         # Dictionary to store QLineEdit and QSpinBox widgets and their event handling logic
         self.line_edits = {}
@@ -84,7 +86,7 @@ class SettingsUI(QDialog):
         self.button_cancel_settings = QPushButton("Cancel", self.horizontal_layout_widget)
         self.button_cancel_settings.setObjectName('button_cancel_settings')
         self.button_cancel_settings.setAutoDefault(False)
-        self.button_cancel_settings.clicked.connect(self.cancel_button)
+        self.button_cancel_settings.clicked.connect(self.cancel_button_clicked)
         self.horizontal_buttons_layout.addWidget(self.button_cancel_settings)
 
         # ======== TAB WIDGET ========
@@ -298,7 +300,7 @@ class SettingsUI(QDialog):
         self.spinbox_gaussian_kernel = self.create_spinbox(self.preprocess_tab, 'spinbox_gaussian_kernel', (117, 43, 40, 20), 1, 15, 2)
         self.spinbox_median_kernel = self.create_spinbox(self.preprocess_tab, 'spinbox_median_kernel', (117, 43, 40, 20), 1, 15, 2)
 
-        self.label_bilateral_diameter = self.create_label("D:", self.preprocess_tab, 'label_bilateral_diamater', (100, 45, 10, 16))
+        self.label_bilateral_diameter = self.create_label("D:", self.preprocess_tab, 'label_bilateral_diameter', (100, 45, 10, 16))
         self.label_bilateral_sigmacolor = self.create_label("SC:", self.preprocess_tab, 'label_bilateral_sigmacolor', (170, 45, 20, 16))
         self.label_bilateral_sigmaspace = self.create_label("SS:", self.preprocess_tab, 'label_bilateral_sigmaspace', (246, 45, 20, 16))
 
@@ -439,13 +441,15 @@ class SettingsUI(QDialog):
         self.translate_table_widget.verticalHeader().setVisible(False)
         self.settings_tab_widget.currentChanged.connect(self.handle_tab_change)
 
-    def create_label(self, text, parent, object_name, geometry):
+    @staticmethod
+    def create_label(text, parent, object_name, geometry):
         label = QLabel(text, parent)
         label.setObjectName(object_name)
         label.setGeometry(QRect(*geometry))
         return label
 
-    def create_button(self, text, parent, object_name, geometry, auto_default, clicked_slot):
+    @staticmethod
+    def create_button(text, parent, object_name, geometry, auto_default, clicked_slot):
         button = QPushButton(text, parent)
         button.setObjectName(object_name)
         button.setGeometry(QRect(*geometry))
@@ -754,6 +758,9 @@ class SettingsUI(QDialog):
         except ValueError as e:
             show_message_box("Critical", "Error", str(e))
 
+    def cancel_button_clicked(self):
+        self.close()
+
     def check_sound_file(self):
         if self.checkbox_play_sound.isChecked():
             if not self.line_edit_sound_file.text():
@@ -932,14 +939,12 @@ class SettingsUI(QDialog):
     def fix_double_spinbox_zeros(value):
         return float(format(value, '.7f').rstrip('0').rstrip('.'))
 
-    def cancel_button(self):
-        self.close()
-
     def closeEvent(self, event):
         self.stop_updating_apply_button()
         self.finished.emit(0)  # For on_settings_ui_closed in MainUI, for disabling 'Settings' menu in system tray
         self.close()
         logger.info("Settings window closed")
+
 
 # For Table Widget
 class MyHeader(QHeaderView):
