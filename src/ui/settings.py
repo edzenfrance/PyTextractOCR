@@ -35,7 +35,7 @@ class SettingsUI(QDialog):
         self.setWindowFlags(Qt.WindowCloseButtonHint | Qt.WindowTitleHint)
 
         self.initialize_settings_components_finish = False
-        self.button_apply_was_enabled = False
+        self.apply_button_was_enabled = False
         self.ocr_tab_hide_widgets = False
         self.output_folder_created = True
         self.open_file_dialog_path = None
@@ -52,9 +52,9 @@ class SettingsUI(QDialog):
         self.config = load_config()
 
         # Initialize timer for fading effect
-        self.fade_timer = QTimer()
-        self.fade_timer.setInterval(50)  # Adjust the interval for a smoother transition
-        self.fade_timer.timeout.connect(self.update_apply_button_state)
+        self.apply_button_state_timer = QTimer()
+        self.apply_button_state_timer.setInterval(50)  # Adjust the interval for a smoother transition
+        self.apply_button_state_timer.timeout.connect(self.update_apply_button_state)
 
         self.horizontal_layout_widget = QWidget(self)
         self.horizontal_layout_widget.setObjectName('horizontal_layout_widget')
@@ -631,12 +631,12 @@ class SettingsUI(QDialog):
 
     def ocr_button_clicked_toggle_widgets_display(self):
         ocr_tab_widgets = self.ocr_tab.findChildren(QWidget)
+        ocr_tab_language_widgets = [self.label_ocr_language, self.button_ocr_language]
         scroll_area_widgets = self.scroll_area.findChildren(QWidget)
-        language_widgets = [self.label_ocr_language, self.button_ocr_language]
 
         self.check_language_file()
 
-        excluded_widgets = set(language_widgets + scroll_area_widgets)
+        excluded_widgets = set(ocr_tab_language_widgets + scroll_area_widgets)
         for widget in ocr_tab_widgets:
             if widget not in excluded_widgets:
                 widget.hide() if not self.ocr_tab_hide_widgets else widget.show()
@@ -700,13 +700,13 @@ class SettingsUI(QDialog):
     def toggle_apply_button(self):
         if not self.initialize_settings_components_finish:
             return
-        if not self.button_apply_was_enabled:
-            self.fade_timer.start()
+        if not self.apply_button_was_enabled:
+            self.apply_button_state_timer.start()
             self.button_apply_settings.setEnabled(True)
-            logger.info(f"Fade timer start: Apply button state: {self.button_apply_was_enabled}")
+            logger.info(f"Apply button color timer start - state: {self.apply_button_was_enabled}")
 
     def update_apply_button_state(self):
-        self.button_apply_was_enabled = True
+        self.apply_button_was_enabled = True
         # Gradually change the Apply button text color to make it visible
         current_color = self.button_apply_settings.palette().color(QPalette.ButtonText)
         target_color = QColor(0, 0, 0)  # Black text color
@@ -722,19 +722,19 @@ class SettingsUI(QDialog):
             self.button_apply_settings.setPalette(palette)
         else:
             # Stop the timer when the desired color is reached
-            logger.info(f"Fade timer stop: Apply button state: {self.button_apply_was_enabled}")
-            self.fade_timer.stop()
+            logger.info(f"Apply button color timer stop - state: {self.apply_button_was_enabled}")
+            self.apply_button_state_timer.stop()
 
     def stop_updating_apply_button(self):
-        logger.info(f"Apply button state: {self.button_apply_was_enabled}")
-        if self.button_apply_was_enabled:
-            self.fade_timer.stop()  # Forcefully stop the update_apply_button_state
+        logger.info(f"Apply button state: {self.apply_button_was_enabled}")
+        if self.apply_button_was_enabled:
+            self.apply_button_state_timer.stop()  # Forcefully stop the update_apply_button_state
             palette = QPalette()
             palette.setColor(QPalette.ButtonText, QColor(128, 128, 128))  # Gray color
             self.button_apply_settings.setPalette(palette)
             self.button_apply_settings.setEnabled(False)
-            self.button_apply_was_enabled = False
-            logger.info(f"Apply button state: {self.button_apply_was_enabled}")
+            self.apply_button_was_enabled = False
+            logger.info(f"Apply button state: {self.apply_button_was_enabled}")
 
     def apply_button_clicked(self):
         try:
@@ -749,7 +749,7 @@ class SettingsUI(QDialog):
 
     def ok_button_clicked(self):
         try:
-            self.finished.emit(0)  # For on_settings_ui_closed in MainUI, for disabling 'Settings' menu in system tray
+            self.finished.emit(0)  # For on_settings_ui_closed method in MainUI, for disabling 'Settings' menu in system tray
             self.check_sound_file()
             self.check_and_create_output_folder()
             if self.output_folder_created:
@@ -941,7 +941,7 @@ class SettingsUI(QDialog):
 
     def closeEvent(self, event):
         self.stop_updating_apply_button()
-        self.finished.emit(0)  # For on_settings_ui_closed in MainUI, for disabling 'Settings' menu in system tray
+        self.finished.emit(0)  # For on_settings_ui_closed method in MainUI, for disabling 'Settings' menu in system tray
         self.close()
         logger.info("Settings window closed")
 

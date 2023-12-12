@@ -104,8 +104,10 @@ class MainUI(QDialog):
     def start_fullscreen_capture(self):
         self.saved_position = self.pos()  # Save the current position of window before capturing. Use for show_main_ui function
         logger.info(f"Main window saved position before capture: X: {self.saved_position.x()} Y: {self.saved_position.y()}")
-        self.hide()
-        time.sleep(0.3)  # Add a sleep to wait for the Main UI to be fully hidden before capturing
+        self.hide()  # Hide the MainUI window
+        if self.fullscreen_capture.ocr_text_ui.isVisible():  # Hide OCR Text window from FullscreenCapture class
+            self.fullscreen_capture.ocr_text_ui.hide()
+        time.sleep(0.3)  # Add a sleep to wait for the MainUI window to be fully hidden before capturing
         self.fullscreen_capture.get_fullscreen_capture()  # Start capturing of fullscreen
 
     # Show the MainUI window at the saved position
@@ -122,14 +124,14 @@ class MainUI(QDialog):
             event.ignore()
 
     def closeEvent(self, event):
-        # Ignore the closing the MainUI window if settings window is currently open
+        # Ignore the closing the MainUI window if Settings window is currently open
         if self.settings_ui.isVisible():
             self.settings_ui.showNormal()
             self.settings_ui.raise_()
             event.ignore()
             return
 
-        # Ignore the closing the MainUI window if ocr text window is currently open
+        # Ignore the closing the MainUI window if OCR Text window is currently open
         if self.fullscreen_capture.ocr_text_ui.isVisible():
             self.fullscreen_capture.ocr_text_ui.showNormal()
             self.fullscreen_capture.ocr_text_ui.raise_()

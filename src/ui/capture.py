@@ -117,7 +117,11 @@ class FullscreenCapture(QMainWindow):
         self.start_pos = None
         self.end_pos = None
 
+        # OCR Text instance
         self.ocr_text_ui = OCRTextUI()
+
+        # Dependency Injection for MainUI show_main_ui method
+        # This line injects an instance of MainUI class into the FullscreenCapture class
         self.main_ui_instance = main_ui_instance
 
         self.init_image_label()

@@ -34,8 +34,6 @@ class OCRTextUI(QDialog):
         self.vertical_layout = QVBoxLayout(self)
         self.vertical_layout.setContentsMargins(5, 5, 5, 5)
 
-        self.load_popup_window_position()
-
     def init_ui(self):
         # Clear existing layout
         if hasattr(self, 'vertical_layout'):
@@ -45,6 +43,7 @@ class OCRTextUI(QDialog):
                     child.widget().deleteLater()
 
         self.config = load_config()
+        self.load_popup_window_position()
         self.load_font_config()
 
         self.text_edit_extracted = QPlainTextEdit(self)
@@ -118,17 +117,15 @@ class OCRTextUI(QDialog):
                 'position_y': window_position_y
             }
         }
-        logger.info(f"Saved position: X: {window_position_x} Y: {window_position_y}")
+        logger.info(f"OCR Text window saved position: X: {window_position_x} Y: {window_position_y}")
         update_config(self_pos_xy)
 
     def load_popup_window_position(self):
-        self.config = load_config()
         self.pos_x = self.config['ocr_window']['position_x']
         self.pos_y = self.config['ocr_window']['position_y']
         self.move(self.pos_x, self.pos_y)
 
     def load_font_config(self):
-        self.config = load_config()
         initial_font_name = self.config['ocr_window']['font_name']
         initial_font_size = self.config['ocr_window']['font_size']
         initial_font_weight = self.config['ocr_window']['font_weight']
@@ -155,7 +152,9 @@ class OCRTextUI(QDialog):
         self.show()
 
     def change_font(self):
+        self.config = load_config()
         self.load_font_config()
+
         font_dialog = QFontDialog(self.initial_font)
         font_dialog.setWindowIcon(QIcon(app_icon))
 
