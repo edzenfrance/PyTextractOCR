@@ -1,15 +1,10 @@
 # Standard libraries
 import re
-import shutil
-import socket
-import time
 from pathlib import Path
-from urllib import request, error
 
 # Third-party libraries
-import requests
 from loguru import logger
-from PySide6.QtCore import Qt, QRect, QTimer, QEvent, QThread, Signal
+from PySide6.QtCore import Qt, QRect, QTimer, QEvent
 from PySide6.QtGui import QColor, QPalette, QIcon, QPainter
 from PySide6.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDialog,
                                QDoubleSpinBox, QFileDialog, QHeaderView, QHBoxLayout,
@@ -23,6 +18,7 @@ from src.ocr.ocr_processor import tesseract_check, tesseract_version
 from src.ui.asset_manager import app_icon
 from src.utils.message_box import show_message_box
 from src.utils.translate import language_list, language_set
+from src.ui.download import DownloadTrainedData
 
 
 class SettingsUI(QDialog):
@@ -44,6 +40,10 @@ class SettingsUI(QDialog):
         self.widget_language_name = None
         self.download_thread = None
         self.check_internet_thread = None
+        self.is_downloading_language_file = False
+
+        # Download Trained Data instance
+        self.download_trained_data = DownloadTrainedData(self)
 
         # Dictionary to store QLineEdit and QSpinBox widgets and their event handling logic
         self.line_edits = {}
@@ -809,65 +809,42 @@ class SettingsUI(QDialog):
 
     def download_from_github(self):
         sender_button = self.sender()
-        label = None
 
         for name, button in self.sc_button_dict.items():
             if button is sender_button:
-                label = name
-                break
+                for language_code, language_name in language_set().items():
+                    if name == language_name:
+                        tessdata_folder = Path("./tessdata/")
+                        file_name = f'{language_code}.traineddata'
+                        download_destination = f'{tessdata_folder}/{file_name}.tmp'
+                        tessdata_folder.mkdir(parents=True, exist_ok=True)
 
-        for language_code, language_name in language_set().items():
-            if label == language_name:
-                tessdata_folder = Path("./tessdata/")
-                file_name = f'{language_code}.traineddata'
-                download_url = f'https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/main/{file_name}'
-                download_destination = f'{tessdata_folder}/{file_name}.tmp'
-                tessdata_folder.mkdir(parents=True, exist_ok=True)
+                        if not self.is_downloading_language_file:
+                            self.download_trained_data.start_download(language_name, download_destination, file_name)
+                            self.is_downloading_language_file = True
+                        break
 
-                self.widget_language_name = language_name
-                self.sc_progressbar_dict[f'{self.widget_language_name}'].setVisible(True)
-                self.sc_button_dict[f'{self.widget_language_name}'].setVisible(False)
-                self.button_ocr_language.setEnabled(False)
-
-                self.download_thread = DownloadThread(download_url, str(download_destination), file_name)
-                self.download_thread.progress_signal.connect(self.update_progress_bar)
-                self.download_thread.error_signal.connect(self.handle_download_error)
-                self.download_thread.start()
-
-                # Start a separate thread to periodically check for internet connectivity during the download
-                self.check_internet_thread = QThread(self)
-                self.check_internet_thread.run = self.check_internet_connection
-                self.check_internet_thread.start()
+    # self.widget_language_name is get from download_from_github function
+    def toggle_download_button_progress_bar(self, language_name, is_visible):
+        self.widget_language_name = language_name
+        logger.info(f"Language: {self.widget_language_name} - Download button: {not is_visible} - Progress bar: {is_visible}")
+        self.sc_button_dict[f'{self.widget_language_name}'].setVisible(not is_visible)
+        self.sc_progressbar_dict[f'{self.widget_language_name}'].setVisible(is_visible)
+        self.button_ocr_language.setEnabled(not is_visible)
+        self.is_downloading_language_file = False
 
     def update_progress_bar(self, value):
         self.sc_progressbar_dict[f'{self.widget_language_name}'].setValue(value)
-
         if value == 100:
             self.button_ocr_language.setEnabled(True)
             self.sc_progressbar_dict[f'{self.widget_language_name}'].setVisible(False)
             self.sc_checkbox_dict[f'{self.widget_language_name}'].setEnabled(True)
             self.scroll_area.update()
-            logger.info("Download 100%!")
+            logger.info("Download completed 100%!")
 
-    def handle_download_error(self, error_message):
-        self.reset_download_button()
-        logger.error(f"Download failed: {error_message}")
-
-    def check_internet_connection(self):
-        while not self.download_thread._stop_event:
-            time.sleep(1)
-
-            if not self.download_thread.is_internet_available():
-                # If internet connection is lost during download, stop the download thread
-                self.download_thread.stop_download()
-                self.reset_download_button()
-                logger.error("Internet connection lost. Download aborted.")
-                break
-
-    def reset_download_button(self):
-        self.button_ocr_language.setEnabled(True)
-        self.sc_button_dict[f'{self.widget_language_name}'].setVisible(True)
-        self.sc_progressbar_dict[f'{self.widget_language_name}'].setVisible(False)
+    # def handle_download_error(self, error_message):
+    #     self.reset_download_button()
+    #     logger.error(f"Download failed: {error_message}")
 
     def save_settings_config(self):
         settings_config = {
@@ -954,59 +931,3 @@ class MyHeader(QHeaderView):
     def paintSection(self, painter: QPainter, rect: QRect, index: int) -> None:
         painter.setFont(self.font())
         super().paintSection(painter, rect, index)
-
-
-class DownloadThread(QThread):
-    progress_signal = Signal(int)
-    error_signal = Signal(str)
-
-    def __init__(self, url, destination, filename):
-        super().__init__()
-        self.url = url
-        self.destination = destination
-        self.filename = filename
-        self._stop_event = False
-
-    def run(self):
-        try:
-            with requests.get(self.url, stream=True) as response:
-                response.raise_for_status()  # Status code 200 = successful
-                total_size = int(response.headers.get('content-length', 0))
-                downloaded_size = 0
-
-                with open(self.destination, 'wb') as file:
-                    for data in response.iter_content(chunk_size=1024):
-                        if self._stop_event:
-                            break
-                        file.write(data)
-                        downloaded_size += len(data)
-                        progress_percentage = int(downloaded_size / total_size * 100)
-                        self.progress_signal.emit(progress_percentage)
-
-            logger.success(f"Download successful")
-            self.rename_downloaded_file()
-        except requests.exceptions.RequestException as e:
-            self.error_signal.emit(str(e))
-
-    def is_internet_available(self):
-        try:
-            logger.info("Checking internet connection")
-            request.urlopen("http://www.google.com", timeout=5)
-            return True
-        except (error.URLError, socket.timeout):
-            return False
-
-    def rename_downloaded_file(self):
-        tessdata_folder = Path('./tessdata')
-        current_file_path = tessdata_folder / f'{self.filename}.tmp'
-        new_file_path = tessdata_folder / self.filename
-        try:
-            shutil.move(current_file_path, new_file_path)
-            logger.info(f"The file '{current_file_path}' has been renamed to '{new_file_path}'.")
-        except Exception as e:
-            logger.error(f"Failed to rename the file {current_file_path}: {e}")
-
-        self.stop_download()
-
-    def stop_download(self):
-        self._stop_event = True  # Flag to stop the download thread
