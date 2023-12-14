@@ -118,6 +118,7 @@ class MainUI(QDialog):
             self.fullscreen_capture.ocr_text_ui.hide()
 
         if self.settings_ui.isVisible():
+            self.settings_ui.save_settings_window_position()
             self.settings_ui_visible = True
             self.settings_ui.hide()
 
@@ -127,6 +128,7 @@ class MainUI(QDialog):
             self.fullscreen_capture.ocr_text_ui.show()
 
         if self.settings_ui_visible:
+            self.settings_ui.load_settings_window_position()
             self.settings_ui_visible = False
             self.settings_ui.show()
 

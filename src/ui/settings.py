@@ -804,6 +804,19 @@ class SettingsUI(QDialog):
             logger.error(f"Failed to create output folder: {e}")
             raise ValueError("Failed to create output folder.")
 
+    def save_settings_window_position(self):
+        window_position_x = self.pos().x()
+        window_position_y = self.pos().y()
+        self_pos_xy = {"miscellaneous": {'settings_window_position_x': window_position_x, 'settings_window_position_y': window_position_y}}
+        logger.info(f"Settings window saved position: X: {window_position_x} Y: {window_position_y}")
+        update_config(self_pos_xy)
+
+    def load_settings_window_position(self):
+        self.config = load_config()
+        pos_x = self.config['miscellaneous']['settings_window_position_x']
+        pos_y = self.config['miscellaneous']['settings_window_position_y']
+        self.move(pos_x, pos_y)
+
     def download_from_github(self):
         sender_button = self.sender()
 

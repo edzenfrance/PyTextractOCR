@@ -111,12 +111,7 @@ class OCRTextUI(QDialog):
     def save_popup_window_position(self):
         window_position_x = self.pos().x()
         window_position_y = self.pos().y()
-        self_pos_xy = {
-            "ocr_window": {
-                'position_x': window_position_x,
-                'position_y': window_position_y
-            }
-        }
+        self_pos_xy = {"ocr_window": {'position_x': window_position_x, 'position_y': window_position_y}}
         logger.info(f"OCR Text window saved position: X: {window_position_x} Y: {window_position_y}")
         update_config(self_pos_xy)
 
