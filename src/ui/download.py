@@ -1,13 +1,11 @@
 # Standard libraries
 import shutil
-import socket
 from pathlib import Path
-from urllib import request, error
 
 # Third-party libraries
 import requests
 from loguru import logger
-from PySide6.QtCore import QThread, Signal, QObject, QTimer
+from PySide6.QtCore import QThread, Signal
 
 
 class DownloadTrainedData:
@@ -15,55 +13,42 @@ class DownloadTrainedData:
         super().__init__()
 
         self.download_thread = None
-        self.check_internet_thread = None
         self.language_name = None
+        self.thread_is_running = False
 
         # Dependency Injection for settings method, injects an instance of SettingsUI class into this class
         self.settings_instance = settings_instance
 
         self.github_tessdata_best_link = "https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/main/"
 
-    def start_download(self, language_name, download_destination, file_name):
-
-        # Check if the internet checking thread is running
-        if self.check_internet_thread is not None and self.check_internet_thread.isRunning():
-            logger.warning("Internet checking thread is already running")
-            return
-
+    def check_download_thread(self):
         # Check if the download thread is running
+        self.thread_is_running = False
         if self.download_thread is not None and self.download_thread.isRunning():
             logger.warning("Download thread is already running")
+            self.thread_is_running = True
             return
 
-        self.language_name = language_name
-        download_url = f'{self.github_tessdata_best_link}{file_name}'
+    def start_download_thread(self, download_destination, file_name):
+        self.check_download_thread()
 
-        self.settings_instance.toggle_download_button_progress_bar(self.language_name, True)
+        download_url = f'{self.github_tessdata_best_link}{file_name}'
+        self.settings_instance.toggle_download_button_progress_bar(True)
 
         self.download_thread = DownloadThread(download_url, str(download_destination), file_name)
         self.download_thread.progress_signal.connect(self.settings_instance.update_progress_bar)
-        self.download_thread.error_signal.connect(self.handle_display_and_cleanup)
-        self.download_thread.finished.connect(self.handle_display_and_cleanup)
+        self.download_thread.error_signal.connect(self.update_settings_element)
+        self.download_thread.finished.connect(self.cleanup_download_thread)
         self.download_thread.start()
 
-        self.check_internet_worker = InternetCheckWorker(self.download_thread)
-        self.check_internet_thread = QThread()
-        self.check_internet_worker.moveToThread(self.check_internet_thread)
-        self.check_internet_thread.started.connect(self.check_internet_worker.start_checking)
-        self.check_internet_worker.no_internet_signal.connect(self.handle_display_and_cleanup)
-        self.check_internet_thread.start()
+    def update_settings_element(self):
+        logger.error("Updating settings element")
+        self.settings_instance.toggle_download_button_progress_bar(False)
+        self.cleanup_download_thread()
 
-    def handle_display_and_cleanup(self):
-        self.settings_instance.toggle_download_button_progress_bar(self.language_name, False)
-        self.cleanup_check_internet_thread()
-
-    def cleanup_check_internet_thread(self):
-        if self.check_internet_thread is not None:
-            logger.info("Cleanup internet check worker thread")
-            self.check_internet_thread.quit()
-            self.check_internet_thread.wait()
-            self.check_internet_thread = None
-
+    def cleanup_download_thread(self):
+        if self.download_thread is not None:
+            logger.info("Cleanup download thread")
             self.download_thread.terminate()
             self.download_thread.wait()
             self.download_thread = None
@@ -84,7 +69,7 @@ class DownloadThread(QThread):
     def run(self):
         try:
             logger.info(f"Downloading file using requests: {self.url}")
-            with requests.get(self.url, stream=True) as response:
+            with requests.get(self.url, stream=True, timeout=10) as response:
                 response.raise_for_status()  # Status code 200 = successful
                 total_size = int(response.headers.get('content-length', 0))
                 downloaded_size = 0
@@ -107,15 +92,6 @@ class DownloadThread(QThread):
             self.stop_download()
             self.error_signal.emit()
 
-    def is_internet_available(self):
-        try:
-            logger.info("Checking internet connection")
-            request.urlopen("http://www.google.com", timeout=5)
-            return True
-        except (error.URLError, socket.timeout) as e:
-            logger.error(f"Internet connection error: {e}")
-            return False
-
     def rename_downloaded_file(self):
         tessdata_folder = Path('./tessdata')
         current_file_path = tessdata_folder / f'{self.filename}.tmp'
@@ -129,31 +105,3 @@ class DownloadThread(QThread):
 
     def stop_download(self):
         self._stop_event = True  # Flag to stop the download thread
-        if self.isRunning():
-            logger.info(f"Cleanup download thread")
-            self.quit()  # Quit download thread
-            self.wait()
-
-
-class InternetCheckWorker(QObject):
-    no_internet_signal = Signal()
-
-    def __init__(self, download_thread):
-        super().__init__()
-
-        self.download_thread = download_thread
-
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.check_internet_connection)
-
-    def start_checking(self):
-        self.timer.start(1000)
-
-    def stop_checking(self):
-        self.timer.stop()
-
-    def check_internet_connection(self):
-        if not self.download_thread._stop_event:
-            if not self.download_thread.is_internet_available():
-                self.no_internet_signal.emit()
-                self.stop_checking()

@@ -205,6 +205,8 @@ def load_config():
         "miscellaneous": {
             'main_window_position_x': 0,
             'main_window_position_y': 0,
+            'settings_window_position_x': 0,
+            'settings_window_position_y': 0,
             'tray_notification_shown': False
         }
     }

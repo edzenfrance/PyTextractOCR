@@ -31,6 +31,8 @@ class MainUI(QDialog):
         self.pos_x = None
         self.config = None
         self.saved_position = None
+        self.ocr_text_ui_visible = False
+        self.settings_ui_visible = False
 
         # Settings UI instance
         self.settings_ui = SettingsUI()
@@ -105,16 +107,35 @@ class MainUI(QDialog):
         self.saved_position = self.pos()  # Save the current position of window before capturing. Use for show_main_ui function
         logger.info(f"Main window saved position before capture: X: {self.saved_position.x()} Y: {self.saved_position.y()}")
         self.hide()  # Hide the MainUI window
-        if self.fullscreen_capture.ocr_text_ui.isVisible():  # Hide OCR Text window from FullscreenCapture class
-            self.fullscreen_capture.ocr_text_ui.hide()
+        self.hide_other_ui_before_capture()
         time.sleep(0.3)  # Add a sleep to wait for the MainUI window to be fully hidden before capturing
         self.fullscreen_capture.get_fullscreen_capture()  # Start capturing of fullscreen
+
+    def hide_other_ui_before_capture(self):
+        if self.fullscreen_capture.ocr_text_ui.isVisible():
+            self.fullscreen_capture.ocr_text_ui.save_popup_window_position()
+            self.ocr_text_ui_visible = True
+            self.fullscreen_capture.ocr_text_ui.hide()
+
+        if self.settings_ui.isVisible():
+            self.settings_ui_visible = True
+            self.settings_ui.hide()
+
+    def show_other_ui_after_capture(self):
+        if self.ocr_text_ui_visible:
+            self.ocr_text_ui_visible = False
+            self.fullscreen_capture.ocr_text_ui.show()
+
+        if self.settings_ui_visible:
+            self.settings_ui_visible = False
+            self.settings_ui.show()
 
     # Show the MainUI window at the saved position
     def show_main_ui(self):
         if self.saved_position is not None:
             self.move(self.saved_position)
         self.show()
+        self.show_other_ui_after_capture()
 
         if not self.fullscreen_capture.isHidden():
             self.fullscreen_capture.close_fullscreen_show_main()

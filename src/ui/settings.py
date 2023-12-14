@@ -33,14 +33,11 @@ class SettingsUI(QDialog):
         self.initialize_settings_components_finish = False
         self.apply_button_was_enabled = False
         self.ocr_tab_hide_widgets = False
+        self.ocr_language_name_widget = None
         self.output_folder_created = True
         self.open_file_dialog_path = None
         self.open_folder_dialog_path = None
         self.open_executable_dialog_path = None
-        self.widget_language_name = None
-        self.download_thread = None
-        self.check_internet_thread = None
-        self.is_downloading_language_file = False
 
         # Download Trained Data instance
         self.download_trained_data = DownloadTrainedData(self)
@@ -819,32 +816,27 @@ class SettingsUI(QDialog):
                         download_destination = f'{tessdata_folder}/{file_name}.tmp'
                         tessdata_folder.mkdir(parents=True, exist_ok=True)
 
-                        if not self.is_downloading_language_file:
-                            self.download_trained_data.start_download(language_name, download_destination, file_name)
-                            self.is_downloading_language_file = True
+                        self.download_trained_data.check_download_thread()
+                        if not self.download_trained_data.thread_is_running:
+                            self.ocr_language_name_widget = language_name
+                            logger.info(f"Thread is not running. Start downloading language: {language_name}")
+                            self.download_trained_data.start_download_thread(download_destination, file_name)
                         break
 
-    # self.widget_language_name is get from download_from_github function
-    def toggle_download_button_progress_bar(self, language_name, is_visible):
-        self.widget_language_name = language_name
-        logger.info(f"Language: {self.widget_language_name} - Download button: {not is_visible} - Progress bar: {is_visible}")
-        self.sc_button_dict[f'{self.widget_language_name}'].setVisible(not is_visible)
-        self.sc_progressbar_dict[f'{self.widget_language_name}'].setVisible(is_visible)
+    def toggle_download_button_progress_bar(self, is_visible):
+        logger.info(f"Language: {self.ocr_language_name_widget} - Download button: {not is_visible} - Progress bar: {is_visible}")
+        self.sc_button_dict[f'{self.ocr_language_name_widget}'].setVisible(not is_visible)
+        self.sc_progressbar_dict[f'{self.ocr_language_name_widget}'].setVisible(is_visible)
         self.button_ocr_language.setEnabled(not is_visible)
-        self.is_downloading_language_file = False
 
     def update_progress_bar(self, value):
-        self.sc_progressbar_dict[f'{self.widget_language_name}'].setValue(value)
+        self.sc_progressbar_dict[f'{self.ocr_language_name_widget}'].setValue(value)
         if value == 100:
+            self.sc_progressbar_dict[f'{self.ocr_language_name_widget}'].setVisible(False)
+            self.sc_checkbox_dict[f'{self.ocr_language_name_widget}'].setEnabled(True)
             self.button_ocr_language.setEnabled(True)
-            self.sc_progressbar_dict[f'{self.widget_language_name}'].setVisible(False)
-            self.sc_checkbox_dict[f'{self.widget_language_name}'].setEnabled(True)
             self.scroll_area.update()
             logger.info("Download completed 100%!")
-
-    # def handle_download_error(self, error_message):
-    #     self.reset_download_button()
-    #     logger.error(f"Download failed: {error_message}")
 
     def save_settings_config(self):
         settings_config = {
