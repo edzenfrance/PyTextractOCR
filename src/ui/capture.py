@@ -8,7 +8,7 @@ from loguru import logger
 from PIL import ImageGrab
 from playsound import playsound, PlaysoundException  # Use version 1.2.2
 from PySide6.QtCore import Qt, QRect, QTimer
-from PySide6.QtGui import QPainter, QColor, QPixmap, QCursor, QPen
+from PySide6.QtGui import QPainter, QColor, QPixmap, QCursor, QPen, QGuiApplication
 from PySide6.QtWidgets import QMainWindow, QApplication, QLabel, QVBoxLayout, QWidget
 
 # Sources
@@ -97,8 +97,25 @@ class ImageLabel(QLabel):
     def update_label_position(self):
         label_width = self.label_dimensions.sizeHint().width() + 8  # Auto-adjust label width based on text length
         label_height = self.label_dimensions.height()
-        label_x = self.selection_area.center().x() - label_width / 2
-        label_y = self.selection_area.bottom() + 4  # Distance from the bottom
+        screen_resolution = QGuiApplication.primaryScreen().geometry()
+        screen_width, screen_height = screen_resolution.width(), screen_resolution.height()
+        # Determine the direction of mouse movement
+        moving_right = self.end_pos.x() > self.start_pos.x()
+        moving_down = self.end_pos.y() > self.start_pos.y()
+        # Adjust label position based on mouse movement direction
+        # Adjust the offsets (10 and 5) to control the spacing around the label, increase these values to add more space
+        label_x = self.end_pos.x() + 10 if moving_right else self.end_pos.x() - label_width - 5
+        label_y = self.end_pos.y() + 10 if moving_down else self.end_pos.y() - label_height - 5
+        # Check if label would exceed screen width
+        if label_x + label_width > screen_width:
+            label_x = screen_width - label_width
+        elif label_x < 0:
+            label_x = 0
+        # Check if label would exceed screen height
+        if label_y + label_height > screen_height:
+            label_y = screen_height - label_height
+        elif label_y < 0:
+            label_y = 0
         self.label_dimensions.setGeometry(label_x, label_y, label_width, label_height)
         self.label_dimensions.show()
 

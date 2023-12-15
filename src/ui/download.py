@@ -12,96 +12,95 @@ class DownloadTrainedData:
     def __init__(self, settings_instance):
         super().__init__()
 
-        self.download_thread = None
-        self.language_name = None
-        self.thread_is_running = False
+        self.download_worker = None
+        self.threads = []
 
         # Dependency Injection for settings method, injects an instance of SettingsUI class into this class
         self.settings_instance = settings_instance
 
-        self.github_tessdata_best_link = "https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/main/"
+        self.github_tessdata_best_url = "https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/main/"
 
-    def check_download_thread(self):
-        # Check if the download thread is running
-        self.thread_is_running = False
-        if self.download_thread is not None and self.download_thread.isRunning():
-            logger.warning("Download thread is already running")
-            self.thread_is_running = True
-            return
+    def start_download_worker(self, language, destination, file_name):
+        url = f'{self.github_tessdata_best_url}{file_name}'
+        self.settings_instance.toggle_download_button_progress_bar(language, True)
 
-    def start_download_thread(self, download_destination, file_name):
-        self.check_download_thread()
+        self.download_worker = DownloadWorker(url, str(destination), file_name, language)
+        self.download_worker.progress_signal.connect(self.settings_instance.update_progress_bar)
+        self.download_worker.error_signal.connect(self.download_failed)
+        self.download_worker.finished.connect(self.thread_finished)
+        self.download_worker.start()
+        self.threads.append(self.download_worker)
 
-        download_url = f'{self.github_tessdata_best_link}{file_name}'
-        self.settings_instance.toggle_download_button_progress_bar(True)
+    def download_failed(self, language):
+        logger.error(f"Downloading '{language}' language failed")
+        self.settings_instance.toggle_download_button_progress_bar(language, False)
 
-        self.download_thread = DownloadThread(download_url, str(download_destination), file_name)
-        self.download_thread.progress_signal.connect(self.settings_instance.update_progress_bar)
-        self.download_thread.error_signal.connect(self.update_settings_element)
-        self.download_thread.finished.connect(self.cleanup_download_thread)
-        self.download_thread.start()
-
-    def update_settings_element(self):
-        logger.error("Updating settings element")
-        self.settings_instance.toggle_download_button_progress_bar(False)
-        self.cleanup_download_thread()
-
-    def cleanup_download_thread(self):
-        if self.download_thread is not None:
-            logger.info("Cleanup download thread")
-            self.download_thread.terminate()
-            self.download_thread.wait()
-            self.download_thread = None
+    def thread_finished(self):
+        for self.download_worker in self.threads:
+            if not self.download_worker.isRunning():
+                self.threads.remove(self.download_worker)
+                logger.info(f"Running Threads: {self.threads}")
+                del self.download_worker
 
 
-class DownloadThread(QThread):
-    progress_signal = Signal(int)
-    error_signal = Signal()
+class DownloadWorker(QThread):
+    progress_signal = Signal(str, int)
+    error_signal = Signal(str)
 
-    def __init__(self, url, destination, filename):
+    def __init__(self, url, destination, filename, language):
         super().__init__()
 
         self.url = url
         self.destination = destination
         self.filename = filename
-        self._stop_event = False
+        self.language = language
+
+        self.file_size = self.get_file_size()
+        self.headers = {'Range': f'bytes={self.file_size}-'}
+
+    def get_file_size(self):
+        try:
+            return Path(self.destination).stat().st_size
+        except FileNotFoundError:
+            return 0
 
     def run(self):
         try:
-            logger.info(f"Downloading file using requests: {self.url}")
-            with requests.get(self.url, stream=True, timeout=10) as response:
-                response.raise_for_status()  # Status code 200 = successful
-                total_size = int(response.headers.get('content-length', 0))
-                downloaded_size = 0
+            logger.info(f"Downloading '{self.language}' language from github: {self.url}")
 
-                with open(self.destination, 'wb') as file:
-                    for data in response.iter_content(chunk_size=1024):
-                        if self._stop_event:
-                            break
-                        file.write(data)
-                        downloaded_size += len(data)
-                        progress_percentage = int(downloaded_size / total_size * 100)
-                        self.progress_signal.emit(progress_percentage)
+            with requests.get(self.url, headers=self.headers, stream=True, timeout=30) as response:
+                response.raise_for_status()
+                remaining_size = int(response.headers.get('content-length', 0))
+                downloaded_size = self.file_size
+                total_size = downloaded_size + remaining_size
+                logger.info(f"Destination: {self.destination} - Downloaded: {downloaded_size} - Remaining: {remaining_size} - Total: {total_size}")
 
-            logger.success(f"Download successful")
-            self.rename_downloaded_file()
+                mode = 'ab' if response.status_code == 206 else 'wb'
+                with open(self.destination, mode) as file:
+                    for chunk in response.iter_content(chunk_size=1024):
+                        downloaded_size = self.write_to_file(file, chunk, downloaded_size, total_size)
+
+                logger.success(f"Downloading '{self.language}' language completed")
+                self.rename_temp_file()
         except (ConnectionError, TimeoutError, requests.exceptions.RequestException) as e:
             error_type = "Connection error" if isinstance(e, ConnectionError) else (
                 "Timeout error" if isinstance(e, TimeoutError) else "Request error")
             logger.error(f"{error_type}: {e}")
-            self.stop_download()
-            self.error_signal.emit()
+            self.error_signal.emit(self.language)
 
-    def rename_downloaded_file(self):
+    def write_to_file(self, file, data, downloaded_size, total_size):
+        file.write(data)
+        downloaded_size += len(data)
+        progress_percentage = int(downloaded_size / total_size * 100)
+        self.progress_signal.emit(self.language, progress_percentage)
+        return downloaded_size  # Return the value so that run can track it correctly
+
+    def rename_temp_file(self):
         tessdata_folder = Path('./tessdata')
         current_file_path = tessdata_folder / f'{self.filename}.tmp'
         new_file_path = tessdata_folder / self.filename
         try:
             shutil.move(current_file_path, new_file_path)
-            logger.info(f"The file '{current_file_path}' has been renamed to '{new_file_path}'.")
+            logger.success(f"The file '{self.filename}.tmp' has been renamed to '{self.filename}'.")
         except Exception as e:
-            logger.error(f"Failed to rename the file {current_file_path}: {e}")
-        self.stop_download()
-
-    def stop_download(self):
-        self._stop_event = True  # Flag to stop the download thread
+            logger.error(f"Failed to rename the file '{self.filename}.tmp': {e}")

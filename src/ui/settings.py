@@ -33,7 +33,6 @@ class SettingsUI(QDialog):
         self.initialize_settings_components_finish = False
         self.apply_button_was_enabled = False
         self.ocr_tab_hide_widgets = False
-        self.ocr_language_name_widget = None
         self.output_folder_created = True
         self.open_file_dialog_path = None
         self.open_folder_dialog_path = None
@@ -536,6 +535,7 @@ class SettingsUI(QDialog):
         self.open_folder_dialog_path = self.config['output']['output_folder_path']
         self.update_combobox_psm_tooltip()
         self.update_combobox_oem_tooltip()
+        self.check_trained_data_language_file()
 
         if tesseract_check(self.config['ocr']['tesseract_path']):
             self.label_tesseract_version.setText(f"Tesseract Version: {tesseract_version()}")
@@ -631,7 +631,7 @@ class SettingsUI(QDialog):
         ocr_tab_language_widgets = [self.label_ocr_language, self.button_ocr_language]
         scroll_area_widgets = self.scroll_area.findChildren(QWidget)
 
-        self.check_language_file()
+        self.check_trained_data_language_file()
 
         excluded_widgets = set(ocr_tab_language_widgets + scroll_area_widgets)
         for widget in ocr_tab_widgets:
@@ -643,7 +643,7 @@ class SettingsUI(QDialog):
 
         self.ocr_tab_hide_widgets = not self.ocr_tab_hide_widgets
 
-    def check_language_file(self):
+    def check_trained_data_language_file(self):
         for language_code, language_name in language_set().items():
             file_path = Path('./tessdata') / f'{language_code}.traineddata'
             is_file_exists = file_path.exists()
@@ -829,27 +829,23 @@ class SettingsUI(QDialog):
                         download_destination = f'{tessdata_folder}/{file_name}.tmp'
                         tessdata_folder.mkdir(parents=True, exist_ok=True)
 
-                        self.download_trained_data.check_download_thread()
-                        if not self.download_trained_data.thread_is_running:
-                            self.ocr_language_name_widget = language_name
-                            logger.info(f"Thread is not running. Start downloading language: {language_name}")
-                            self.download_trained_data.start_download_thread(download_destination, file_name)
+                        logger.info(f"Selected language: {language_name}")
+                        self.download_trained_data.start_download_worker(language_name, download_destination, file_name)
                         break
 
-    def toggle_download_button_progress_bar(self, is_visible):
-        logger.info(f"Language: {self.ocr_language_name_widget} - Download button: {not is_visible} - Progress bar: {is_visible}")
-        self.sc_button_dict[f'{self.ocr_language_name_widget}'].setVisible(not is_visible)
-        self.sc_progressbar_dict[f'{self.ocr_language_name_widget}'].setVisible(is_visible)
+    def toggle_download_button_progress_bar(self, language_name, is_visible):
+        logger.info(f"Download button: {not is_visible} - Progress bar: {is_visible}")
+        self.sc_button_dict[f'{language_name}'].setVisible(not is_visible)
+        self.sc_progressbar_dict[f'{language_name}'].setVisible(is_visible)
         self.button_ocr_language.setEnabled(not is_visible)
 
-    def update_progress_bar(self, value):
-        self.sc_progressbar_dict[f'{self.ocr_language_name_widget}'].setValue(value)
+    def update_progress_bar(self, language_name, value):
+        self.sc_progressbar_dict[f'{language_name}'].setValue(value)
         if value == 100:
-            self.sc_progressbar_dict[f'{self.ocr_language_name_widget}'].setVisible(False)
-            self.sc_checkbox_dict[f'{self.ocr_language_name_widget}'].setEnabled(True)
+            self.sc_progressbar_dict[f'{language_name}'].setVisible(False)
+            self.sc_checkbox_dict[f'{language_name}'].setEnabled(True)
             self.button_ocr_language.setEnabled(True)
             self.scroll_area.update()
-            logger.info("Download completed 100%!")
 
     def save_settings_config(self):
         settings_config = {
@@ -894,7 +890,7 @@ class SettingsUI(QDialog):
                 'enable_translation': self.checkbox_show_translation.isChecked()
             }
         }
-        # Save checked OCR languages
+        # Save all checked OCR languages to config
         save_lang = ""
         for language_code, language_name in language_set().items():
             if self.sc_checkbox_dict[f'{language_name}'].isChecked():
@@ -903,13 +899,13 @@ class SettingsUI(QDialog):
                     save_lang = f"{save_lang}+{language_code}" if save_lang else language_code
         settings_config['ocr']['language'] = f'{save_lang}'
 
-        # Get selected language in every Translate To combobox
+        # Get the selected language in every Translate To combobox
         for count, language_name in enumerate(language_list().values(), start=0):
             for language_code, name in language_list().items():
                 if name == self.translate_to_comboboxes[count].currentText().lower():
                     settings_config['translate'][f'{language_name}'] = f'{language_code}'
 
-        self.check_language_file()
+        self.check_trained_data_language_file()
         logger.info("Saving settings in configuration file")
         update_config(settings_config)
 
@@ -928,7 +924,7 @@ class SettingsUI(QDialog):
         logger.info("Settings window closed")
 
 
-# For Table Widget
+# For Translate Table Widget
 class MyHeader(QHeaderView):
     def __init__(self, orientation, parent=None):
         super().__init__(orientation, parent)
