@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDialog,
                                QSpinBox, QTableWidget, QTableWidgetItem, QTabWidget, QVBoxLayout,
                                QWidget, QGroupBox)
 
-# Sources
+# Custom libraries
 from src.config.config import load_config, update_config
 from src.ocr.ocr_processor import tesseract_check, tesseract_version
 from src.ui.asset_manager import app_icon
@@ -542,14 +542,11 @@ class SettingsUI(QDialog):
 
         self.initialize_settings_components_finish = True
 
-    def init_widget(self, widget, table_name, key, line_edit_replace=None):
+    def init_widget(self, widget, table_name, key, fix_line_edit=False):
         value = self.config[table_name][key]
         try:
-            if line_edit_replace:
-                formatted_value = re.sub(r'\\+', r'\\', str(value).replace('/', '\\'))
-                widget.setText(formatted_value)
-            elif isinstance(widget, QLineEdit):
-                widget.setText(value)
+            if isinstance(widget, QLineEdit):
+                widget.setText(value if fix_line_edit else re.sub(r'\\+', r'\\', str(value).replace('/', '\\')))
             elif isinstance(widget, QSpinBox):
                 widget.setValue(int(value))
             elif isinstance(widget, QDoubleSpinBox):
@@ -609,6 +606,7 @@ class SettingsUI(QDialog):
                       self.spinbox_bilateral_diameter,
                       self.spinbox_bilateral_sigmaspace,
                       self.spinbox_bilateral_sigmacolor]
+
         for vis in visibility:
             vis.setVisible(is_index_three)
 
@@ -644,14 +642,15 @@ class SettingsUI(QDialog):
         self.ocr_tab_hide_widgets = not self.ocr_tab_hide_widgets
 
     def check_trained_data_language_file(self):
+        self.config = load_config()
         for language_code, language_name in language_set().items():
             file_path = Path('./tessdata') / f'{language_code}.traineddata'
-            is_file_exists = file_path.exists()
-            is_language_in_config = language_code in self.config['ocr']['language']
+            is_file_exist = file_path.exists()
+            is_language_selected = language_code in self.config['ocr']['language']
 
-            self.sc_checkbox_dict[f'{language_name}'].setChecked(is_file_exists and is_language_in_config)
-            self.sc_checkbox_dict[f'{language_name}'].setEnabled(is_file_exists)
-            self.sc_button_dict[f'{language_name}'].setVisible(not is_file_exists)
+            self.sc_checkbox_dict[f'{language_name}'].setChecked(is_file_exist and is_language_selected)
+            self.sc_checkbox_dict[f'{language_name}'].setEnabled(is_file_exist)
+            self.sc_button_dict[f'{language_name}'].setVisible(not is_file_exist)
 
     @staticmethod
     def remove_duplicate_chars(line_edit):
@@ -738,6 +737,7 @@ class SettingsUI(QDialog):
             self.button_OK_settings.setDefault(False)
             self.check_sound_file()
             self.check_and_create_output_folder()
+            self.check_trained_data_language_file()
             self.button_OK_settings.setFocus()
             if self.output_folder_created:
                 self.stop_updating_apply_button()
@@ -824,7 +824,7 @@ class SettingsUI(QDialog):
             if button is sender_button:
                 for language_code, language_name in language_set().items():
                     if name == language_name:
-                        tessdata_folder = Path("./tessdata/")
+                        tessdata_folder = Path('./tessdata/')
                         file_name = f'{language_code}.traineddata'
                         download_destination = f'{tessdata_folder}/{file_name}.tmp'
                         tessdata_folder.mkdir(parents=True, exist_ok=True)
@@ -891,21 +891,20 @@ class SettingsUI(QDialog):
             }
         }
         # Save all checked OCR languages to config
-        save_lang = ""
-        for language_code, language_name in language_set().items():
-            if self.sc_checkbox_dict[f'{language_name}'].isChecked():
-                file_path = Path('./tessdata') / f'{language_code}.traineddata'
-                if file_path.exists():
-                    save_lang = f"{save_lang}+{language_code}" if save_lang else language_code
-        settings_config['ocr']['language'] = f'{save_lang}'
+        checked_languages = [
+            language_code for language_code, language_name in language_set().items()
+            if self.sc_checkbox_dict[language_name].isChecked() and Path('./tessdata', f'{language_code}.traineddata').exists()
+        ]
+        settings_config['ocr']['language'] = '+'.join(checked_languages)
 
         # Get the selected language in every Translate To combobox
-        for count, language_name in enumerate(language_list().values(), start=0):
-            for language_code, name in language_list().items():
-                if name == self.translate_to_comboboxes[count].currentText().lower():
-                    settings_config['translate'][f'{language_name}'] = f'{language_code}'
+        languages = language_list()
+        for count, language_name in enumerate(languages.values()):
+            current_text = self.translate_to_comboboxes[count].currentText().lower()
+            for language_code, name in languages.items():
+                if name == current_text:
+                    settings_config['translate'][language_name] = language_code
 
-        self.check_trained_data_language_file()
         logger.info("Saving settings in configuration file")
         update_config(settings_config)
 

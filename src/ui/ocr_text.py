@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (QCheckBox, QDialog, QFontDialog, QHBoxLayout,
                                QLabel, QPlainTextEdit, QPushButton, QSizePolicy,
                                QSpacerItem, QVBoxLayout)
 
-# Sources
+# Custom libraries
 from src.config.config import load_config, update_config
 from src.ui.asset_manager import app_icon
 
@@ -44,7 +44,7 @@ class OCRTextUI(QDialog):
 
         self.config = load_config()
         self.load_popup_window_position()
-        self.load_font_config()
+        self.load_font_style()
 
         self.text_edit_extracted = QPlainTextEdit(self)
         self.text_edit_extracted.setFont(self.initial_font)
@@ -89,7 +89,7 @@ class OCRTextUI(QDialog):
         self.clickable_label_font.setStyleSheet("color: blue; text-decoration: underline;")
         self.clickable_label_font.setToolTip("<html><head/><body><p style='color: rgb(87, 87, 87);"
                                              "text-decoration: none;'>Customize text font</p></body></html>")
-        self.clickable_label_font.clicked.connect(self.change_font)
+        self.clickable_label_font.clicked.connect(self.set_font_style)
         self.horizontal_bottom_layout.addWidget(self.clickable_label_font)
 
         self.button_ok = QPushButton("OK", self)
@@ -120,7 +120,7 @@ class OCRTextUI(QDialog):
         self.pos_y = self.config['ocr_window']['position_y']
         self.move(self.pos_x, self.pos_y)
 
-    def load_font_config(self):
+    def load_font_style(self):
         initial_font_name = self.config['ocr_window']['font_name']
         initial_font_size = self.config['ocr_window']['font_size']
         initial_font_weight = self.config['ocr_window']['font_weight']
@@ -146,9 +146,9 @@ class OCRTextUI(QDialog):
         update_config(on_top_config)
         self.show()
 
-    def change_font(self):
+    def set_font_style(self):
         self.config = load_config()
-        self.load_font_config()
+        self.load_font_style()
 
         font_dialog = QFontDialog(self.initial_font)
         font_dialog.setWindowIcon(QIcon(app_icon))

@@ -12,7 +12,7 @@ from loguru import logger
 from PIL import Image
 from pytesseract import Output
 
-# Sources
+# Custom libraries
 from src.config.config import load_config
 from src.ocr.preprocess import preprocess_image
 from src.utils.translate import translate_text

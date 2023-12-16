@@ -3,8 +3,8 @@ from pathlib import Path
 
 # Third-party libraries
 import toml
-from toml import TomlDecodeError
 from loguru import logger
+from toml import TomlDecodeError
 
 
 def check_config_keys(default_config, loaded_config):

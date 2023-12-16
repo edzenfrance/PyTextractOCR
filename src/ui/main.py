@@ -3,12 +3,12 @@ import time
 from pathlib import Path
 
 # Third-party libraries
+from loguru import logger
 from PySide6.QtCore import Qt, QCoreApplication
 from PySide6.QtGui import QIcon, QAction, QGuiApplication
 from PySide6.QtWidgets import QDialog, QHBoxLayout, QPushButton, QSystemTrayIcon, QMenu, QStyle
-from loguru import logger
 
-# Sources
+# Custom libraries
 from src.config.config import load_config, update_config
 from src.ui.asset_manager import app_icon, main_icon, settings_icon, about_icon, exit_icon
 from src.ui.capture import FullscreenCapture
@@ -46,27 +46,18 @@ class MainUI(QDialog):
         self.tray_icon.activated.connect(self.tray_icon_activated)
 
         icon_path = Path(app_icon)
-        if icon_path.is_file():
-            self.tray_icon.setIcon(QIcon(str(icon_path)))
-        else:
-            # Use a built-in system icon if the custom one is missing.
-            self.tray_icon.setIcon(self.style().standardIcon(QStyle.SP_MessageBoxInformation))
-        self.tray_icon.setToolTip("System Tray Example")
+        # SP_MessageBoxInformation - Built-in system icon if the custom one is missing
+        self.tray_icon.setIcon(QIcon(str(icon_path)) if icon_path.is_file else self.style().standardIcon(QStyle.SP_MessageBoxInformation))
 
-        self.main_menu_action = QAction('Show PyTexractOCR')
-        self.settings_action = QAction('Settings')
-        self.about_action = QAction('About')
-        self.exit_action = QAction('Exit')
+        self.main_menu_action = QAction('Show PyTexractOCR', triggered=self.show)
+        self.settings_action = QAction('Settings', triggered=self.show_settings_from_tray)
+        self.about_action = QAction('About', triggered=self.show_about_from_tray)
+        self.exit_action = QAction('Exit', triggered=self.exit_app_from_tray)
 
         self.main_menu_action.setIcon(QIcon(main_icon))
         self.settings_action.setIcon(QIcon(settings_icon))
         self.about_action.setIcon(QIcon(about_icon))
         self.exit_action.setIcon(QIcon(exit_icon))
-
-        self.main_menu_action.triggered.connect(self.show)
-        self.settings_action.triggered.connect(self.show_settings_from_tray)
-        self.about_action.triggered.connect(self.show_about_from_tray)
-        self.exit_action.triggered.connect(self.exit_app_from_tray)
 
         self.menu = QMenu()
         self.menu.addAction(self.main_menu_action)
@@ -76,6 +67,7 @@ class MainUI(QDialog):
 
         self.tray_icon.setContextMenu(self.menu)
         self.tray_icon.show()
+        self.tray_icon.setToolTip("PyTextractOCR")
 
         horizontal_layout = QHBoxLayout()
 
@@ -207,7 +199,7 @@ class MainUI(QDialog):
 
     def show_settings_from_tray(self):
         if not self.settings_ui.isVisible():
-            logger.info("Show settings using system tray")
+            logger.info("Showing settings using system tray")
             self.settings_action.setEnabled(False)
             self.settings_ui.initialize_settings_components()
             self.settings_ui.show()

@@ -11,7 +11,7 @@ from PySide6.QtCore import Qt, QRect, QTimer
 from PySide6.QtGui import QPainter, QColor, QPixmap, QCursor, QPen, QGuiApplication
 from PySide6.QtWidgets import QMainWindow, QApplication, QLabel, QVBoxLayout, QWidget
 
-# Sources
+# Custom libraries
 from src.config.config import load_config
 from src.ocr.ocr_processor import perform_ocr
 from src.ui.ocr_text import OCRTextUI
