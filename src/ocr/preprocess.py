@@ -10,36 +10,7 @@ from skimage.transform import rotate
 
 def preprocess_image(image_path, config):
     try:
-        scale_factor = config['preprocess']['scale_factor']
-        grayscale = config['preprocess']['grayscale']
-        gaussian_blur = config['preprocess']['gaussian_blur_kernel']
-        median_blur = config['preprocess']['median_blur_kernel']
-        remove_noise = config['preprocess']['remove_noise']
-        adaptive_thresholding = config['preprocess']['adaptive_thresholding']
-        adaptive_threshold = config['preprocess']['adaptive_threshold']
-        global_thresholding = config['preprocess']['global_thresholding']
-        global_threshold = config['preprocess']['global_threshold']
-        dilate = config['preprocess']['dilate']
-        erode = config['preprocess']['erode']
-        dilate_erode_kernel = config['preprocess']['structure_manipulation_kernel']
-        dilate_erode_iteration = config['preprocess']['structure_manipulation_iteration']
-        deskew = config['preprocess']['deskew']
-
-        start_preprocess(image_path,
-                         scale_factor,
-                         grayscale,
-                         gaussian_blur,
-                         median_blur,
-                         remove_noise,
-                         adaptive_thresholding,
-                         adaptive_threshold,
-                         global_thresholding,
-                         global_threshold,
-                         dilate,
-                         erode,
-                         dilate_erode_kernel,
-                         dilate_erode_iteration,
-                         deskew)
+        start_preprocess(image_path, **config['preprocess'])
     except Exception as e:
         logger.error(f"An error occurred while preprocessing the image [{e}]")
 
@@ -47,8 +18,13 @@ def preprocess_image(image_path, config):
 def start_preprocess(image_path,
                      scale_factor=None,
                      grayscale=None,
+                     image_smoothing=None,
+                     blur_kernel=None,
                      gaussian_blur_kernel=None,
-                     median_blur=None,
+                     median_blur_kernel=None,
+                     bilateral_filtering_diameter=None,
+                     bilateral_filtering_sigmacolor=None,
+                     bilateral_filtering_sigmaspace=None,
                      remove_noise=None,
                      adaptive_thresholding=None,
                      adaptive_threshold=None,
@@ -56,10 +32,9 @@ def start_preprocess(image_path,
                      global_threshold=None,
                      dilate=None,
                      erode=None,
-                     dilate_erode_kernel=None,
-                     dilate_erode_iteration=None,
+                     structure_manipulation_kernel=None,
+                     structure_manipulation_iteration=None,
                      deskew=None):
-
     image = cv2.imread(image_path)
 
     if scale_factor != 1.0:
@@ -74,7 +49,7 @@ def start_preprocess(image_path,
         logger.info("Applying gaussian blur")
         image = cv2.GaussianBlur(image, (gaussian_blur_kernel, gaussian_blur_kernel), 0)
 
-    if median_blur:
+    if median_blur_kernel:
         logger.info('Applying median blur')
         image = cv2.medianBlur(image, 1)
 
@@ -105,13 +80,13 @@ def start_preprocess(image_path,
         # image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)  # Fix this
         _, image = cv2.threshold(image, global_threshold, 255, cv2.THRESH_BINARY)
 
-    kernel = np.ones((dilate_erode_kernel, dilate_erode_kernel), np.uint8)
+    kernel = np.ones((structure_manipulation_kernel, structure_manipulation_kernel), np.uint8)
 
     if dilate:
-        image = cv2.dilate(image, kernel, iterations=dilate_erode_iteration)
+        image = cv2.dilate(image, kernel, iterations=structure_manipulation_iteration)
 
     if erode:
-        image = cv2.erode(image, kernel, iterations=dilate_erode_iteration)
+        image = cv2.erode(image, kernel, iterations=structure_manipulation_iteration)
 
     cv2.imwrite(image_path, image)
 

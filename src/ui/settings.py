@@ -32,7 +32,7 @@ class SettingsUI(QDialog):
 
         self.initialize_settings_components_finish = False
         self.apply_button_was_enabled = False
-        self.ocr_tab_hide_widgets = False
+        self.ocr_tab_widget_visible = False
         self.output_folder_created = True
         self.open_file_dialog_path = None
         self.open_folder_dialog_path = None
@@ -41,7 +41,7 @@ class SettingsUI(QDialog):
         # Download Trained Data instance
         self.download_trained_data = DownloadTrainedData(self)
 
-        # Dictionary to store QLineEdit and QSpinBox widgets and their event handling logic
+        # Dictionary to store QLineEdit and QSpinBox widgets
         self.line_edits = {}
         self.spinboxes = {}
 
@@ -49,7 +49,7 @@ class SettingsUI(QDialog):
 
         # Initialize timer for fading effect
         self.apply_button_state_timer = QTimer()
-        self.apply_button_state_timer.setInterval(50)  # Adjust the interval for a smoother transition
+        self.apply_button_state_timer.setInterval(100)  # Adjust the interval for a smoother transition
         self.apply_button_state_timer.timeout.connect(self.update_apply_button_state)
 
         self.horizontal_layout_widget = QWidget(self)
@@ -413,13 +413,10 @@ class SettingsUI(QDialog):
 
             # Add the languages with the first letter capitalized to the combo box, excluding the current language
             for language_code, language_name in language_list().items():
-
                 if language_name != combobox_language:
                     translate_to_combobox.addItem(language_name.capitalize())
-
                 if language_code == self.config['translate'][combobox_language.lower()]:
                     index = translate_to_combobox.findText(language_name.capitalize())
-
                     if index >= 0:  # -1 means the text was not found
                         translate_to_combobox.setCurrentIndex(index)
 
@@ -436,6 +433,12 @@ class SettingsUI(QDialog):
         self.translate_table_widget.setGeometry(QRect(5, 70, 399, 189))
         self.translate_table_widget.verticalHeader().setVisible(False)
         self.settings_tab_widget.currentChanged.connect(self.handle_tab_change)
+
+        # Define widgets related to OCR language and scroll area, which are used in the 'ocr_button_clicked_toggle_widgets_display' function.
+        # 'ocr_tab_widgets' contains all child widgets of 'ocr_tab' excluding those in 'ocr_tab_language_widgets' and 'scroll_area_widgets'.
+        ocr_tab_language_widgets = [self.label_ocr_language, self.button_ocr_language]
+        ocr_tab_scroll_area_widgets = self.scroll_area.findChildren(QWidget)
+        self.ocr_tab_widgets = set(self.ocr_tab.findChildren(QWidget)) - set(ocr_tab_language_widgets + ocr_tab_scroll_area_widgets)
 
     @staticmethod
     def create_label(text, parent, object_name, geometry):
@@ -625,21 +628,11 @@ class SettingsUI(QDialog):
             spinbox.clearFocus()
 
     def ocr_button_clicked_toggle_widgets_display(self):
-        ocr_tab_widgets = self.ocr_tab.findChildren(QWidget)
-        ocr_tab_language_widgets = [self.label_ocr_language, self.button_ocr_language]
-        scroll_area_widgets = self.scroll_area.findChildren(QWidget)
-
+        [widget.setVisible(False if not self.ocr_tab_widget_visible else True) for widget in self.ocr_tab_widgets]
+        self.button_ocr_language.setText("Hide" if self.ocr_tab_widget_visible else "Show")
+        self.scroll_area.setVisible(not self.ocr_tab_widget_visible)
         self.check_trained_data_language_file()
-
-        excluded_widgets = set(ocr_tab_language_widgets + scroll_area_widgets)
-        for widget in ocr_tab_widgets:
-            if widget not in excluded_widgets:
-                widget.hide() if not self.ocr_tab_hide_widgets else widget.show()
-
-        self.button_ocr_language.setText("Hide" if self.ocr_tab_hide_widgets else "Show")
-        self.scroll_area.setVisible(not self.ocr_tab_hide_widgets)
-
-        self.ocr_tab_hide_widgets = not self.ocr_tab_hide_widgets
+        self.ocr_tab_widget_visible = not self.ocr_tab_widget_visible
 
     def check_trained_data_language_file(self):
         self.config = load_config()
@@ -712,7 +705,6 @@ class SettingsUI(QDialog):
                 new_color.setRed(int(current_color.red() + ((target_color.red() - current_color.red()) / 10)))
                 new_color.setGreen(int(current_color.green() + ((target_color.green() - current_color.green()) / 10)))
                 new_color.setBlue(int(current_color.blue() + ((target_color.blue() - current_color.blue()) / 10)))
-
             palette = QPalette()
             palette.setColor(QPalette.ButtonText, new_color)
             self.button_apply_settings.setPalette(palette)
