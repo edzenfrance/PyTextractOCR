@@ -50,7 +50,7 @@ class SettingsUI(QDialog):
         # Initialize timer for fading effect
         self.apply_button_state_timer = QTimer()
         self.apply_button_state_timer.setInterval(100)  # Adjust the interval for a smoother transition
-        self.apply_button_state_timer.timeout.connect(self.update_apply_button_state)
+        self.apply_button_state_timer.timeout.connect(self.update_apply_button)
 
         self.horizontal_layout_widget = QWidget(self)
         self.horizontal_layout_widget.setObjectName('horizontal_layout_widget')
@@ -246,12 +246,13 @@ class SettingsUI(QDialog):
         self.preprocess_tab.setObjectName('preprocess_tab')
         self.settings_tab_widget.addTab(self.preprocess_tab, "Preprocess")
 
-        self.label_scale_factor = self.create_label("Scale Factor:", self.preprocess_tab, 'label_scale_factor', (16, 12, 121, 16))
+        self.checkbox_enable_preprocess = self.create_checkbox("Enable Preprocess", self.preprocess_tab, 'checkbox_enable_preprocess', (16, 10, 201, 20))
 
-        # SPINBOX - Scale Factor
+        # Scale Factor
+        self.label_scale_factor = self.create_label("Scale Factor:", self.preprocess_tab, 'label_scale_factor', (16, 47, 121, 16))
         self.spinbox_scale_factor = QDoubleSpinBox(self.preprocess_tab)
         self.spinbox_scale_factor.setObjectName('spinbox_scale_factor')
-        self.spinbox_scale_factor.setGeometry(QRect(90, 11, 45, 20))
+        self.spinbox_scale_factor.setGeometry(QRect(90, 46, 45, 20))
         self.spinbox_scale_factor.setMinimum(1.0)
         self.spinbox_scale_factor.setMaximum(10.0)
         self.spinbox_scale_factor.setSingleStep(0.1)
@@ -270,47 +271,50 @@ class SettingsUI(QDialog):
 
         self.checkbox_grayscale = self.create_checkbox("Grayscale", self.preprocess_tab, 'checkbox_grayscale', (250, 10, 201, 20))
 
-        # COMBOBOX - Image Smoothing
-        self.combobox_img_smoothing = QComboBox(self.preprocess_tab)
-        self.combobox_img_smoothing.setObjectName('combobox_img_smoothing')
-        self.combobox_img_smoothing.setGeometry(QRect(16, 42, 75, 22))
-        self.img_smoothing_tooltip = {
-            'Blur': "Blur",
-            'Gaussian': "Gaussian Blur",
-            'Median': "Median Blur",
-            'Bilateral': "Bilateral Filtering"
+        self.checkbox_remove_noise = self.create_checkbox("Remove noise", self.preprocess_tab, 'checkbox_remove_noise', (160, 45, 180, 20))
+
+        # Smoothing
+        smoothing_outer_widget = QWidget(self.preprocess_tab)
+        smoothing_outer_widget.setGeometry(0, 70, 409, 71)
+        smoothing_layout = QHBoxLayout(smoothing_outer_widget)
+        smoothing_groupbox = QGroupBox("Smoothing")
+
+        self.combobox_smoothing = QComboBox(smoothing_groupbox)
+        self.combobox_smoothing.setObjectName('combobox_smoothing')
+        self.combobox_smoothing.setGeometry(QRect(16, 22, 75, 22))
+        self.smoothing_tooltip = {
+            'Average': "Average Blurring",
+            'Gaussian': "Gaussian Blurring",
+            'Median': "Median Blurring",
+            'Bilateral': "Bilateral Blurring"
         }
-        for cb_text, tooltip in self.img_smoothing_tooltip.items():
-            self.combobox_img_smoothing.addItem(str(cb_text))
+        for cb_text, tooltip in self.smoothing_tooltip.items():
+            self.combobox_smoothing.addItem(str(cb_text))
         try:
-            img_sm_value = int(self.config['preprocess']['image_smoothing'])
+            img_sm_value = int(self.config['preprocess']['smoothing'])
             valid_oem_value = max(0, min(img_sm_value, 3))
-            self.combobox_img_smoothing.setCurrentIndex(valid_oem_value)
+            self.combobox_smoothing.setCurrentIndex(valid_oem_value)
         except ValueError as e:
             logger.error(f"Error converting oem value to integer: {e}")
-        self.combobox_img_smoothing.currentIndexChanged.connect(lambda: (self.update_combobox_img_smoothing(), self.toggle_apply_button()))
+        self.combobox_smoothing.currentIndexChanged.connect(lambda: (self.update_combobox_smoothing(), self.toggle_apply_button()))
 
-        self.label_img_smoothing_kernel = self.create_label("K:", self.preprocess_tab, 'label_img_smoothing_kernel', (100, 45, 10, 16))
+        self.label_smoothing_kernel = self.create_label("K:", smoothing_groupbox, 'label_smoothing_kernel', (100, 25, 10, 16))
+        self.label_bilateral_diameter = self.create_label("D:", smoothing_groupbox, 'label_bilateral_diameter', (100, 25, 10, 16))
+        self.label_bilateral_sigmacolor = self.create_label("SC:", smoothing_groupbox, 'label_bilateral_sigmacolor', (170, 25, 20, 16))
+        self.label_bilateral_sigmaspace = self.create_label("SS:", smoothing_groupbox, 'label_bilateral_sigmaspace', (246, 25, 20, 16))
 
-        self.spinbox_blur_kernel = self.create_spinbox(self.preprocess_tab, 'spinbox_blur_kernel', (117, 43, 40, 20), 1, 10, 1)
-        self.spinbox_gaussian_kernel = self.create_spinbox(self.preprocess_tab, 'spinbox_gaussian_kernel', (117, 43, 40, 20), 1, 15, 2)
-        self.spinbox_median_kernel = self.create_spinbox(self.preprocess_tab, 'spinbox_median_kernel', (117, 43, 40, 20), 1, 15, 2)
+        self.spinbox_average_kernel = self.create_spinbox(smoothing_groupbox, 'spinbox_average_kernel', (117, 23, 40, 20), 1, 10, 1)
+        self.spinbox_gaussian_kernel = self.create_spinbox(smoothing_groupbox, 'spinbox_gaussian_kernel', (117, 23, 40, 20), 1, 15, 2)
+        self.spinbox_median_kernel = self.create_spinbox(smoothing_groupbox, 'spinbox_median_kernel', (117, 23, 40, 20), 1, 15, 2)
+        self.spinbox_bilateral_diameter = self.create_spinbox(smoothing_groupbox, 'spinbox_bilateral_diameter', (117, 23, 40, 20), 1, 10, 1)
+        self.spinbox_bilateral_sigmacolor = self.create_spinbox(smoothing_groupbox, 'spinbox_bilateral_sigmacolor', (193, 23, 40, 20), 1, 99, 1)
+        self.spinbox_bilateral_sigmaspace = self.create_spinbox(smoothing_groupbox, 'spinbox_bilateral_sigmaspace', (267, 23, 40, 20), 1, 99, 1)
 
-        self.label_bilateral_diameter = self.create_label("D:", self.preprocess_tab, 'label_bilateral_diameter', (100, 45, 10, 16))
-        self.label_bilateral_sigmacolor = self.create_label("SC:", self.preprocess_tab, 'label_bilateral_sigmacolor', (170, 45, 20, 16))
-        self.label_bilateral_sigmaspace = self.create_label("SS:", self.preprocess_tab, 'label_bilateral_sigmaspace', (246, 45, 20, 16))
-
-        self.spinbox_bilateral_diameter = self.create_spinbox(self.preprocess_tab, 'spinbox_bilateral_diameter', (117, 43, 40, 20), 1, 10, 1)
-        self.spinbox_bilateral_sigmacolor = self.create_spinbox(self.preprocess_tab, 'spinbox_bilateral_sigmacolor', (193, 43, 40, 20), 1, 99, 1)
-        self.spinbox_bilateral_sigmaspace = self.create_spinbox(self.preprocess_tab, 'spinbox_bilateral_sigmaspace', (267, 43, 40, 20), 1, 99, 1)
-
-        self.checkbox_remove_noise = self.create_checkbox("Remove noise", self.preprocess_tab, 'checkbox_remove_noise', (240, 70, 180, 20))
-
-        self.update_combobox_img_smoothing()
+        smoothing_layout.addWidget(smoothing_groupbox)
 
         # Thresholding
         thresholding_outer_widget = QWidget(self.preprocess_tab)
-        thresholding_outer_widget.setGeometry(0, 90, 409, 71)
+        thresholding_outer_widget.setGeometry(0, 130, 409, 71)
         thresholding_layout = QHBoxLayout(thresholding_outer_widget)
         thresholding_groupbox = QGroupBox("Thresholding")
 
@@ -334,7 +338,7 @@ class SettingsUI(QDialog):
 
         # Structure Manipulation
         struct_m_outer_widget = QWidget(self.preprocess_tab)
-        struct_m_outer_widget.setGeometry(0, 150, 409, 71)
+        struct_m_outer_widget.setGeometry(0, 190, 409, 71)
         struct_m_layout = QHBoxLayout(struct_m_outer_widget)
         struct_m_groupbox = QGroupBox("Structure Manipulation")
 
@@ -511,7 +515,15 @@ class SettingsUI(QDialog):
             (self.checkbox_whitelist_char, 'ocr', 'enable_whitelist_char'),
             (self.line_edit_tesseract_path, 'ocr', 'tesseract_path'),
             (self.spinbox_scale_factor, 'preprocess', 'scale_factor'),
+            (self.checkbox_enable_preprocess, 'preprocess', 'enable_preprocess'),
             (self.checkbox_grayscale, 'preprocess', 'grayscale'),
+            (self.combobox_smoothing, 'preprocess', 'smoothing'),
+            (self.spinbox_average_kernel, 'preprocess', 'average_blur_kernel'),
+            (self.spinbox_gaussian_kernel, 'preprocess', 'gaussian_blur_kernel'),
+            (self.spinbox_median_kernel, 'preprocess', 'median_blur_kernel'),
+            (self.spinbox_bilateral_diameter, 'preprocess', 'bilateral_blur_diameter'),
+            (self.spinbox_bilateral_sigmacolor, 'preprocess', 'bilateral_blur_sigmacolor'),
+            (self.spinbox_bilateral_sigmaspace, 'preprocess', 'bilateral_blur_sigmaspace'),
             (self.checkbox_remove_noise, 'preprocess', 'remove_noise'),
             (self.checkbox_adaptive_thresholding, 'preprocess', 'adaptive_thresholding'),
             (self.spinbox_adaptive_threshold, 'preprocess', 'adaptive_threshold'),
@@ -538,6 +550,7 @@ class SettingsUI(QDialog):
         self.open_folder_dialog_path = self.config['output']['output_folder_path']
         self.update_combobox_psm_tooltip()
         self.update_combobox_oem_tooltip()
+        self.update_combobox_smoothing()
         self.check_trained_data_language_file()
 
         if tesseract_check(self.config['ocr']['tesseract_path']):
@@ -594,11 +607,11 @@ class SettingsUI(QDialog):
         tooltip = self.oem_tooltip.get(int(self.combobox_ocr_engine_mode.currentText()))
         self.combobox_ocr_engine_mode.setToolTip(tooltip)
 
-    def update_combobox_img_smoothing(self):
-        index = self.combobox_img_smoothing.currentIndex()
+    def update_combobox_smoothing(self):
+        index = self.combobox_smoothing.currentIndex()
 
-        self.label_img_smoothing_kernel.setVisible(index == 0 or index == 1 or index == 2)
-        self.spinbox_blur_kernel.setVisible(index == 0)
+        self.label_smoothing_kernel.setVisible(index == 0 or index == 1 or index == 2)
+        self.spinbox_average_kernel.setVisible(index == 0)
         self.spinbox_gaussian_kernel.setVisible(index == 1)
         self.spinbox_median_kernel.setVisible(index == 2)
 
@@ -613,15 +626,8 @@ class SettingsUI(QDialog):
         for vis in visibility:
             vis.setVisible(is_index_three)
 
-        self.spinbox_blur_kernel.setValue(self.config['preprocess']['blur_kernel'])
-        self.spinbox_gaussian_kernel.setValue(self.config['preprocess']['gaussian_blur_kernel'])
-        self.spinbox_median_kernel.setValue(self.config['preprocess']['median_blur_kernel'])
-        self.spinbox_bilateral_diameter.setValue(self.config['preprocess']['bilateral_filtering_diameter'])
-        self.spinbox_bilateral_sigmacolor.setValue(self.config['preprocess']['bilateral_filtering_sigmacolor'])
-        self.spinbox_bilateral_sigmaspace.setValue(self.config['preprocess']['bilateral_filtering_sigmaspace'])
-
-        tooltip = list(self.img_smoothing_tooltip.values())[index]
-        self.combobox_img_smoothing.setToolTip(tooltip)
+        tooltip = list(self.smoothing_tooltip.values())[index]
+        self.combobox_smoothing.setToolTip(tooltip)
 
     def handle_tab_change(self):
         for spinbox in self.spinboxes.values():
@@ -635,6 +641,7 @@ class SettingsUI(QDialog):
         self.ocr_tab_widget_visible = not self.ocr_tab_widget_visible
 
     def check_trained_data_language_file(self):
+        logger.info("Checking trained data languages")
         self.config = load_config()
         for language_code, language_name in language_set().items():
             file_path = Path('./tessdata') / f'{language_code}.traineddata'
@@ -694,7 +701,7 @@ class SettingsUI(QDialog):
             self.button_apply_settings.setEnabled(True)
             logger.info(f"Apply button color timer start - state: {self.apply_button_was_enabled}")
 
-    def update_apply_button_state(self):
+    def update_apply_button(self):
         self.apply_button_was_enabled = True
         # Gradually change the Apply button text color to make it visible
         current_color = self.button_apply_settings.palette().color(QPalette.ButtonText)
@@ -714,9 +721,8 @@ class SettingsUI(QDialog):
             self.apply_button_state_timer.stop()
 
     def stop_updating_apply_button(self):
-        logger.info(f"Apply button state: {self.apply_button_was_enabled}")
         if self.apply_button_was_enabled:
-            self.apply_button_state_timer.stop()  # Forcefully stop the update_apply_button_state
+            self.apply_button_state_timer.stop()  # Forcefully stop the update_apply_button
             palette = QPalette()
             palette.setColor(QPalette.ButtonText, QColor(128, 128, 128))  # Gray color
             self.button_apply_settings.setPalette(palette)
@@ -767,7 +773,7 @@ class SettingsUI(QDialog):
                 raise ValueError("Output folder is empty.")
 
         if Path(output_folder_path).exists() and Path(output_folder_path).is_dir():
-            logger.info(f"Output folder already exist '{output_folder_path}'")
+            logger.info(f"Output folder found '{output_folder_path}'")
             self.output_folder_created = True
             self.save_settings_config()
             return
@@ -857,8 +863,16 @@ class SettingsUI(QDialog):
                 'whitelist_char': self.line_edit_whitelist_char.text()
             },
             "preprocess": {
+                'enable_preprocess': self.checkbox_enable_preprocess.isChecked(),
                 'scale_factor': self.fix_double_spinbox_zeros(self.spinbox_scale_factor.value()),
                 'grayscale': self.checkbox_grayscale.isChecked(),
+                'smoothing': self.combobox_smoothing.currentIndex(),
+                'average_blur_kernel': self.spinbox_average_kernel.value(),
+                'gaussian_blur_kernel': self.spinbox_gaussian_kernel.value(),
+                'median_blur_kernel': self.spinbox_median_kernel.value(),
+                'bilateral_blur_diameter': self.spinbox_bilateral_diameter.value(),
+                'bilateral_blur_sigmacolor': self.spinbox_bilateral_sigmacolor.value(),
+                'bilateral_blur_sigmaspace': self.spinbox_bilateral_sigmaspace.value(),
                 'remove_noise': self.checkbox_remove_noise.isChecked(),
                 'adaptive_thresholding': self.checkbox_adaptive_thresholding.isChecked(),
                 'adaptive_threshold': self.spinbox_adaptive_threshold.value(),

@@ -4,7 +4,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QMessageBox
 
-# Source
+# Custom library
 from src.ui.asset_manager import app_icon
 
 

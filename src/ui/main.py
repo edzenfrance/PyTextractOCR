@@ -29,7 +29,6 @@ class MainUI(QDialog):
 
         self.pos_y = None
         self.pos_x = None
-        self.config = None
         self.saved_position = None
         self.ocr_text_ui_visible = False
         self.settings_ui_visible = False
@@ -153,11 +152,11 @@ class MainUI(QDialog):
             event.ignore()
             return
 
-        self.config = load_config()
-        if self.config['preferences']['minimize_to_system_tray']:
+        config = load_config()
+        if config['preferences']['minimize_to_system_tray']:
             logger.info("Minimizing application to system tray")
 
-            if not self.config['miscellaneous']['tray_notification_shown']:
+            if not config['miscellaneous']['tray_notification_shown']:
                 self.tray_icon.showMessage('Hey there!', 'PyTextractOCR has been minimized to the system tray. ',
                                            QSystemTrayIcon.Information, 2000)
                 update_config({"miscellaneous": {'tray_notification_shown': True}})
@@ -179,9 +178,9 @@ class MainUI(QDialog):
         config_path = Path('config.toml')
         if config_path.is_file():
             # Move the window at the saved position
-            self.config = load_config()
-            pos_x = self.config['miscellaneous']['main_window_position_x']
-            pos_y = self.config['miscellaneous']['main_window_position_y']
+            config = load_config()
+            pos_x = config['miscellaneous']['main_window_position_x']
+            pos_y = config['miscellaneous']['main_window_position_y']
             logger.info(f"Moving main window position: X: {pos_x} Y: {pos_y}")
             self.move(pos_x, pos_y)
         else:

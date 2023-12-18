@@ -1,7 +1,7 @@
 # Third-party library
 from googletrans import Translator
 
-# Source
+# Custom library
 from src.config.config import load_config
 
 translator = Translator()

@@ -16,15 +16,16 @@ def preprocess_image(image_path, config):
 
 
 def start_preprocess(image_path,
+                     enable_preprocess=None,
                      scale_factor=None,
                      grayscale=None,
-                     image_smoothing=None,
-                     blur_kernel=None,
+                     smoothing=None,
+                     average_blur_kernel=None,
                      gaussian_blur_kernel=None,
                      median_blur_kernel=None,
-                     bilateral_filtering_diameter=None,
-                     bilateral_filtering_sigmacolor=None,
-                     bilateral_filtering_sigmaspace=None,
+                     bilateral_blur_diameter=None,
+                     bilateral_blur_sigmacolor=None,
+                     bilateral_blur_sigmaspace=None,
                      remove_noise=None,
                      adaptive_thresholding=None,
                      adaptive_threshold=None,
@@ -35,23 +36,32 @@ def start_preprocess(image_path,
                      structure_manipulation_kernel=None,
                      structure_manipulation_iteration=None,
                      deskew=None):
+
+    if not enable_preprocess:
+        logger.info("Preprocessing image is disabled")
+        return
+
     image = cv2.imread(image_path)
 
     if scale_factor != 1.0:
-        logger.info(f"Resizing image - scale factor: {scale_factor}")
+        logger.info(f"Resizing image: {scale_factor}x scale")
         image = cv2.resize(image, None, fx=scale_factor, fy=scale_factor, interpolation=cv2.INTER_CUBIC)
 
     if grayscale:
         logger.info("Applying grayscale")
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-    if gaussian_blur_kernel:
-        logger.info("Applying gaussian blur")
-        image = cv2.GaussianBlur(image, (gaussian_blur_kernel, gaussian_blur_kernel), 0)
-
-    if median_blur_kernel:
-        logger.info('Applying median blur')
-        image = cv2.medianBlur(image, 1)
+    smoothing_methods = {
+        0: {"method": cv2.blur, "params": ((average_blur_kernel, average_blur_kernel),), "message": "Applying average blurring"},
+        1: {"method": cv2.GaussianBlur, "params": ((gaussian_blur_kernel, gaussian_blur_kernel), 0), "message": "Applying gaussian blurring"},
+        2: {"method": cv2.medianBlur, "params": (median_blur_kernel,), "message": "Applying median blurring"},
+        3: {"method": cv2.bilateralFilter, "params": (bilateral_blur_diameter, bilateral_blur_sigmacolor, bilateral_blur_sigmaspace),
+            "message": "Applying bilateral blurring"}
+    }
+    if smoothing in smoothing_methods:
+        method_info = smoothing_methods[smoothing]
+        logger.info(method_info["message"])
+        image = method_info["method"](image, *method_info["params"])
 
     if remove_noise:
         if not grayscale:
@@ -91,13 +101,10 @@ def start_preprocess(image_path,
     cv2.imwrite(image_path, image)
 
     if deskew:
-        logger.info("Deskewing")
-        deskew_image(image_path)
+        logger.info("Deskewing image")
+        image = io.imread(image_path)
+        grayscale = rgb2gray(image)
+        angle = determine_skew(grayscale)
+        rotated = rotate(image, angle, resize=True) * 255
+        io.imsave(image_path, rotated.astype(np.uint8))
 
-
-def deskew_image(image_path):
-    image = io.imread(image_path)
-    grayscale = rgb2gray(image)
-    angle = determine_skew(grayscale)
-    rotated = rotate(image, angle, resize=True) * 255
-    io.imsave(image_path, rotated.astype(np.uint8))
