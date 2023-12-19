@@ -246,17 +246,19 @@ class SettingsUI(QDialog):
         self.preprocess_tab.setObjectName('preprocess_tab')
         self.settings_tab_widget.addTab(self.preprocess_tab, "Preprocess")
 
-        self.checkbox_enable_preprocess = self.create_checkbox("Enable Preprocess", self.preprocess_tab, 'checkbox_enable_preprocess', (16, 10, 201, 20))
+        self.checkbox_enable_preprocess = self.create_checkbox("Enable Preprocess", self.preprocess_tab, 'checkbox_enable_preprocess',
+                                                               (16, 10, 201, 20))
 
         # Scale Factor
         self.label_scale_factor = self.create_label("Scale Factor:", self.preprocess_tab, 'label_scale_factor', (16, 47, 121, 16))
         self.spinbox_scale_factor = QDoubleSpinBox(self.preprocess_tab)
         self.spinbox_scale_factor.setObjectName('spinbox_scale_factor')
-        self.spinbox_scale_factor.setGeometry(QRect(90, 46, 45, 20))
+        self.spinbox_scale_factor.setGeometry(QRect(90, 46, 30, 19))
         self.spinbox_scale_factor.setMinimum(1.0)
         self.spinbox_scale_factor.setMaximum(10.0)
         self.spinbox_scale_factor.setSingleStep(0.1)
         self.spinbox_scale_factor.setDecimals(1)
+        self.spinbox_scale_factor.setButtonSymbols(QDoubleSpinBox.NoButtons)
         self.spinbox_scale_factor.valueChanged.connect(lambda value, name='spinbox_scale_factor':
                                                        (self.disable_spinbox_highlight(value, name),
                                                         self.toggle_apply_button()))
@@ -273,85 +275,102 @@ class SettingsUI(QDialog):
 
         self.checkbox_remove_noise = self.create_checkbox("Remove noise", self.preprocess_tab, 'checkbox_remove_noise', (160, 45, 180, 20))
 
-        # Smoothing
-        smoothing_outer_widget = QWidget(self.preprocess_tab)
-        smoothing_outer_widget.setGeometry(0, 70, 409, 71)
-        smoothing_layout = QHBoxLayout(smoothing_outer_widget)
-        smoothing_groupbox = QGroupBox("Smoothing")
-
-        self.combobox_smoothing = QComboBox(smoothing_groupbox)
-        self.combobox_smoothing.setObjectName('combobox_smoothing')
-        self.combobox_smoothing.setGeometry(QRect(16, 22, 75, 22))
-        self.smoothing_tooltip = {
+        # Blurring
+        self.combobox_blurring = QComboBox(self.preprocess_tab)
+        self.combobox_blurring.setObjectName('combobox_blurring')
+        self.combobox_blurring.setGeometry(QRect(95, 77, 75, 22))
+        self.tooltip_blurring = {
             'Average': "Average Blurring",
             'Gaussian': "Gaussian Blurring",
             'Median': "Median Blurring",
             'Bilateral': "Bilateral Blurring"
         }
-        for cb_text, tooltip in self.smoothing_tooltip.items():
-            self.combobox_smoothing.addItem(str(cb_text))
+        for cb_text, tooltip in self.tooltip_blurring.items():
+            self.combobox_blurring.addItem(str(cb_text))
         try:
-            img_sm_value = int(self.config['preprocess']['smoothing'])
-            valid_oem_value = max(0, min(img_sm_value, 3))
-            self.combobox_smoothing.setCurrentIndex(valid_oem_value)
+            self.combobox_blurring.setCurrentIndex(max(0, min(int(self.config['preprocess']['blurring']), 3)))
         except ValueError as e:
             logger.error(f"Error converting oem value to integer: {e}")
-        self.combobox_smoothing.currentIndexChanged.connect(lambda: (self.update_combobox_smoothing(), self.toggle_apply_button()))
+        self.combobox_blurring.currentIndexChanged.connect(lambda: (self.update_combobox_blurring(), self.toggle_apply_button()))
 
-        self.label_smoothing_kernel = self.create_label("K:", smoothing_groupbox, 'label_smoothing_kernel', (100, 25, 10, 16))
-        self.label_bilateral_diameter = self.create_label("D:", smoothing_groupbox, 'label_bilateral_diameter', (100, 25, 10, 16))
-        self.label_bilateral_sigmacolor = self.create_label("SC:", smoothing_groupbox, 'label_bilateral_sigmacolor', (170, 25, 20, 16))
-        self.label_bilateral_sigmaspace = self.create_label("SS:", smoothing_groupbox, 'label_bilateral_sigmaspace', (246, 25, 20, 16))
+        self.label_blurring = self.create_label("Blurring:", self.preprocess_tab, 'label_blurring', (16, 80, 70, 16))
+        self.label_blurring_kernel = self.create_label("K:", self.preprocess_tab, 'label_blurring_kernel', (180, 80, 10, 16))
+        self.label_bilateral_diameter = self.create_label("D:", self.preprocess_tab, 'label_bilateral_diameter', (180, 80, 10, 16))
+        self.label_bilateral_sigmacolor = self.create_label("SC:", self.preprocess_tab, 'label_bilateral_sigmacolor', (235, 80, 20, 16))
+        self.label_bilateral_sigmaspace = self.create_label("SS:", self.preprocess_tab, 'label_bilateral_sigmaspace', (295, 80, 20, 16))
 
-        self.spinbox_average_kernel = self.create_spinbox(smoothing_groupbox, 'spinbox_average_kernel', (117, 23, 40, 20), 1, 10, 1)
-        self.spinbox_gaussian_kernel = self.create_spinbox(smoothing_groupbox, 'spinbox_gaussian_kernel', (117, 23, 40, 20), 1, 15, 2)
-        self.spinbox_median_kernel = self.create_spinbox(smoothing_groupbox, 'spinbox_median_kernel', (117, 23, 40, 20), 1, 15, 2)
-        self.spinbox_bilateral_diameter = self.create_spinbox(smoothing_groupbox, 'spinbox_bilateral_diameter', (117, 23, 40, 20), 1, 10, 1)
-        self.spinbox_bilateral_sigmacolor = self.create_spinbox(smoothing_groupbox, 'spinbox_bilateral_sigmacolor', (193, 23, 40, 20), 1, 99, 1)
-        self.spinbox_bilateral_sigmaspace = self.create_spinbox(smoothing_groupbox, 'spinbox_bilateral_sigmaspace', (267, 23, 40, 20), 1, 99, 1)
-
-        smoothing_layout.addWidget(smoothing_groupbox)
+        self.spinbox_average_kernel = self.create_spinbox(self.preprocess_tab, 'spinbox_average_kernel', (195, 78, 30, 19), 1, 10, 1)
+        self.spinbox_gaussian_kernel = self.create_spinbox(self.preprocess_tab, 'spinbox_gaussian_kernel', (195, 78, 30, 19), 1, 15, 2)
+        self.spinbox_median_kernel = self.create_spinbox(self.preprocess_tab, 'spinbox_median_kernel', (195, 78, 30, 19), 1, 15, 2)
+        self.spinbox_bilateral_diameter = self.create_spinbox(self.preprocess_tab, 'spinbox_bilateral_diameter', (195, 78, 30, 19), 1, 10, 1)
+        self.spinbox_bilateral_sigmacolor = self.create_spinbox(self.preprocess_tab, 'spinbox_bilateral_sigmacolor', (255, 78, 30, 19), 1, 256, 1)
+        self.spinbox_bilateral_sigmaspace = self.create_spinbox(self.preprocess_tab, 'spinbox_bilateral_sigmaspace', (315, 78, 30, 19), 1, 256, 1)
 
         # Thresholding
-        thresholding_outer_widget = QWidget(self.preprocess_tab)
-        thresholding_outer_widget.setGeometry(0, 130, 409, 71)
-        thresholding_layout = QHBoxLayout(thresholding_outer_widget)
-        thresholding_groupbox = QGroupBox("Thresholding")
+        self.combobox_thresholding = QComboBox(self.preprocess_tab)
+        self.combobox_thresholding.setObjectName('combobox_thresholding')
+        self.combobox_thresholding.setGeometry(QRect(95, 112, 75, 22))
+        self.tooltip_thresholding = {
+            'Global': "Enable this option to convert the image to a binary format.\n"
+                      "Binarization simplifies the image by separating pixels into black\n"
+                      "and white, making it suitable for various image processing tasks.",
+            'Adaptive': "Adaptive Thresholding",
+            'Otsu': "Otsu Thresholding"
+        }
+        for cb_text, tooltip in self.tooltip_thresholding.items():
+            self.combobox_thresholding.addItem(str(cb_text))
+        try:
+            self.combobox_thresholding.setCurrentIndex(max(0, min(int(self.config['preprocess']['blurring']), 1)))
+        except ValueError as e:
+            logger.error(f"Error converting oem value to integer: {e}")
+        self.combobox_thresholding.currentIndexChanged.connect(lambda: (self.update_combobox_thresholding(), self.toggle_apply_button()))
 
-        self.checkbox_adaptive_thresholding = self.create_checkbox("Adaptive:", thresholding_groupbox,
-                                                                   'checkbox_adaptive_thresholding', (20, 21, 180, 20))
+        self.combobox_adaptive_method = QComboBox(self.preprocess_tab)
+        self.combobox_adaptive_method.setObjectName('combobox_adaptive_method')
+        self.combobox_adaptive_method.setGeometry(QRect(240, 112, 75, 22))
+        self.adaptive_method = {
+            'Mean': "cv2.ADAPTIVE_THRESH_MEAN_C\nThreshold value is the mean of neighbourhood area.",
+            'Gaussian': "cv2.ADAPTIVE_THRESH_GAUSSIAN_C\nThreshold value is the weighted sum of neighbourhood"
+                        "values where weights are a gaussian window."
+        }
+        for cb_text, tooltip in self.adaptive_method.items():
+            self.combobox_adaptive_method.addItem(str(cb_text))
+        try:
+            self.combobox_adaptive_method.setCurrentIndex(max(0, min(int(self.config['preprocess']['threshold_adaptive_method']), 1)))
+        except ValueError as e:
+            logger.error(f"Error converting oem value to integer: {e}")
 
-        self.spinbox_adaptive_threshold = self.create_spinbox(thresholding_groupbox, 'spinbox_adaptive_threshold', (98, 21, 45, 20), 1, 255, 2)
+        self.label_thresholding = self.create_label("Thresholding:", self.preprocess_tab, 'label_thresholding', (16, 115, 75, 16))
+        self.label_threshold = self.create_label("T:", self.preprocess_tab, 'label_threshold', (180, 115, 10, 16))
+        self.spinbox_adaptive_threshold = self.create_spinbox(self.preprocess_tab, 'spinbox_adaptive_threshold', (195, 113, 30, 19), 1, 255, 2)
 
-        self.checkbox_global_thresholding = self.create_checkbox("Global:", thresholding_groupbox, 'checkbox_global_thresholding', (185, 21, 180, 20),
-                                                                 tooltip="Enable this option to convert the image to a binary format.\n"
-                                                                         "Binarization simplifies the image by separating pixels into black\n"
-                                                                         "and white, making it suitable for various image processing tasks.")
-
-        self.spinbox_global_threshold = self.create_spinbox(thresholding_groupbox, 'spinbox_global_threshold', (250, 21, 45, 20), 1, 255, 1,
+        self.spinbox_global_threshold = self.create_spinbox(self.preprocess_tab, 'spinbox_global_threshold', (195, 113, 30, 19), 1, 255, 1,
                                                             tooltip="Threshold minimum = 0, maximum = 255\n"
                                                                     "Set the threshold value for binarization. Pixels with values above\n"
                                                                     "this threshold will be set to white, and those below will be black.\n"
                                                                     "Adjust the threshold based on the characteristics of your image.")
 
-        thresholding_layout.addWidget(thresholding_groupbox)
+        # Morphological Transformations
+        self.combobox_morph_trans = QComboBox(self.preprocess_tab)
+        self.combobox_morph_trans.setObjectName('combobox_morph_trans')
+        self.combobox_morph_trans.setGeometry(QRect(95, 147, 75, 22))
+        self.tooltip_morph_trans = {
+            'Erosion': "Erode",
+            'Dilation': "Dilate",
+            'Opening': "An opening is an erosion followed by a dilation.",
+            'Closing': "A closing is a dilation followed by an erosion.",
+            'Gradient': "A morphological gradient is the difference between a dilation and erosion.\n"
+                        "It is useful for determining the outline of a particular object of an image"
+        }
+        for cb_text, tooltip in self.tooltip_morph_trans.items():
+            self.combobox_morph_trans.addItem(str(cb_text))
+        try:
+            self.combobox_morph_trans.setCurrentIndex(max(0, min(int(self.config['preprocess']['morphological_transformation']), 4)))
+        except ValueError as e:
+            logger.error(f"Error converting oem value to integer: {e}")
+        self.combobox_morph_trans.currentIndexChanged.connect(lambda: (self.update_combobox_morph_trans(), self.toggle_apply_button()))
 
-        # Structure Manipulation
-        struct_m_outer_widget = QWidget(self.preprocess_tab)
-        struct_m_outer_widget.setGeometry(0, 190, 409, 71)
-        struct_m_layout = QHBoxLayout(struct_m_outer_widget)
-        struct_m_groupbox = QGroupBox("Structure Manipulation")
-
-        self.checkbox_dilate = self.create_checkbox("Dilate", struct_m_groupbox, 'checkbox_dilate', (20, 21, 180, 20))
-        self.checkbox_erode = self.create_checkbox("Erode", struct_m_groupbox, 'checkbox_erode', (90, 21, 180, 20))
-
-        self.label_struct_m_kernel = self.create_label("K:", struct_m_groupbox, 'label_struct_m_kernel', (150, 23, 121, 16))
-        self.label_struct_m_iteration = self.create_label("I:", struct_m_groupbox, 'label_struct_m_iteration', (220, 23, 121, 16))
-
-        self.spinbox_struct_m_kernel = self.create_spinbox(struct_m_groupbox, 'spinbox_struct_m_kernel', (165, 21, 40, 20), 1, 10, 1)
-        self.spinbox_struct_m_iteration = self.create_spinbox(struct_m_groupbox, 'spinbox_struct_m_iteration', (235, 21, 40, 20), 1, 10, 1)
-
-        struct_m_layout.addWidget(struct_m_groupbox)
+        self.label_blurring = self.create_label("Morph Trans:", self.preprocess_tab, 'label_blurring', (16, 150, 70, 16))
 
         # ======== OUTPUT TAB ========
 
@@ -478,6 +497,7 @@ class SettingsUI(QDialog):
         spinbox.setMinimum(minimum)
         spinbox.setMaximum(maximum)
         spinbox.setSingleStep(step)
+        spinbox.setButtonSymbols(QSpinBox.NoButtons)
         if tooltip:
             spinbox.setToolTip(tooltip)
         spinbox.valueChanged.connect(lambda value, name=object_name: (self.disable_spinbox_highlight(value, name),
@@ -517,7 +537,7 @@ class SettingsUI(QDialog):
             (self.spinbox_scale_factor, 'preprocess', 'scale_factor'),
             (self.checkbox_enable_preprocess, 'preprocess', 'enable_preprocess'),
             (self.checkbox_grayscale, 'preprocess', 'grayscale'),
-            (self.combobox_smoothing, 'preprocess', 'smoothing'),
+            (self.combobox_blurring, 'preprocess', 'blurring'),
             (self.spinbox_average_kernel, 'preprocess', 'average_blur_kernel'),
             (self.spinbox_gaussian_kernel, 'preprocess', 'gaussian_blur_kernel'),
             (self.spinbox_median_kernel, 'preprocess', 'median_blur_kernel'),
@@ -525,14 +545,11 @@ class SettingsUI(QDialog):
             (self.spinbox_bilateral_sigmacolor, 'preprocess', 'bilateral_blur_sigmacolor'),
             (self.spinbox_bilateral_sigmaspace, 'preprocess', 'bilateral_blur_sigmaspace'),
             (self.checkbox_remove_noise, 'preprocess', 'remove_noise'),
-            (self.checkbox_adaptive_thresholding, 'preprocess', 'adaptive_thresholding'),
-            (self.spinbox_adaptive_threshold, 'preprocess', 'adaptive_threshold'),
-            (self.checkbox_global_thresholding, 'preprocess', 'global_thresholding'),
-            (self.spinbox_global_threshold, 'preprocess', 'global_threshold'),
-            (self.checkbox_dilate, 'preprocess', 'dilate'),
-            (self.checkbox_erode, 'preprocess', 'erode'),
-            (self.spinbox_struct_m_kernel, 'preprocess', 'structure_manipulation_kernel'),
-            (self.spinbox_struct_m_iteration, 'preprocess', 'structure_manipulation_iteration'),
+            (self.combobox_thresholding, 'preprocess', 'thresholding'),
+            (self.spinbox_global_threshold, 'preprocess', 'threshold_global'),
+            (self.spinbox_adaptive_threshold, 'preprocess', 'threshold_adaptive'),
+            (self.combobox_adaptive_method, 'preprocess', 'threshold_adaptive_method'),
+            (self.combobox_morph_trans, 'preprocess', 'morphological_transformation'),
             (self.checkbox_deskew, 'preprocess', 'deskew'),
             (self.checkbox_copy_to_clipboard, 'output', 'copy_to_clipboard'),
             (self.checkbox_show_popup_window, 'output', 'show_popup_window'),
@@ -550,7 +567,9 @@ class SettingsUI(QDialog):
         self.open_folder_dialog_path = self.config['output']['output_folder_path']
         self.update_combobox_psm_tooltip()
         self.update_combobox_oem_tooltip()
-        self.update_combobox_smoothing()
+        self.update_combobox_blurring()
+        self.update_combobox_thresholding()
+        self.update_combobox_morph_trans()
         self.check_trained_data_language_file()
 
         if tesseract_check(self.config['ocr']['tesseract_path']):
@@ -607,10 +626,10 @@ class SettingsUI(QDialog):
         tooltip = self.oem_tooltip.get(int(self.combobox_ocr_engine_mode.currentText()))
         self.combobox_ocr_engine_mode.setToolTip(tooltip)
 
-    def update_combobox_smoothing(self):
-        index = self.combobox_smoothing.currentIndex()
+    def update_combobox_blurring(self):
+        index = self.combobox_blurring.currentIndex()
 
-        self.label_smoothing_kernel.setVisible(index == 0 or index == 1 or index == 2)
+        self.label_blurring_kernel.setVisible(index == 0 or index == 1 or index == 2)
         self.spinbox_average_kernel.setVisible(index == 0)
         self.spinbox_gaussian_kernel.setVisible(index == 1)
         self.spinbox_median_kernel.setVisible(index == 2)
@@ -626,8 +645,19 @@ class SettingsUI(QDialog):
         for vis in visibility:
             vis.setVisible(is_index_three)
 
-        tooltip = list(self.smoothing_tooltip.values())[index]
-        self.combobox_smoothing.setToolTip(tooltip)
+        tooltip = list(self.tooltip_blurring.values())[index]
+        self.combobox_blurring.setToolTip(tooltip)
+
+    def update_combobox_thresholding(self):
+        index = self.combobox_thresholding.currentIndex()
+
+        self.label_threshold.setVisible(index == 0 or index == 1)
+        self.spinbox_global_threshold.setVisible(index == 0)
+        self.spinbox_adaptive_threshold.setVisible(index == 1)
+        self.combobox_adaptive_method.setVisible(index == 1)
+
+    def update_combobox_morph_trans(self):
+        pass
 
     def handle_tab_change(self):
         for spinbox in self.spinboxes.values():
@@ -866,7 +896,7 @@ class SettingsUI(QDialog):
                 'enable_preprocess': self.checkbox_enable_preprocess.isChecked(),
                 'scale_factor': self.fix_double_spinbox_zeros(self.spinbox_scale_factor.value()),
                 'grayscale': self.checkbox_grayscale.isChecked(),
-                'smoothing': self.combobox_smoothing.currentIndex(),
+                'blurring': self.combobox_blurring.currentIndex(),
                 'average_blur_kernel': self.spinbox_average_kernel.value(),
                 'gaussian_blur_kernel': self.spinbox_gaussian_kernel.value(),
                 'median_blur_kernel': self.spinbox_median_kernel.value(),
@@ -874,14 +904,11 @@ class SettingsUI(QDialog):
                 'bilateral_blur_sigmacolor': self.spinbox_bilateral_sigmacolor.value(),
                 'bilateral_blur_sigmaspace': self.spinbox_bilateral_sigmaspace.value(),
                 'remove_noise': self.checkbox_remove_noise.isChecked(),
-                'adaptive_thresholding': self.checkbox_adaptive_thresholding.isChecked(),
-                'adaptive_threshold': self.spinbox_adaptive_threshold.value(),
-                'global_thresholding': self.checkbox_global_thresholding.isChecked(),
-                'global_threshold': self.spinbox_global_threshold.value(),
-                'dilate': self.checkbox_dilate.isChecked(),
-                'erode': self.checkbox_erode.isChecked(),
-                'structure_manipulation_kernel': self.spinbox_struct_m_kernel.value(),
-                'structure_manipulation_iteration': self.spinbox_struct_m_iteration.value(),
+                'thresholding': self.combobox_thresholding.currentIndex(),
+                'threshold_global': self.spinbox_global_threshold.value(),
+                'threshold_adaptive': self.spinbox_adaptive_threshold.value(),
+                'threshold_adaptive_method': self.combobox_adaptive_method.currentIndex(),
+                'morphological_transformation': self.combobox_morph_trans.currentIndex(),
                 'deskew': self.checkbox_deskew.isChecked()
             },
             "output": {
