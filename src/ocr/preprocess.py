@@ -103,13 +103,13 @@ def start_preprocess(image_path,
         ret, image = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
         logger.info(f"Otsu's thresholding value: {ret}")
 
-    # kernel = np.ones((structure_manipulation_kernel, structure_manipulation_kernel), np.uint8)
-
     if morphological_transformation == 0:
-        image = cv2.erode(image, erosion_kernel, iterations=erosion_iteration)
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (erosion_kernel, erosion_kernel))
+        image = cv2.erode(image, kernel, iterations=erosion_iteration)
 
     if morphological_transformation == 1:
-        image = cv2.dilate(image, dilation_kernel, iterations=dilation_iteration)
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (dilation_kernel, dilation_kernel))
+        image = cv2.dilate(image, kernel, iterations=dilation_iteration)
 
     if morphological_transformation == 2:  # NEEDS GRAYSCALE
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (opening_kernel, opening_kernel))
@@ -122,6 +122,14 @@ def start_preprocess(image_path,
     if morphological_transformation == 4:
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (gradient_kernel, gradient_kernel))
         image = cv2.morphologyEx(image, cv2.MORPH_GRADIENT, kernel)
+
+    if morphological_transformation == 5:
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (13, 5))
+        image = cv2.morphologyEx(image, cv2.MORPH_TOPHAT, kernel)
+
+    if morphological_transformation == 6:
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (13, 5))
+        image = cv2.morphologyEx(image, cv2.MORPH_BLACKHAT, kernel)
 
     cv2.imwrite(image_path, image)
 

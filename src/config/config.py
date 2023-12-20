@@ -1,33 +1,11 @@
 # Standard library
 from pathlib import Path
+from collections import OrderedDict
 
 # Third-party libraries
 import toml
 from loguru import logger
 from toml import TomlDecodeError
-
-
-def check_config_keys(default_config, loaded_config):
-    missing_keys = set()
-
-    def find_missing_keys(default_dict, loaded_dict, parent_key=""):
-        for key, value in default_dict.items():
-            if isinstance(value, dict):
-                find_missing_keys(value, loaded_dict.get(key, {}), f"{parent_key}.{key}" if parent_key else key)
-            elif key not in loaded_dict:
-                missing_keys.add(f"{parent_key}.{key}" if parent_key else key)
-
-    find_missing_keys(default_config, loaded_config)
-
-    if missing_keys:
-        logger.info("Missing keys in configuration file")
-        for key in missing_keys:
-            logger.warning(f"{key}")
-
-    else:
-        logger.success("All default keys found in configuration file")
-
-    return not missing_keys
 
 
 def load_config():
@@ -53,9 +31,9 @@ def load_config():
             'scale_factor': 1.0,
             'grayscale': True,
             'blurring': 0,
-            'average_blur_kernel': 1,
-            'gaussian_blur_kernel': 0,
-            'median_blur_kernel': 0,
+            'average_blur_kernel': [3, 3],
+            'gaussian_blur_kernel': [4, 4],
+            'median_blur_kernel': [5, 5],
             'bilateral_blur_diameter': 1,
             'bilateral_blur_sigmacolor': 75,
             'bilateral_blur_sigmaspace': 75,
@@ -65,13 +43,13 @@ def load_config():
             'threshold_adaptive': 31,
             'threshold_adaptive_method': 1,
             'morphological_transformation': 2,
-            'erosion_kernel': 5,
-            'erosion_iteration': 1,
-            'dilation_kernel': 5,
-            'dilation_iteration': 1,
-            'opening_kernel': 5,
-            'closing_kernel': 5,
-            'gradient_kernel': 5,
+            'erosion_kernel_iteration': [3, 3, 1],
+            'dilation_kernel_iteration': [3, 3, 1],
+            'opening_kernel': [5, 5],
+            'closing_kernel': [5, 5],
+            'gradient_kernel': [5, 5],
+            'tophat_kernel': [5, 5],
+            'blackhat_kernel': [5, 5],
             'deskew': False,
         },
         "output": {
@@ -217,7 +195,6 @@ def load_config():
     }
 
     try:
-        # logger.info("Loading configuration file 'config.toml'")
         if Path('config.toml').exists():
             config = toml.load('config.toml')
         else:
@@ -226,20 +203,25 @@ def load_config():
         logger.error("An error occurred while loading the configuration file. Using default settings")
         config = default_config
 
-    # Check for missing keys and display the missing keys if any.
-    check_config_keys(default_config, config)
-
-    # Update default_config with values from config where necessary.
+    modified = False
+    new_config = {section: {} for section in default_config}  # create a new dictionary with the same sections as default_config
     for section, section_config in default_config.items():
         if section in config:
-            for key, value in section_config.items():
+            for key in section_config:
                 if key in config[section]:
-                    section_config[key] = config[section][key]
+                    new_config[section][key] = config[section][key]  # update the value from loaded config
+                else:
+                    logger.warning(f"Missing keys: {[section]}{[key]}")
+                    new_config[section][key] = section_config[key]  # if key was not present in loaded config, use the default value
+                    modified = True  # if key was not present in loaded config, it's a missing key
 
-    with open("config.toml", "w") as f:
-        toml.dump(default_config, f)
+    if modified:  # if there was a missing key
+        with open("config.toml", "w") as f:
+            toml.dump(new_config, f)  # overwrite the config.toml file with the updated config
+    else:
+        logger.success("All keys were found in the configuration file")
 
-    return default_config
+    return new_config  # return the updated config
 
 
 def update_config(new_config):
