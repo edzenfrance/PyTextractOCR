@@ -249,7 +249,7 @@ class SettingsUI(QDialog):
                                                                (16, 10, 201, 20))
 
         # Scale Factor
-        self.label_scale_factor = self.create_label("Scale Factor:", self.preprocess_tab, 'label_scale_factor', (21, 47, 121, 16))
+        self.label_scale_factor = self.create_label("Scale Factor:", self.preprocess_tab, 'label_scale_factor', (22, 47, 121, 16))
         self.spinbox_scale_factor = QDoubleSpinBox(self.preprocess_tab)
         self.spinbox_scale_factor.setObjectName('spinbox_scale_factor')
         self.spinbox_scale_factor.setGeometry(QRect(96, 46, 30, 19))
@@ -269,7 +269,7 @@ class SettingsUI(QDialog):
         self.checkbox_remove_noise = self.create_checkbox("Remove noise", self.preprocess_tab, 'checkbox_remove_noise', (250, 45, 180, 20))
 
         # Deskew
-        self.label_deskew = self.create_label("Deskew:", self.preprocess_tab, 'label_deskew', (43, 80, 70, 16))
+        self.label_deskew = self.create_label("Deskew:", self.preprocess_tab, 'label_deskew', (45, 80, 70, 16))
         self.checkbox_deskew = self.create_checkbox("", self.preprocess_tab, 'checkbox_deskew', (95, 80, 180, 20),
                                                     tooltip="Enable this option to automatically straighten skewed text in the image.\n"
                                                             "Improved alignment enhances OCR accuracy, making text extraction\n"
@@ -279,24 +279,36 @@ class SettingsUI(QDialog):
         self.combobox_deskew = self.create_combobox((115, 77, 75, 22), self.tooltip_deskew, 'combobox_deskew', 'preprocess',
                                                     'blurring', 1, self.update_combobox_blurring)
 
-        # Blurring
-        self.label_blurring = self.create_label("Blurring:", self.preprocess_tab, 'label_blurring', (43, 115, 70, 16))
-        self.checkbox_blurring = self.create_checkbox("", self.preprocess_tab, "checkbox_blurring", (95, 115, 15, 15))
-        self.tooltip_blurring = {'Average': "Average Blurring",
-                                 'Gaussian': "Gaussian Blurring",
-                                 'Median': "Median Blurring",
-                                 'Bilateral': "Bilateral Blurring"}
-        self.combobox_blurring = self.create_combobox((115, 112, 75, 22), self.tooltip_blurring, 'combobox_blurring', 'preprocess',
-                                                      'blurring', 3, self.update_combobox_blurring)
-        self.label_blurring_kernel = self.create_label("K:", self.preprocess_tab, 'label_blurring_kernel', (200, 115, 10, 16))
-        self.label_bilateral_diameter = self.create_label("D:", self.preprocess_tab, 'label_bilateral_diameter', (200, 115, 10, 16))
-        self.label_bilateral_sigmacolor = self.create_label("C:", self.preprocess_tab, 'label_bilateral_sigmacolor', (250, 115, 20, 16))
-        self.label_bilateral_sigmaspace = self.create_label("S:", self.preprocess_tab, 'label_bilateral_sigmaspace', (300, 115, 20, 16))
-        self.spinbox_blurring_kernel_h = self.create_spinbox(self.preprocess_tab, 'spinbox_average_kernel_h', (215, 113, 30, 19), 1, 10, 1)
-        self.spinbox_blurring_kernel_v = self.create_spinbox(self.preprocess_tab, 'spinbox_average_kernel_v', (250, 113, 30, 19), 1, 10, 1)
-        self.spinbox_bilateral_diameter = self.create_spinbox(self.preprocess_tab, 'spinbox_bilateral_diameter', (215, 113, 30, 19), 1, 10, 1)
-        self.spinbox_bilateral_sigmacolor = self.create_spinbox(self.preprocess_tab, 'spinbox_bilateral_sigmacolor', (265, 113, 30, 19), 1, 256, 1)
-        self.spinbox_bilateral_sigmaspace = self.create_spinbox(self.preprocess_tab, 'spinbox_bilateral_sigmaspace', (315, 113, 30, 19), 1, 256, 1)
+        # Blur
+        # Diameter, SigmaColor and SigmaSpace is used by Bilateral Blurring
+        self.label_blur = self.create_label("Blurring:", self.preprocess_tab, 'label_blur', (43, 115, 70, 16))
+        self.checkbox_blur = self.create_checkbox("", self.preprocess_tab, "checkbox_blur", (95, 115, 15, 15))
+        self.tooltip_blur = {'Average': "Average Blur works by averaging the pixel values in\n"
+                                        "the neighborhood defined by the kernel, resulting in\n"
+                                        "a smoothing effect. It's a straightforward method but\n"
+                                        "might not preserve edges well.",
+                             'Gaussian': "Gaussian Blur uses a Gaussian kernel, giving more\n"
+                                         "weight to the nearby pixels and less to the distant\n"
+                                         "ones. This method provides a more natural blurring\n"
+                                         "effect and preserves edges better than Box Blur.",
+                             'Median': "Median Blur replaces each pixel's value with the median\n"
+                                       "of the pixel values in its neighborhood. It's particularly\n"
+                                       "effective at reducing salt-and-pepper noise.",
+                             'Bilateral': "Bilateral Blurring" "Bilateral Blur is a more advanced\n"
+                                          "method that also takes into account the intensity\n"
+                                          "difference between pixels. It can preserve edges\n"
+                                          "while still reducing noise."}
+        self.combobox_blur = self.create_combobox((115, 112, 75, 22), self.tooltip_blur, 'combobox_blur', 'preprocess',
+                                                  'blurring', 3, self.update_combobox_blurring)
+        self.label_blur_kernel = self.create_label("K:", self.preprocess_tab, 'label_blur_kernel', (200, 115, 10, 16))
+        self.label_blur_diameter = self.create_label("D:", self.preprocess_tab, 'label_blur_diameter', (200, 115, 10, 16))
+        self.label_blur_sigmacolor = self.create_label("C:", self.preprocess_tab, 'label_blur_sigmacolor', (250, 115, 20, 16))
+        self.label_blur_sigmaspace = self.create_label("S:", self.preprocess_tab, 'label_blur_sigmaspace', (300, 115, 20, 16))
+        self.spinbox_blur_kernel_h = self.create_spinbox(self.preprocess_tab, 'spinbox_average_kernel_h', (215, 113, 30, 19), 1, 15, 1)
+        self.spinbox_blur_kernel_v = self.create_spinbox(self.preprocess_tab, 'spinbox_average_kernel_v', (250, 113, 30, 19), 1, 15, 1)
+        self.spinbox_blur_diameter = self.create_spinbox(self.preprocess_tab, 'spinbox_blur_diameter', (215, 113, 30, 19), 1, 10, 1)
+        self.spinbox_blur_sigmacolor = self.create_spinbox(self.preprocess_tab, 'spinbox_blur_sigmacolor', (265, 113, 30, 19), 1, 256, 1)
+        self.spinbox_blur_sigmaspace = self.create_spinbox(self.preprocess_tab, 'spinbox_blur_sigmaspace', (315, 113, 30, 19), 1, 256, 1)
 
         # Thresholding
         self.label_thresholding = self.create_label("Thresholding:", self.preprocess_tab, 'label_thresholding', (16, 150, 75, 16))
@@ -304,8 +316,12 @@ class SettingsUI(QDialog):
         self.tooltip_thresholding = {'Global': "Enable this option to convert the image to a binary format.\n"
                                                "Binarization simplifies the image by separating pixels into black\n"
                                                "and white, making it suitable for various image processing tasks.",
-                                     'Adaptive': "Adaptive Thresholding",
-                                     'Otsu': "Otsu Thresholding"}
+                                     'Adaptive': "Adaptive Thresholding applies different thresholds for\n"
+                                                 "different regions of the image, which provides better\n"
+                                                 "results for images with varying illumination.",
+                                     'Otsu': "Otsu's Thresholding automatically determines\n"
+                                             "the optimal threshold value based on the image's\n"
+                                             "histogram."}
         self.combobox_thresholding = self.create_combobox((115, 147, 75, 22), self.tooltip_thresholding, 'combobox_thresholding', 'preprocess',
                                                           'thresholding', 1, self.update_combobox_thresholding)
         self.label_threshold = self.create_label("T:", self.preprocess_tab, 'label_threshold', (200, 150, 10, 16))
@@ -321,20 +337,34 @@ class SettingsUI(QDialog):
         # Morphological Transformation
         self.label_morph = self.create_label("Morph Trans:", self.preprocess_tab, 'label_morph', (19, 185, 70, 16))
         self.checkbox_morph = self.create_checkbox("", self.preprocess_tab, "checkbox_morph", (95, 185, 15, 15))
-        self.tooltip_morph = {'Erosion': "Erode",
-                              'Dilation': "Dilate",
-                              'Opening': "An opening is an erosion followed by a dilation.",
-                              'Closing': "A closing is a dilation followed by an erosion.",
-                              'Gradient': "A morphological gradient is the difference between a dilation and erosion.\n"
-                                          "It is useful for determining the outline of a particular object of an image",
-                              'Tophat': "Tophat",
-                              'Blackhat': "Blackhat"}
+        self.tooltip_morph = {'Erosion': "Erosion shrinks the shapes in the image by peeling off\n"
+                                         "pixels from their edges. Useful for removing small-scale\n"
+                                         "noise and separating closely spaced elements.",
+                              'Dilation': "Dilation expands the shapes in the image by adding\n"
+                                          "pixels to their edges. Useful for filling small holes\n"
+                                          "and connecting nearby elements.",
+                              'Opening': "Opening is erosion followed by dilation. It helps to\n"
+                                         "remove small-scale noise and to disconnect elements\n"
+                                         "that are close together.",
+                              'Closing': "Closing is dilation followed by erosion. It helps to fill\n"
+                                         "small holes and gaps and to connect nearby elements.",
+                              'Gradient': "Morphological Gradient shows the difference between\n"
+                                          "dilation and erosion of an image, often resulting in an\n"
+                                          "outline of the shapes in the image.",
+                              'Top Hat': "Top Hat shows the difference between the original\n"
+                                         "image and the result of applying the opening operation.\n"
+                                         "It highlights bright spots in the image that are smaller\n"
+                                         "than the structuring element.",
+                              'Black Hat': "Black Hat shows the difference between the result\n"
+                                           "of applying the closing operation and the original\n"
+                                           "image. It highlights dark spots in the image that\n"
+                                           "are smaller than the structuring element."}
         self.combobox_morph = self.create_combobox((115, 182, 75, 22), self.tooltip_morph, 'combobox_morph', 'preprocess',
                                                    'morphological_transformation', 6, self.update_combobox_morph)
         self.label_morph_kernel = self.create_label("K:", self.preprocess_tab, 'label_morph_kernel', (200, 185, 10, 16))
         self.label_morph_iteration = self.create_label("I:", self.preprocess_tab, 'label_morph_iteration', (285, 185, 10, 16))
-        self.spinbox_morph_kernel_h = self.create_spinbox(self.preprocess_tab, 'spinbox_morph_kernel_h', (215, 183, 30, 19), 1, 10, 1)
-        self.spinbox_morph_kernel_v = self.create_spinbox(self.preprocess_tab, 'spinbox_morph_kernel_v', (250, 183, 30, 19), 1, 10, 1)
+        self.spinbox_morph_kernel_h = self.create_spinbox(self.preprocess_tab, 'spinbox_morph_kernel_h', (215, 183, 30, 19), 1, 15, 2)
+        self.spinbox_morph_kernel_v = self.create_spinbox(self.preprocess_tab, 'spinbox_morph_kernel_v', (250, 183, 30, 19), 1, 15, 2)
         self.spinbox_morph_iteration = self.create_spinbox(self.preprocess_tab, 'spinbox_morph_iteration', (300, 183, 30, 19), 1, 10, 1)
 
         # ======== OUTPUT TAB ========
@@ -515,10 +545,11 @@ class SettingsUI(QDialog):
             (self.line_edit_tesseract_path, 'ocr', 'tesseract_path'),
             (self.spinbox_scale_factor, 'preprocess', 'scale_factor'),
             (self.checkbox_enable_preprocess, 'preprocess', 'enable_preprocess'),
-            (self.checkbox_grayscale, 'preprocess', 'grayscale'),
+            (self.checkbox_grayscale, 'preprocess', 'enable_grayscale'),
             (self.checkbox_deskew, 'preprocess', 'enable_deskew'),
-            (self.checkbox_blurring, 'preprocess', 'enable_blurring'),
-            (self.combobox_blurring, 'preprocess', 'blurring'),
+            (self.combobox_deskew, 'preprocess', 'deskew_position'),
+            (self.checkbox_blur, 'preprocess', 'enable_blurring'),
+            (self.combobox_blur, 'preprocess', 'blurring'),
             (self.checkbox_remove_noise, 'preprocess', 'remove_noise'),
             (self.checkbox_thresholding, 'preprocess', 'enable_thresholding'),
             (self.combobox_thresholding, 'preprocess', 'thresholding'),
@@ -562,6 +593,8 @@ class SettingsUI(QDialog):
                 widget.setValue(float(value))
             elif isinstance(widget, QCheckBox):
                 widget.setChecked(value)
+            elif isinstance(widget, QComboBox):
+                widget.setCurrentIndex(value)
         except (TypeError, ValueError, AttributeError):
             logger.error(f"Invalid configuration - Table: {table_name} | Key: {key} | Value: {value}")
 
@@ -601,37 +634,45 @@ class SettingsUI(QDialog):
         self.combobox_ocr_engine_mode.setToolTip(tooltip)
 
     def update_combobox_blurring(self):
-        index = self.combobox_blurring.currentIndex()
+        index = self.combobox_blur.currentIndex()
 
-        kernel_dict = {
-            0: 'blur_average_kernel',
-            1: 'blur_gaussian_kernel',
-            2: 'blur_median_kernel'
-        }
-        vis_kernel = [self.label_blurring_kernel,
-                      self.spinbox_blurring_kernel_h,
-                      self.spinbox_blurring_kernel_v]
+        settings_name = [
+            'blur_average_kernel',
+            'blur_gaussian_kernel',
+            'blur_median_kernel',
+        ]
 
-        for vis_k in vis_kernel:
-            vis_k.setVisible(index in kernel_dict)
+        # Set visibility and values based on index.
+        self.label_blur_kernel.setVisible(index != 3)
+        self.spinbox_blur_kernel_h.setVisible(index != 3)
+        self.spinbox_blur_kernel_v.setVisible(index != 2 and index != 3)
 
-        if index in kernel_dict:
-            self.spinbox_blurring_kernel_h.setValue(self.config['preprocess'][kernel_dict[index]][0])
-            self.spinbox_blurring_kernel_v.setValue(self.config['preprocess'][kernel_dict[index]][1])
+        if index == 0:
+            self.spinbox_blur_kernel_h.setSingleStep(1)
+            self.spinbox_blur_kernel_v.setSingleStep(1)
+        else:
+            self.spinbox_blur_kernel_h.setSingleStep(2)
+            self.spinbox_blur_kernel_v.setSingleStep(2)
+
+        if index < 2:
+            self.spinbox_blur_kernel_h.setValue(self.config['preprocess'][settings_name[index]][0])
+            self.spinbox_blur_kernel_v.setValue(self.config['preprocess'][settings_name[index]][1])
+        elif index == 2:
+            self.spinbox_blur_kernel_h.setValue(self.config['preprocess'][settings_name[index]])
 
         is_index_three = index == 3
-        visibility = [self.label_bilateral_diameter,
-                      self.label_bilateral_sigmacolor,
-                      self.label_bilateral_sigmaspace,
-                      self.spinbox_bilateral_diameter,
-                      self.spinbox_bilateral_sigmaspace,
-                      self.spinbox_bilateral_sigmacolor]
+        visibility = [self.label_blur_diameter,
+                      self.label_blur_sigmacolor,
+                      self.label_blur_sigmaspace,
+                      self.spinbox_blur_diameter,
+                      self.spinbox_blur_sigmaspace,
+                      self.spinbox_blur_sigmacolor]
 
         for vis in visibility:
             vis.setVisible(is_index_three)
 
-        tooltip = list(self.tooltip_blurring.values())[index]
-        self.combobox_blurring.setToolTip(tooltip)
+        tooltip = list(self.tooltip_blur.values())[index]
+        self.combobox_blur.setToolTip(tooltip)
 
     def update_combobox_thresholding(self):
         index = self.combobox_thresholding.currentIndex()
@@ -646,6 +687,9 @@ class SettingsUI(QDialog):
         if index == 1:
             self.spinbox_threshold.setValue(self.config['preprocess']['threshold_adaptive'])
             self.combobox_adaptive_method.setCurrentIndex(self.config['preprocess']['threshold_adaptive_method'])
+
+        tooltip = list(self.tooltip_thresholding.values())[index]
+        self.combobox_thresholding.setToolTip(tooltip)
 
     def update_combobox_adaptive_method(self):
         pass
@@ -662,8 +706,8 @@ class SettingsUI(QDialog):
             2: 'opening_kernel',
             3: 'closing_kernel',
             4: 'gradient_kernel',
-            5: 'tophat_kernel',
-            6: 'blackhat_kernel'
+            5: 'top_hat_kernel',
+            6: 'black_hat_kernel'
         }
         if index in kernel_dict:
             kernel = kernel_dict[index]
@@ -675,6 +719,9 @@ class SettingsUI(QDialog):
                     self.spinbox_morph_iteration.setValue(iteration)
             except IndexError:
                 pass
+
+        tooltip = list(self.tooltip_morph.values())[index]
+        self.combobox_morph.setToolTip(tooltip)
 
     def handle_tab_change(self):
         for spinbox in self.spinboxes.values():
@@ -912,12 +959,12 @@ class SettingsUI(QDialog):
             "preprocess": {
                 'enable_preprocess': self.checkbox_enable_preprocess.isChecked(),
                 'scale_factor': self.fix_double_spinbox_zeros(self.spinbox_scale_factor.value()),
-                'grayscale': self.checkbox_grayscale.isChecked(),
+                'enable_grayscale': self.checkbox_grayscale.isChecked(),
                 'remove_noise': self.checkbox_remove_noise.isChecked(),
                 'enable_deskew': self.checkbox_deskew.isChecked(),
                 'deskew_position': self.combobox_deskew.currentIndex(),
-                'enable_blurring': self.checkbox_blurring.isChecked(),
-                'blurring': self.combobox_blurring.currentIndex(),
+                'enable_blurring': self.checkbox_blur.isChecked(),
+                'blurring': self.combobox_blur.currentIndex(),
                 'enable_thresholding': self.checkbox_thresholding.isChecked(),
                 'thresholding': self.combobox_thresholding.currentIndex(),
                 'threshold_adaptive_method': self.combobox_adaptive_method.currentIndex(),
@@ -936,19 +983,22 @@ class SettingsUI(QDialog):
                 'enable_translation': self.checkbox_show_translation.isChecked()
             }
         }
-        # Save blurring
-        blur_index = self.combobox_blurring.currentIndex()
-        settings_name = [
-            'blur_average_kernel',
-            'blur_gaussian_kernel',
-            'blur_median_kernel',
-            'blur_bilateral_diameter_scolor_sspace'
-        ]
-        settings_values = {i: [self.spinbox_blurring_kernel_h.value(), self.spinbox_blurring_kernel_v.value()] for i in range(0, 3)}
-        settings_values.update(
-            {3: [self.spinbox_bilateral_diameter.value(), self.spinbox_bilateral_sigmacolor.value(), self.spinbox_bilateral_sigmaspace.value()]})
-        if blur_index in settings_values:
-            settings_config['preprocess'][settings_name[blur_index]] = settings_values[blur_index]
+        # Save blurring kernel and other
+        blur_index = self.combobox_blur.currentIndex()
+        if blur_index == 0:
+            settings_config['preprocess']['blur_average_kernel'] = [self.spinbox_blur_kernel_h.value(), self.spinbox_blur_kernel_v.value()]
+        elif blur_index == 1:
+            kvh = self.spinbox_morph_kernel_h.value()
+            kvh = kvh if kvh % 2 else kvh + 1
+            kvv = self.spinbox_morph_kernel_h.value()
+            kvv = kvv if kvv % 2 else kvv + 1
+            settings_config['preprocess']['blur_gaussian_kernel'] = [kvh, kvv]
+        elif blur_index == 2:
+            kvh = self.spinbox_blur_kernel_h.value()
+            settings_config['preprocess']['blur_median_kernel'] = kvh if kvh % 2 else kvh + 1
+        elif blur_index == 3:
+            settings_config['preprocess']['blur_bilateral_dcs'] = [
+                self.spinbox_blur_diameter.value(), self.spinbox_blur_sigmacolor.value(), self.spinbox_blur_sigmaspace.value()]
 
         # Save thresholding
         thresh_index = self.combobox_thresholding.currentIndex()
@@ -964,8 +1014,8 @@ class SettingsUI(QDialog):
             'opening_kernel',
             'closing_kernel',
             'gradient_kernel',
-            'tophat_kernel',
-            'blackhat_kernel'
+            'top_hat_kernel',
+            'black_hat_kernel'
         ]
         settings_values = {i: [self.spinbox_morph_kernel_h.value(), self.spinbox_morph_kernel_v.value(), self.spinbox_morph_iteration.value()] for i
                            in range(2)}
