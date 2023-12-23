@@ -1,6 +1,5 @@
 # Standard library
 from pathlib import Path
-from collections import OrderedDict
 
 # Third-party libraries
 import toml

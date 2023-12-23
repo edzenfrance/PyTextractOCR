@@ -53,7 +53,7 @@ def start_preprocess(image_path,
         image = io.imread(image_path)
         grayscale = rgb2gray(image)
         angle = determine_skew(grayscale)
-        if angle > 0.0:
+        if angle is not None and angle > 0.0:
             rotated = rotate(image, angle, resize=True) * 255
             logger.info(f"Deskew rotated angle value: {angle}")
             io.imsave(image_path, rotated.astype(np.uint8))
@@ -96,7 +96,7 @@ def start_preprocess(image_path,
         empty_image = np.zeros(labels.shape, np.uint8)
 
         for i in range(0, nlabels - 1):
-            if sizes[i] >= 50:  # filter small dotted regions
+            if sizes[i] >= 100:  # filter small dotted regions
                 empty_image[labels == i + 1] = 255
 
         image = cv2.bitwise_not(empty_image)
@@ -158,7 +158,7 @@ def start_preprocess(image_path,
     if enable_deskew and deskew_position == 1:
         logger.info(f"Deskewing image [Last]")
         angle = determine_skew(image)
-        if angle > 0.0:
+        if angle is not None and angle > 0.0:
             rotated = rotate(image, angle, resize=True) * 255
             logger.info(f"Deskew rotated angle value: {angle}")
             io.imsave(image_path, rotated.astype(np.uint8))

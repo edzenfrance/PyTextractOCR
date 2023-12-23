@@ -7,8 +7,8 @@ from src.config.config import load_config
 translator = Translator()
 
 
-def language_set():
-    languages_set = {
+def tesseract_languages():
+    return {
         'afr': 'Afrikaans',
         'sqi': 'Albanian',
         'amh': 'Amharic',
@@ -129,13 +129,12 @@ def language_set():
         'cym': 'Welsh',
         'fry': 'Western Frisian',
         'yid': 'Yiddish',
-        'yor': 'Yoruba',
+        'yor': 'Yoruba'
     }
-    return languages_set
 
 
-def language_list():
-    languages_list = {
+def googletrans_languages():
+    return {
         'af': 'afrikaans',
         'sq': 'albanian',
         'am': 'amharic',
@@ -248,20 +247,21 @@ def language_list():
         'yo': 'yoruba',
         'zu': 'zulu'
     }
-    return languages_list
 
 
 def translate_text(extracted_text):
-    languages = language_list()
     config = load_config()
+    googletrans_languages_dict = googletrans_languages()
+    tesseract_languages_dict = tesseract_languages()
 
-    selected_language = config['ocr']['language']
-    source_language = next((code for code, name in languages.items() if name == selected_language), None)
-    if not source_language:
-        raise ValueError(f"Source language '{selected_language}' not found in the language list.")
+    language = tesseract_languages_dict.get(config['ocr']['language'])  # Find only one language
+    if language:
+        source_language = ''.join(k for k, v in googletrans_languages_dict.items() if v == language.lower())
+    else:
+        raise ValueError(f"Source language '{config['ocr']['language']}' not found in the translate language list.")
 
-    dest_lang = config['translate'][selected_language]
-    destination_language = next((code for code, name in languages.items() if code == dest_lang), None)
+    dest_lang = config['translate'][language.lower()]
+    destination_language = next((code for code, name in googletrans_languages_dict.items() if code == dest_lang), None)
     if not destination_language:
         raise ValueError(f"Destination language '{dest_lang}' not found in the language list.")
 

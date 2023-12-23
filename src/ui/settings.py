@@ -16,7 +16,7 @@ from src.config.config import load_config, update_config
 from src.ocr.ocr_processor import tesseract_check, tesseract_version
 from src.ui.asset_manager import app_icon
 from src.utils.message_box import show_message_box
-from src.utils.translate import language_list, language_set
+from src.utils.translate import googletrans_languages, tesseract_languages
 from src.ui.download import DownloadTrainedData
 
 
@@ -139,7 +139,7 @@ class SettingsUI(QDialog):
         self.sc_checkboxes = []
 
         # Add checkboxes for different languages with "Download" button
-        for language_name in language_set().values():
+        for language_name in tesseract_languages().values():
             self.scroll_row_layout = QHBoxLayout()
 
             self.sc_checkbox = QCheckBox(language_name.title())
@@ -313,9 +313,12 @@ class SettingsUI(QDialog):
         # Thresholding
         self.label_thresholding = self.create_label("Thresholding:", self.preprocess_tab, 'label_thresholding', (16, 150, 75, 16))
         self.checkbox_thresholding = self.create_checkbox("", self.preprocess_tab, "checkbox_thresholding", (95, 150, 15, 15))
-        self.tooltip_thresholding = {'Global': "Enable this option to convert the image to a binary format.\n"
-                                               "Binarization simplifies the image by separating pixels into black\n"
-                                               "and white, making it suitable for various image processing tasks.",
+        self.tooltip_thresholding = {'Global': "Global Thresholding applies a single, global threshold value\n"
+                                               "to the entire image. All the pixel intensity values higher than\n"
+                                               "this threshold are set to one value (typically white), while\n"
+                                               "those lower are set to another value (typically black). It's simple and fast,\n"
+                                               "but might not work well if the image has different lighting conditions\n"
+                                               "in different areas.",
                                      'Adaptive': "Adaptive Thresholding applies different thresholds for\n"
                                                  "different regions of the image, which provides better\n"
                                                  "results for images with varying illumination.",
@@ -425,12 +428,12 @@ class SettingsUI(QDialog):
 
         self.translate_to_comboboxes = []
 
-        for table_row, combobox_language in enumerate(language_list().values(), start=0):
+        for table_row, combobox_language in enumerate(googletrans_languages().values(), start=0):
             table_widget_language = QTableWidgetItem(combobox_language.capitalize())
             translate_to_combobox = QComboBox()
 
             # Add the languages with the first letter capitalized to the combo box, excluding the current language
-            for language_code, language_name in language_list().items():
+            for language_code, language_name in googletrans_languages().items():
                 if language_name != combobox_language:
                     translate_to_combobox.addItem(language_name.capitalize())
                 if language_code == self.config['translate'][combobox_language.lower()]:
@@ -737,7 +740,7 @@ class SettingsUI(QDialog):
     def check_trained_data_language_file(self):
         logger.info("Checking trained data languages")
         self.config = load_config()
-        for language_code, language_name in language_set().items():
+        for language_code, language_name in tesseract_languages().items():
             file_path = Path('./tessdata') / f'{language_code}.traineddata'
             is_file_exist = file_path.exists()
             is_language_selected = language_code in self.config['ocr']['language']
@@ -914,7 +917,7 @@ class SettingsUI(QDialog):
 
         for name, button in self.sc_button_dict.items():
             if button is sender_button:
-                for language_code, language_name in language_set().items():
+                for language_code, language_name in tesseract_languages().items():
                     if name == language_name:
                         tessdata_folder = Path('./tessdata/')
                         file_name = f'{language_code}.traineddata'
@@ -1024,12 +1027,12 @@ class SettingsUI(QDialog):
             settings_config['preprocess'][settings_name[morph_index]] = settings_values[morph_index]
 
         # Save all checked OCR languages
-        checked_languages = [language_code for language_code, language_name in language_set().items()
+        checked_languages = [language_code for language_code, language_name in tesseract_languages().items()
                              if self.sc_checkbox_dict[language_name].isChecked() and Path('./tessdata', f'{language_code}.traineddata').exists()]
         settings_config['ocr']['language'] = '+'.join(checked_languages)
 
         # Get the selected language in every Translate To combobox
-        languages = language_list()
+        languages = googletrans_languages()
         for count, language_name in enumerate(languages.values()):
             current_text = self.translate_to_comboboxes[count].currentText().lower()
             for language_code, name in languages.items():
