@@ -41,6 +41,7 @@ def load_config():
             'enable_thresholding': False,
             'thresholding': 0,
             'threshold_global': 64,
+            'threshold_global_type': 0,
             'threshold_adaptive': 31,
             'threshold_adaptive_method': 1,
             'enable_morphological_transformation': False,

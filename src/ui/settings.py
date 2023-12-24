@@ -316,9 +316,9 @@ class SettingsUI(QDialog):
         self.tooltip_thresholding = {'Global': "Global Thresholding applies a single, global threshold value\n"
                                                "to the entire image. All the pixel intensity values higher than\n"
                                                "this threshold are set to one value (typically white), while\n"
-                                               "those lower are set to another value (typically black). It's simple and fast,\n"
-                                               "but might not work well if the image has different lighting conditions\n"
-                                               "in different areas.",
+                                               "those lower are set to another value (typically black). It's\n"
+                                               "simple and fast, but might not work well if the image has\n"
+                                               "different lighting conditions in different areas.",
                                      'Adaptive': "Adaptive Thresholding applies different thresholds for\n"
                                                  "different regions of the image, which provides better\n"
                                                  "results for images with varying illumination.",
@@ -328,14 +328,23 @@ class SettingsUI(QDialog):
         self.combobox_thresholding = self.create_combobox((115, 147, 75, 22), self.tooltip_thresholding, 'combobox_thresholding', 'preprocess',
                                                           'thresholding', 1, self.update_combobox_thresholding)
         self.label_threshold = self.create_label("T:", self.preprocess_tab, 'label_threshold', (200, 150, 10, 16))
+        self.label_global_type = self.create_label("T:", self.preprocess_tab, 'label_global_type', (250, 150, 15, 16))
+        self.tooltip_global_type = {'Binary': "cv2.ADAPTIVE_THRESH_MEAN_C\nThreshold value is the mean of neighbourhood area.",
+                                    'Inverse': "cv2.ADAPTIVE_THRESH_GAUSSIAN_C\nThreshold value is the weighted sum of neighbourhood"
+                                               "values where weights are a gaussian window.",
+                                    'Truncate': "Truncate",
+                                    'ToZero': "To Zero",
+                                    'ZeroInv': "Zero Inv"
+                                    }
+        self.combobox_global_type = self.create_combobox((268, 147, 75, 22), self.tooltip_global_type, 'combobox_global_type',
+                                                         'preprocess', 'threshold_global_type', 1, self.update_combobox_adaptive_method)
         self.label_adaptive_method = self.create_label("M:", self.preprocess_tab, 'label_adaptive_method', (250, 150, 15, 16))
         self.spinbox_threshold = self.create_spinbox(self.preprocess_tab, 'spinbox_threshold', (215, 148, 30, 19), 1, 255, 2)
         self.tooltip_adaptive_method = {'Mean': "cv2.ADAPTIVE_THRESH_MEAN_C\nThreshold value is the mean of neighbourhood area.",
                                         'Gaussian': "cv2.ADAPTIVE_THRESH_GAUSSIAN_C\nThreshold value is the weighted sum of neighbourhood"
                                                     "values where weights are a gaussian window."}
         self.combobox_adaptive_method = self.create_combobox((268, 147, 75, 22), self.tooltip_adaptive_method, 'combobox_adaptive_method',
-                                                             'preprocess',
-                                                             'threshold_adaptive_method', 1, self.update_combobox_adaptive_method)
+                                                             'preprocess', 'threshold_adaptive_method', 1, self.update_combobox_adaptive_method)
 
         # Morphological Transformation
         self.label_morph = self.create_label("Morph Trans:", self.preprocess_tab, 'label_morph', (19, 185, 70, 16))
@@ -682,6 +691,8 @@ class SettingsUI(QDialog):
 
         self.label_threshold.setVisible(index == 0 or index == 1)
         self.spinbox_threshold.setVisible(index == 0 or index == 1)
+        self.label_global_type.setVisible(index == 0)
+        self.combobox_global_type.setVisible(index == 0)
         self.label_adaptive_method.setVisible(index == 1)
         self.combobox_adaptive_method.setVisible(index == 1)
 

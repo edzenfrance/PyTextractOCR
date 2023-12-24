@@ -13,6 +13,7 @@ from src.config.config import load_config, update_config
 from src.ui.asset_manager import app_icon, main_icon, settings_icon, about_icon, exit_icon
 from src.ui.capture import FullscreenCapture
 from src.ui.settings import SettingsUI
+from src.ui.about import AboutUI
 
 
 class MainUI(QDialog):
@@ -36,6 +37,9 @@ class MainUI(QDialog):
         # Settings UI instance
         self.settings_ui = SettingsUI()
         self.settings_ui.finished.connect(self.on_settings_ui_closed)
+
+        # About UI instance
+        self.about_ui = AboutUI()
 
         # Fullscreen Capture instance
         self.fullscreen_capture = FullscreenCapture(self)
@@ -204,7 +208,7 @@ class MainUI(QDialog):
             self.settings_ui.show()
 
     def show_about_from_tray(self):
-        pass
+        self.about_ui.show()
 
     def exit_app_from_tray(self):
         self.save_main_window_position()
