@@ -1,4 +1,6 @@
 # Standard libraries
+import os
+import shutil
 import tempfile
 from datetime import datetime
 from pathlib import Path
@@ -261,8 +263,23 @@ class FullscreenCapture(QMainWindow):
             capture_area.save(temporary_file_name)
             logger.success(f"Captured image saved as temporary file: {temporary_file_name}")
 
-        self.extracted_text = perform_ocr(temporary_file_name, current_datetime)
+        self.start_perform_ocr(temporary_file_name, current_datetime, False)
 
+    def start_perform_ocr(self, file_name, current_datetime, scan_only):
+        self.config = load_config()
+        if scan_only:
+            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as temp:
+                temporary_file_name = temp.name
+                shutil.copy(file_name, temporary_file_name)  # copy the selected file to the temporary file
+                logger.success(f"Selected image copied as temporary file: {temp.name}")
+            self.extracted_text = perform_ocr(temporary_file_name)
+        else:
+            self.extracted_text = perform_ocr(file_name)
+            if self.config['output']['save_enhanced_image']:
+                folder = self.config['output']['output_folder_path']
+                self.save_temporary_image(file_name, current_datetime, folder)
+            else:
+                self.remove_temporary_image(file_name)
         self.play_sound_file()
         self.close_fullscreen_show_main()
         self.show_ocr_text_ui()
@@ -311,3 +328,20 @@ class FullscreenCapture(QMainWindow):
         now = datetime.now()
         # The hour is in a 24-hour format (military time)
         return f"{now.year}_{now.month:02d}_{now.day:02d}_{now.hour:02d}{now.minute:02d}{now.second:02d}"
+
+    @staticmethod
+    def save_temporary_image(image_path, date_time, output_folder_path):
+        new_image_path = os.path.join(output_folder_path, f"{date_time}_enhanced.png")
+        try:
+            shutil.move(image_path, new_image_path)
+            logger.info(f"The file '{image_path}' has been moved to '{new_image_path}'")
+        except Exception as e:
+            logger.error(f"Failed to move the file '{image_path}' to '{new_image_path}: {e}")
+
+    @staticmethod
+    def remove_temporary_image(image_path):
+        try:
+            os.remove(image_path)
+            logger.success(f"Temporary image successfully removed: {image_path}")
+        except Exception as e:
+            logger.error(f"An error occurred while removing temporary image '{image_path}': {e}")

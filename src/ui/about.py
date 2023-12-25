@@ -25,11 +25,11 @@ class AboutUI(QDialog):
         pytex_label = QLabel("PyTextractOCR")
         version_label = QLabel("Version: 1.0")
         about_label = QLabel("Author: Edzen France")
-        text_layout.addSpacing(10)  # Add space
+        text_layout.addSpacing(10)
         text_layout.addWidget(pytex_label)
         text_layout.addWidget(version_label)
         text_layout.addWidget(about_label)
-        text_layout.addSpacing(100)  # Add space
+        text_layout.addSpacing(100)
 
         button_layout = QHBoxLayout()
         button_layout.addStretch(1)

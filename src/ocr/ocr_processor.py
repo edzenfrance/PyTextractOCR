@@ -1,6 +1,5 @@
 # Standard libraries
 import os
-import shutil
 from pathlib import Path
 
 # Third-party libraries
@@ -18,7 +17,7 @@ from src.ocr.preprocess import preprocess_image
 from src.utils.translate import translate_text
 
 
-def perform_ocr(working_image, datetime):
+def perform_ocr(working_image):
     config = load_config()
     extracted_text = None
     translated_text = None
@@ -43,11 +42,6 @@ def perform_ocr(working_image, datetime):
             if config['translate']['enable_translation']:
                 translated_text = translate_extracted_text(extracted_text)
 
-        if config['output']['save_enhanced_image']:
-            folder = config['output']['output_folder_path']
-            save_temporary_image(working_image, datetime, folder)
-        else:
-            remove_temporary_image(working_image)
     except Exception as e:
         logger.error(f"An error occurred during OCR process: {e}")
 
@@ -139,23 +133,6 @@ def translate_extracted_text(extracted_text):
     except Exception as e:
         logger.error(f"An error occurred while translating text: {e}")
     return google_trans_text
-
-
-def save_temporary_image(image_path, datetime, output_folder_path):
-    new_image_path = os.path.join(output_folder_path, f"{datetime}_enhanced.png")
-    try:
-        shutil.move(image_path, new_image_path)
-        logger.info(f"The file '{image_path}' has been moved to '{new_image_path}'")
-    except Exception as e:
-        logger.error(f"Failed to move the file '{image_path}' to '{new_image_path}: {e}")
-
-
-def remove_temporary_image(image_path):
-    try:
-        os.remove(image_path)
-        logger.success(f"Temporary image successfully removed: {image_path}")
-    except Exception as e:
-        logger.error(f"An error occurred while removing temporary image '{image_path}': {e}")
 
 
 def tesseract_check(tesseract_path):

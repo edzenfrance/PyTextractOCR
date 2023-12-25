@@ -6,7 +6,7 @@ from pathlib import Path
 from loguru import logger
 from PySide6.QtCore import Qt, QCoreApplication
 from PySide6.QtGui import QIcon, QAction, QGuiApplication
-from PySide6.QtWidgets import QDialog, QHBoxLayout, QPushButton, QSystemTrayIcon, QMenu, QStyle
+from PySide6.QtWidgets import QDialog, QHBoxLayout, QPushButton, QSystemTrayIcon, QMenu, QStyle, QFileDialog
 
 # Custom libraries
 from src.config.config import load_config, update_config
@@ -33,6 +33,7 @@ class MainUI(QDialog):
         self.saved_position = None
         self.ocr_text_ui_visible = False
         self.settings_ui_visible = False
+        self.open_file_dialog_path = None
 
         # Settings UI instance
         self.settings_ui = SettingsUI()
@@ -76,16 +77,20 @@ class MainUI(QDialog):
 
         capture_button = QPushButton("Capture", self)
         capture_button.setToolTip("Capture Rectangular Region")
-        capture_button.setEnabled(True)
         capture_button.setAutoDefault(False)
         capture_button.clicked.connect(self.start_fullscreen_capture)
 
+        scan_button = QPushButton("Scan", self)
+        scan_button.setToolTip("Select and OCR Image")
+        scan_button.setAutoDefault(False)
+        scan_button.clicked.connect(self.select_image_to_ocr)
+
         setting_button = QPushButton("Settings", self)
-        setting_button.setEnabled(True)
         setting_button.setAutoDefault(False)
         setting_button.clicked.connect(self.show_settings_ui_main)
 
         horizontal_layout.addWidget(capture_button)
+        horizontal_layout.addWidget(scan_button)
         horizontal_layout.addWidget(setting_button)
 
         self.setLayout(horizontal_layout)
@@ -105,6 +110,18 @@ class MainUI(QDialog):
         self.hide_other_ui_before_capture()
         time.sleep(0.3)  # Add a sleep to wait for the MainUI window to be fully hidden before capturing
         self.fullscreen_capture.get_fullscreen_capture()  # Start capturing of fullscreen
+
+    def select_image_to_ocr(self):
+        options = QFileDialog.Options()
+        options |= QFileDialog.ReadOnly
+        file_path, _ = QFileDialog.getOpenFileName(self, "Select Image File", self.open_file_dialog_path,
+                                                   "Image Files (*.jpg *.png *.bmp *.gif *.jpeg *.tiff *.webp)", options=options)
+        if file_path:
+            formatted_file_path = file_path.replace('/', '\\')
+            self.open_file_dialog_path = formatted_file_path
+            datetime = self.fullscreen_capture.get_current_datetime()
+            logger.info(f"Selected image for OCR: {formatted_file_path}")
+            self.fullscreen_capture.start_perform_ocr(formatted_file_path, datetime, True)
 
     def hide_other_ui_before_capture(self):
         if self.fullscreen_capture.ocr_text_ui.isVisible():
