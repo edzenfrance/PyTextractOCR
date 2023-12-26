@@ -1,5 +1,6 @@
 # Third-party libraries
 import cv2
+import imghdr
 import numpy as np
 from deskew import determine_skew
 from loguru import logger
@@ -46,6 +47,10 @@ def start_preprocess(image_path,
 
     if not enable_preprocess:
         logger.info("Preprocessing is disabled")
+        return
+
+    if imghdr.what(image_path) == 'gif':
+        logger.warning("Image is GIF (Graphics Interchange Format). OpenCV do not support GIF")
         return
 
     # Deskew first
