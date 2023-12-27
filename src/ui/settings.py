@@ -172,15 +172,15 @@ class SettingsUI(QDialog):
         self.combobox_page_seg_mode.setObjectName('combobox_page_seg_mode')
         self.combobox_page_seg_mode.setGeometry(QRect(135, 45, 61, 22))
         self.psm_tooltip = {
-            3: "Fully automatic page segmentation, but\nno OSD. (Default)",
-            4: "Assume a single column of text of variable sizes. ",
-            5: "Assume a single uniform block of vertically\naligned text. ",
+            3: "Fully automatic page segmentation,\nbut no OSD. (Default)",
+            4: "Assume a single column\nof text of variable sizes. ",
+            5: "Assume a single uniform block\nof vertically aligned text. ",
             6: "Assume a single uniform block of text. ",
             7: "Treat the image as a single text line. ",
             8: "Treat the image as a single word. ",
             9: "Treat the image as a single word in a circle. ",
             10: "Treat the image as a single character. ",
-            11: "Sparse text. Find as much text as possible in\nno particular order. ",
+            11: "Sparse text. Find as much text as\npossible in no particular order. ",
             13: "Raw line. Treat the image as a single text line,\nbypassing hacks that are Tesseract-specific."
         }
         for index, tooltip in self.psm_tooltip.items():
@@ -217,10 +217,12 @@ class SettingsUI(QDialog):
         self.combobox_ocr_engine_mode.currentIndexChanged.connect(lambda: (self.update_combobox_oem_tooltip(), self.toggle_apply_button()))
 
         self.checkbox_pres_iw_spc = self.create_checkbox("Preserve interword spaces", self.ocr_tab, 'checkbox_pres_iw_spc', (16, 75, 171, 20),
-                                                         tooltip="Enable this option to preserve interword spaces in the OCR output.\n"
-                                                                 "This helps maintain the original spacing between words in the "
-                                                                 "recognized text.", )
-
+                                                         tooltip="Enable this option to preserve interword\n"
+                                                                 "spaces in the OCR output. This helps\n"
+                                                                 "maintain the original spacing between\n"
+                                                                 "words in the recognized text. Use Page\n"
+                                                                 "segment mode: 6 when enabling this\n"
+                                                                 "option.")
         self.label_tesseract_version = self.create_label("Tesseract Version: Not found", self.ocr_tab, 'label_tesseract_version', (15, 180, 250, 16))
         self.label_blacklist_char = self.create_label("Blacklist characters:", self.ocr_tab, 'label_blacklist_char', (15, 108, 111, 16))
         self.label_whitelist_char = self.create_label("Whitelist characters:", self.ocr_tab, 'label_whitelist_char', (15, 138, 111, 16))
@@ -249,7 +251,11 @@ class SettingsUI(QDialog):
                                                                (16, 10, 201, 20))
 
         # Scale Factor
-        self.label_scale_factor = self.create_label("Scale Factor:", self.preprocess_tab, 'label_scale_factor', (22, 47, 121, 16))
+        self.label_scale_factor = self.create_label("Scale Factor:", self.preprocess_tab, 'label_scale_factor', (22, 47, 121, 16),
+                                                    tooltip="Modifies image size based on the scale factor.\n"
+                                                            "Use 1.0 for original size, and values over 1.0\n"
+                                                            "to enlarge. For instance, 1.5 increases size by\n"
+                                                            "50%, 2.0 doubles it.")
         self.spinbox_scale_factor = QDoubleSpinBox(self.preprocess_tab)
         self.spinbox_scale_factor.setObjectName('spinbox_scale_factor')
         self.spinbox_scale_factor.setGeometry(QRect(96, 46, 30, 19))
@@ -265,24 +271,39 @@ class SettingsUI(QDialog):
         self.spinbox_scale_factor.lineEdit().installEventFilter(self)
         self.spinboxes['spinbox_scale_factor'] = self.spinbox_scale_factor  # Add to the dictionary
 
-        self.checkbox_grayscale = self.create_checkbox("Grayscale", self.preprocess_tab, 'checkbox_grayscale', (160, 45, 201, 20))
-        self.checkbox_remove_noise = self.create_checkbox("Remove noise", self.preprocess_tab, 'checkbox_remove_noise', (250, 45, 180, 20))
+        self.checkbox_grayscale = self.create_checkbox("Grayscale", self.preprocess_tab, 'checkbox_grayscale', (160, 45, 69, 20),
+                                                       tooltip="Enables grayscale conversion. This\n"
+                                                               "transforms the image into shades of\n"
+                                                               "gray, enhancing contrast and detail\n"
+                                                               "for further image processing tasks.")
+        self.checkbox_remove_noise = self.create_checkbox("Remove noise", self.preprocess_tab, 'checkbox_remove_noise', (250, 45, 93, 20),
+                                                          tooltip="Enables noise removal process. This\n"
+                                                                  "uses global thresholding and connected\n"
+                                                                  "components with statistics to identify\n"
+                                                                  "and filter out small dotted regions based\n"
+                                                                  "on size.")
 
         # Deskew
-        self.label_deskew = self.create_label("Deskew:", self.preprocess_tab, 'label_deskew', (45, 80, 70, 16))
-        self.checkbox_deskew = self.create_checkbox("", self.preprocess_tab, 'checkbox_deskew', (95, 80, 180, 20),
-                                                    tooltip="Enable this option to automatically straighten skewed text in the image.\n"
-                                                            "Improved alignment enhances OCR accuracy, making text extraction\n"
-                                                            "more efficient. Ideal for scanned document or image with tilted text.")
+        self.label_deskew = self.create_label("Deskew:", self.preprocess_tab, 'label_deskew', (45, 80, 70, 16),
+                                              tooltip="Enable this option to automatically straighten\n"
+                                                      "skewed text in the image. Improved alignment\n"
+                                                      "enhances OCR accuracy, making text extraction\n"
+                                                      "more efficient. Ideal for scanned document or\n"
+                                                      "image with tilted text.")
+        self.checkbox_deskew = self.create_checkbox("", self.preprocess_tab, 'checkbox_deskew', (95, 79, 180, 20))
         self.tooltip_deskew = {'First': "Deskew the image before preprocessing",
                                'Last': "Deskew the image after preprocessing"}
         self.combobox_deskew = self.create_combobox((115, 77, 75, 22), self.tooltip_deskew, 'combobox_deskew', 'preprocess',
-                                                    'blurring', 1, self.update_combobox_blurring)
+                                                    'blurring', 1, self.update_combobox_deskew)
 
         # Blur
         # Diameter, SigmaColor and SigmaSpace is used by Bilateral Blurring
-        self.label_blur = self.create_label("Blurring:", self.preprocess_tab, 'label_blur', (43, 115, 70, 16))
-        self.checkbox_blur = self.create_checkbox("", self.preprocess_tab, "checkbox_blur", (95, 115, 15, 15))
+        self.label_blur = self.create_label("Blurring:", self.preprocess_tab, 'label_blur', (43, 115, 70, 16),
+                                            tooltip="Applies a blur effect to the image. This helps\n"
+                                                    "reduce high-frequency noise and detail in the\n"
+                                                    "image, making it easier to identify key features\n"
+                                                    "and patterns.")
+        self.checkbox_blur = self.create_checkbox("", self.preprocess_tab, "checkbox_blur", (95, 116, 15, 15))
         self.tooltip_blur = {'Average': "Average Blur works by averaging the pixel values in\n"
                                         "the neighborhood defined by the kernel, resulting in\n"
                                         "a smoothing effect. It's a straightforward method but\n"
@@ -300,10 +321,10 @@ class SettingsUI(QDialog):
                                           "while still reducing noise."}
         self.combobox_blur = self.create_combobox((115, 112, 75, 22), self.tooltip_blur, 'combobox_blur', 'preprocess',
                                                   'blurring', 3, self.update_combobox_blurring)
-        self.label_blur_kernel = self.create_label("K:", self.preprocess_tab, 'label_blur_kernel', (200, 115, 10, 16))
-        self.label_blur_diameter = self.create_label("D:", self.preprocess_tab, 'label_blur_diameter', (200, 115, 10, 16))
-        self.label_blur_sigmacolor = self.create_label("C:", self.preprocess_tab, 'label_blur_sigmacolor', (250, 115, 20, 16))
-        self.label_blur_sigmaspace = self.create_label("S:", self.preprocess_tab, 'label_blur_sigmaspace', (300, 115, 20, 16))
+        self.label_blur_kernel = self.create_label("K:", self.preprocess_tab, 'label_blur_kernel', (200, 115, 10, 16), tooltip="Kernel")
+        self.label_blur_diameter = self.create_label("D:", self.preprocess_tab, 'label_blur_diameter', (200, 115, 10, 16), tooltip="Diameter")
+        self.label_blur_sigmacolor = self.create_label("C:", self.preprocess_tab, 'label_blur_sigmacolor', (250, 115, 20, 16), tooltip="Sigma Color")
+        self.label_blur_sigmaspace = self.create_label("S:", self.preprocess_tab, 'label_blur_sigmaspace', (300, 115, 20, 16), tooltip="Sigma Space")
         self.spinbox_blur_kernel_h = self.create_spinbox(self.preprocess_tab, 'spinbox_average_kernel_h', (215, 113, 30, 19), 1, 15, 1)
         self.spinbox_blur_kernel_v = self.create_spinbox(self.preprocess_tab, 'spinbox_average_kernel_v', (250, 113, 30, 19), 1, 15, 1)
         self.spinbox_blur_diameter = self.create_spinbox(self.preprocess_tab, 'spinbox_blur_diameter', (215, 113, 30, 19), 1, 10, 1)
@@ -311,70 +332,96 @@ class SettingsUI(QDialog):
         self.spinbox_blur_sigmaspace = self.create_spinbox(self.preprocess_tab, 'spinbox_blur_sigmaspace', (315, 113, 30, 19), 1, 256, 1)
 
         # Thresholding
-        self.label_thresholding = self.create_label("Thresholding:", self.preprocess_tab, 'label_thresholding', (16, 150, 75, 16))
-        self.checkbox_thresholding = self.create_checkbox("", self.preprocess_tab, "checkbox_thresholding", (95, 150, 15, 15))
+        self.label_thresholding = self.create_label("Thresholding:", self.preprocess_tab, 'label_thresholding', (16, 150, 75, 16),
+                                                    tooltip="Converts the image into a binary\n"
+                                                            "format by setting a threshold value.")
+        self.checkbox_thresholding = self.create_checkbox("", self.preprocess_tab, "checkbox_thresholding", (95, 151, 15, 15))
         self.tooltip_thresholding = {'Global': "Global Thresholding applies a single, global threshold value\n"
                                                "to the entire image. All the pixel intensity values higher than\n"
                                                "this threshold are set to one value (typically white), while\n"
                                                "those lower are set to another value (typically black). It's\n"
                                                "simple and fast, but might not work well if the image has\n"
                                                "different lighting conditions in different areas.",
-                                     'Adaptive': "Adaptive Thresholding applies different thresholds for\n"
-                                                 "different regions of the image, which provides better\n"
-                                                 "results for images with varying illumination.",
+                                     'Adaptive': "Adaptive Thresholding applies different thresholds\n"
+                                                 "for different regions of the image, which provides\n"
+                                                 "better results for images with varying illumination.",
                                      'Otsu': "Otsu's Thresholding automatically determines\n"
                                              "the optimal threshold value based on the image's\n"
                                              "histogram."}
         self.combobox_thresholding = self.create_combobox((115, 147, 75, 22), self.tooltip_thresholding, 'combobox_thresholding', 'preprocess',
                                                           'thresholding', 1, self.update_combobox_thresholding)
-        self.label_threshold = self.create_label("T:", self.preprocess_tab, 'label_threshold', (200, 150, 10, 16))
-        self.label_global_type = self.create_label("T:", self.preprocess_tab, 'label_global_type', (250, 150, 15, 16))
-        self.tooltip_global_type = {'Binary': "cv2.ADAPTIVE_THRESH_MEAN_C\nThreshold value is the mean of neighbourhood area.",
-                                    'Inverse': "cv2.ADAPTIVE_THRESH_GAUSSIAN_C\nThreshold value is the weighted sum of neighbourhood"
-                                               "values where weights are a gaussian window.",
-                                    'Truncate': "Truncate",
-                                    'ToZero': "To Zero",
-                                    'ZeroInv': "Zero Inv"
+        self.label_threshold = self.create_label("T:", self.preprocess_tab, 'label_threshold', (200, 150, 10, 16), tooltip="Threshold")
+        self.label_global_type = self.create_label("T:", self.preprocess_tab, 'label_global_type', (250, 150, 15, 16), tooltip="Threshold Type")
+        self.tooltip_global_type = {'Binary': "Transforms pixel values. Values exceeding\n"
+                                              "the threshold become the maximum, or\n"
+                                              "else become zero.",
+                                    'Inverse': "Inverse of binary thresholding. Pixel values\n"
+                                               "exceeding the threshold become zero,\n"
+                                               "otherwise they become the maximum.",
+                                    'Truncate': "Pixel values exceeding the threshold\n"
+                                                "are truncated to the threshold. Values\n"
+                                                "below the threshold remain unchanged.",
+                                    'ToZero': "Pixel values exceeding the threshold\n"
+                                              "remain the same, values below the\n"
+                                              "threshold become zero.",
+                                    'ZeroInv': "Inverse of to-zero thresholding. Pixel\n"
+                                               "values exceeding the threshold become\n"
+                                               "zero, values below the threshold remain\n"
+                                               "unchanged."
                                     }
         self.combobox_global_type = self.create_combobox((268, 147, 75, 22), self.tooltip_global_type, 'combobox_global_type',
-                                                         'preprocess', 'threshold_global_type', 1, self.update_combobox_adaptive_method)
-        self.label_adaptive_method = self.create_label("M:", self.preprocess_tab, 'label_adaptive_method', (250, 150, 15, 16))
+                                                         'preprocess', 'threshold_global_type', 1, self.update_combobox_thresh_global_type)
+        self.label_adaptive_method = self.create_label("M:", self.preprocess_tab, 'label_adaptive_method', (250, 150, 15, 16), tooltip="Method")
         self.spinbox_threshold = self.create_spinbox(self.preprocess_tab, 'spinbox_threshold', (215, 148, 30, 19), 1, 255, 2)
-        self.tooltip_adaptive_method = {'Mean': "cv2.ADAPTIVE_THRESH_MEAN_C\nThreshold value is the mean of neighbourhood area.",
-                                        'Gaussian': "cv2.ADAPTIVE_THRESH_GAUSSIAN_C\nThreshold value is the weighted sum of neighbourhood"
-                                                    "values where weights are a gaussian window."}
+        self.tooltip_adaptive_method = {'Mean': "Sets the threshold for a pixel based on\n"
+                                                "the average of its surrounding pixels,\n"
+                                                "minus a constant value.",
+                                        'Gaussian': "Sets the threshold for a pixel based on\n"
+                                                    "a weighted average of its surrounding\n"
+                                                    "pixels, giving more importance to the\n"
+                                                    "closer ones, minus a constant value."}
         self.combobox_adaptive_method = self.create_combobox((268, 147, 75, 22), self.tooltip_adaptive_method, 'combobox_adaptive_method',
                                                              'preprocess', 'threshold_adaptive_method', 1, self.update_combobox_adaptive_method)
 
         # Morphological Transformation
-        self.label_morph = self.create_label("Morph Trans:", self.preprocess_tab, 'label_morph', (19, 185, 70, 16))
-        self.checkbox_morph = self.create_checkbox("", self.preprocess_tab, "checkbox_morph", (95, 185, 15, 15))
-        self.tooltip_morph = {'Erosion': "Erosion shrinks the shapes in the image by peeling off\n"
-                                         "pixels from their edges. Useful for removing small-scale\n"
-                                         "noise and separating closely spaced elements.",
-                              'Dilation': "Dilation expands the shapes in the image by adding\n"
-                                          "pixels to their edges. Useful for filling small holes\n"
-                                          "and connecting nearby elements.",
-                              'Opening': "Opening is erosion followed by dilation. It helps to\n"
-                                         "remove small-scale noise and to disconnect elements\n"
-                                         "that are close together.",
-                              'Closing': "Closing is dilation followed by erosion. It helps to fill\n"
-                                         "small holes and gaps and to connect nearby elements.",
-                              'Gradient': "Morphological Gradient shows the difference between\n"
-                                          "dilation and erosion of an image, often resulting in an\n"
-                                          "outline of the shapes in the image.",
-                              'Top Hat': "Top Hat shows the difference between the original\n"
-                                         "image and the result of applying the opening operation.\n"
-                                         "It highlights bright spots in the image that are smaller\n"
-                                         "than the structuring element.",
-                              'Black Hat': "Black Hat shows the difference between the result\n"
-                                           "of applying the closing operation and the original\n"
-                                           "image. It highlights dark spots in the image that\n"
-                                           "are smaller than the structuring element."}
+        self.label_morph = self.create_label("Morph Trans:", self.preprocess_tab, 'label_morph', (19, 185, 70, 16),
+                                             tooltip="Morphological Transformation. Performs\n"
+                                                     "operations based on the image's shape.\n"
+                                                     "This can help remove noise, fill holes, or\n"
+                                                     "identify structures within the image.")
+        self.checkbox_morph = self.create_checkbox("", self.preprocess_tab, "checkbox_morph", (95, 186, 15, 15))
+        self.tooltip_morph = {'Erosion': "Erosion shrinks the shapes in the image by\n"
+                                         "peeling off pixels from their edges. Useful\n"
+                                         "for removing small-scale noise and separating\n"
+                                         "closely spaced elements.",
+                              'Dilation': "Dilation expands the shapes in the image by\n"
+                                          "adding pixels to their edges. Useful for filling\n"
+                                          "small holes and connecting nearby elements.",
+                              'Opening': "Opening is erosion followed by dilation.\n"
+                                         "It helps to remove small-scale noise and\n"
+                                         "to disconnect elements that are close\n"
+                                         "together.",
+                              'Closing': "Closing is dilation followed by erosion.\n"
+                                         "It helps to fill small holes and gaps and\n"
+                                         "to connect nearby elements.",
+                              'Gradient': "Morphological Gradient shows the difference\n"
+                                          "between dilation and erosion of an image,\n"
+                                          "often resulting in an outline of the shapes\n"
+                                          "in the image.",
+                              'Top Hat': "Top Hat shows the difference between the\n"
+                                         "original image and the result of applying\n"
+                                         "the opening operation. It highlights bright\n"
+                                         "spots in the image that are smaller than the\n"
+                                         "structuring element.",
+                              'Black Hat': "Black Hat shows the difference between\n"
+                                           "the result of applying the closing operation\n"
+                                           "and the original image. It highlights dark\n"
+                                           "spots in the image that are smaller than the\n"
+                                           "structuring element."}
         self.combobox_morph = self.create_combobox((115, 182, 75, 22), self.tooltip_morph, 'combobox_morph', 'preprocess',
                                                    'morphological_transformation', 6, self.update_combobox_morph)
-        self.label_morph_kernel = self.create_label("K:", self.preprocess_tab, 'label_morph_kernel', (200, 185, 10, 16))
-        self.label_morph_iteration = self.create_label("I:", self.preprocess_tab, 'label_morph_iteration', (285, 185, 10, 16))
+        self.label_morph_kernel = self.create_label("K:", self.preprocess_tab, 'label_morph_kernel', (200, 185, 10, 16), tooltip="Kernel")
+        self.label_morph_iteration = self.create_label("I:", self.preprocess_tab, 'label_morph_iteration', (285, 185, 10, 16), tooltip="Iteration")
         self.spinbox_morph_kernel_h = self.create_spinbox(self.preprocess_tab, 'spinbox_morph_kernel_h', (215, 183, 30, 19), 1, 15, 2)
         self.spinbox_morph_kernel_v = self.create_spinbox(self.preprocess_tab, 'spinbox_morph_kernel_v', (250, 183, 30, 19), 1, 15, 2)
         self.spinbox_morph_iteration = self.create_spinbox(self.preprocess_tab, 'spinbox_morph_iteration', (300, 183, 30, 19), 1, 10, 1)
@@ -471,10 +518,11 @@ class SettingsUI(QDialog):
         self.ocr_tab_widgets = set(self.ocr_tab.findChildren(QWidget)) - set(ocr_tab_language_widgets + ocr_tab_scroll_area_widgets)
 
     @staticmethod
-    def create_label(text, parent, object_name, geometry):
+    def create_label(text, parent, object_name, geometry, tooltip=None):
         label = QLabel(text, parent)
         label.setObjectName(object_name)
         label.setGeometry(QRect(*geometry))
+        label.setToolTip(tooltip)
         return label
 
     @staticmethod
@@ -565,6 +613,7 @@ class SettingsUI(QDialog):
             (self.checkbox_remove_noise, 'preprocess', 'remove_noise'),
             (self.checkbox_thresholding, 'preprocess', 'enable_thresholding'),
             (self.combobox_thresholding, 'preprocess', 'thresholding'),
+            (self.combobox_global_type, 'preprocess', 'threshold_global_type'),
             (self.combobox_adaptive_method, 'preprocess', 'threshold_adaptive_method'),
             (self.checkbox_morph, 'preprocess', 'enable_morphological_transformation'),
             (self.combobox_morph, 'preprocess', 'morphological_transformation'),
@@ -586,6 +635,8 @@ class SettingsUI(QDialog):
         self.update_combobox_oem_tooltip()
         self.update_combobox_blurring()
         self.update_combobox_thresholding()
+        self.update_combobox_thresh_global_type()
+        self.update_combobox_adaptive_method()
         self.update_combobox_morph()
         self.check_trained_data_language_file()
 
@@ -645,15 +696,18 @@ class SettingsUI(QDialog):
         tooltip = self.oem_tooltip.get(int(self.combobox_ocr_engine_mode.currentText()))
         self.combobox_ocr_engine_mode.setToolTip(tooltip)
 
+    def update_combobox_deskew(self):
+        index = self.combobox_deskew.currentIndex()
+        tooltip = list(self.tooltip_deskew.values())[index]
+        self.combobox_deskew.setToolTip(tooltip)
+
     def update_combobox_blurring(self):
         index = self.combobox_blur.currentIndex()
-
         settings_name = [
             'blur_average_kernel',
             'blur_gaussian_kernel',
             'blur_median_kernel',
         ]
-
         # Set visibility and values based on index.
         self.label_blur_kernel.setVisible(index != 3)
         self.spinbox_blur_kernel_h.setVisible(index != 3)
@@ -688,7 +742,6 @@ class SettingsUI(QDialog):
 
     def update_combobox_thresholding(self):
         index = self.combobox_thresholding.currentIndex()
-
         self.label_threshold.setVisible(index == 0 or index == 1)
         self.spinbox_threshold.setVisible(index == 0 or index == 1)
         self.label_global_type.setVisible(index == 0)
@@ -705,15 +758,20 @@ class SettingsUI(QDialog):
         tooltip = list(self.tooltip_thresholding.values())[index]
         self.combobox_thresholding.setToolTip(tooltip)
 
+    def update_combobox_thresh_global_type(self):
+        index = self.combobox_global_type.currentIndex()
+        tooltip = list(self.tooltip_global_type.values())[index]
+        self.combobox_global_type.setToolTip(tooltip)
+
     def update_combobox_adaptive_method(self):
-        pass
+        index = self.combobox_adaptive_method.currentIndex()
+        tooltip = list(self.tooltip_adaptive_method.values())[index]
+        self.combobox_adaptive_method.setToolTip(tooltip)
 
     def update_combobox_morph(self):
         index = self.combobox_morph.currentIndex()
-
         self.label_morph_iteration.setVisible(index == 0 or index == 1)
         self.spinbox_morph_iteration.setVisible(index == 0 or index == 1)
-
         kernel_dict = {
             0: 'erosion_kernel_iteration',
             1: 'dilation_kernel_iteration',
@@ -981,6 +1039,7 @@ class SettingsUI(QDialog):
                 'blurring': self.combobox_blur.currentIndex(),
                 'enable_thresholding': self.checkbox_thresholding.isChecked(),
                 'thresholding': self.combobox_thresholding.currentIndex(),
+                'threshold_global_type': self.combobox_global_type.currentIndex(),
                 'threshold_adaptive_method': self.combobox_adaptive_method.currentIndex(),
                 'enable_morphological_transformation': self.checkbox_morph.isChecked(),
                 'morphological_transformation': self.combobox_morph.currentIndex()
