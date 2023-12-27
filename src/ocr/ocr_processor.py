@@ -3,7 +3,6 @@ import os
 from pathlib import Path
 
 # Third-party libraries
-import cv2
 import pandas as pd
 import pyperclip
 import pytesseract
@@ -78,9 +77,7 @@ def perform_ocr_image_to_string(image_path, custom_config):
 
 def perform_ocr_image_to_data(image_path, custom_config):
     logger.info(f"Performing pytesseract image to data '{image_path}'")
-    img = cv2.imread(image_path)
-
-    d = pytesseract.image_to_data(img, config=custom_config, output_type=Output.DICT)
+    d = pytesseract.image_to_data(Image.open(image_path), config=custom_config, output_type=Output.DICT)
     df = pd.DataFrame(d)
 
     # Clean up blanks

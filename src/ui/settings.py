@@ -703,6 +703,8 @@ class SettingsUI(QDialog):
 
     def update_combobox_blurring(self):
         index = self.combobox_blur.currentIndex()
+        tooltip = list(self.tooltip_blur.values())[index]
+        self.combobox_blur.setToolTip(tooltip)
         settings_name = [
             'blur_average_kernel',
             'blur_gaussian_kernel',
@@ -737,11 +739,10 @@ class SettingsUI(QDialog):
         for vis in visibility:
             vis.setVisible(is_index_three)
 
-        tooltip = list(self.tooltip_blur.values())[index]
-        self.combobox_blur.setToolTip(tooltip)
-
     def update_combobox_thresholding(self):
         index = self.combobox_thresholding.currentIndex()
+        tooltip = list(self.tooltip_thresholding.values())[index]
+        self.combobox_thresholding.setToolTip(tooltip)
         self.label_threshold.setVisible(index == 0 or index == 1)
         self.spinbox_threshold.setVisible(index == 0 or index == 1)
         self.label_global_type.setVisible(index == 0)
@@ -754,9 +755,6 @@ class SettingsUI(QDialog):
         if index == 1:
             self.spinbox_threshold.setValue(self.config['preprocess']['threshold_adaptive'])
             self.combobox_adaptive_method.setCurrentIndex(self.config['preprocess']['threshold_adaptive_method'])
-
-        tooltip = list(self.tooltip_thresholding.values())[index]
-        self.combobox_thresholding.setToolTip(tooltip)
 
     def update_combobox_thresh_global_type(self):
         index = self.combobox_global_type.currentIndex()
