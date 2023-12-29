@@ -121,6 +121,7 @@ class MainUI(QDialog):
             formatted_file_path = file_path.replace('/', '\\')
             self.open_file_dialog_path = formatted_file_path
             datetime = self.fullscreen_capture.get_current_datetime()
+            self.fullscreen_capture.ocr_text_ui.save_popup_window_position()
             logger.info(f"Selected image for OCR: {formatted_file_path}")
             self.fullscreen_capture.start_perform_ocr(formatted_file_path, datetime, True)
 
