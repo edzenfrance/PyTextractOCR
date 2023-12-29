@@ -85,13 +85,14 @@ class MainUI(QDialog):
         scan_button.setAutoDefault(False)
         scan_button.clicked.connect(self.select_image_to_ocr)
 
-        setting_button = QPushButton("Settings", self)
-        setting_button.setAutoDefault(False)
-        setting_button.clicked.connect(self.show_settings_ui_main)
+        settings_button = QPushButton("Settings", self)
+        settings_button.setToolTip("Open Settings window")
+        settings_button.setAutoDefault(False)
+        settings_button.clicked.connect(self.show_settings_ui_main)
 
         horizontal_layout.addWidget(capture_button)
         horizontal_layout.addWidget(scan_button)
-        horizontal_layout.addWidget(setting_button)
+        horizontal_layout.addWidget(settings_button)
 
         self.setLayout(horizontal_layout)
 

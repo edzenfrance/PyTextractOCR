@@ -220,9 +220,7 @@ class SettingsUI(QDialog):
                                                          tooltip="Enable this option to preserve interword\n"
                                                                  "spaces in the OCR output. This helps\n"
                                                                  "maintain the original spacing between\n"
-                                                                 "words in the recognized text. Use Page\n"
-                                                                 "segment mode: 6 when enabling this\n"
-                                                                 "option.")
+                                                                 "words in the recognized text.")
         self.label_tesseract_version = self.create_label("Tesseract Version: Not found", self.ocr_tab, 'label_tesseract_version', (15, 180, 250, 16))
         self.label_blacklist_char = self.create_label("Blacklist characters:", self.ocr_tab, 'label_blacklist_char', (15, 108, 111, 16))
         self.label_whitelist_char = self.create_label("Whitelist characters:", self.ocr_tab, 'label_whitelist_char', (15, 138, 111, 16))

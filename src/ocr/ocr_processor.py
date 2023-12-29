@@ -1,4 +1,5 @@
 # Standard libraries
+import re
 import os
 from pathlib import Path
 
@@ -85,6 +86,7 @@ def perform_ocr_image_to_data(image_path, custom_config):
 
     # Sort blocks vertically
     sorted_blocks = df1.groupby('block_num').first().sort_values('top').index.tolist()
+    full_text = ''
     for block in sorted_blocks:
         curr = df1[df1['block_num'] == block]
         sel = curr[curr.text.str.len() > 3]
@@ -109,9 +111,10 @@ def perform_ocr_image_to_data(image_path, custom_config):
                 text += ' ' * added
             text += ln['text'] + ' '
             prev_left += len(ln['text']) + added + 1
-        text += '\n'
-        # logger.info(text)
-        return text
+        full_text += f'{text}\n'
+    full_text = re.sub(r' +$', '', full_text, flags=re.MULTILINE)  # Remove trailing spaces at the end of every line
+    full_text = re.sub(r'(?<=\S) +(?=\S)', ' ', full_text)  # Remove extra spaces between text
+    return full_text
 
 
 def copy_to_clipboard(text):
