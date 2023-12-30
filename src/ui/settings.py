@@ -475,7 +475,7 @@ class SettingsUI(QDialog):
         self.translate_table_widget.setVerticalHeader(header_vertical)
 
         self.translate_table_widget.setColumnCount(2)
-        self.translate_table_widget.setRowCount(110)
+        self.translate_table_widget.setRowCount(len(googletrans_languages()))
         self.translate_table_widget.setHorizontalHeaderLabels(table_header_labels)
         self.translate_table_widget.setEditTriggers(QAbstractItemView.NoEditTriggers)  # Make the entire table read-only
         self.translate_table_widget.setSelectionMode(QAbstractItemView.NoSelection)  # No items can be selected
@@ -808,7 +808,7 @@ class SettingsUI(QDialog):
         for language_code, language_name in tesseract_languages().items():
             file_path = Path('./tessdata') / f'{language_code}.traineddata'
             is_file_exist = file_path.exists()
-            is_language_selected = language_code in self.config['ocr']['language']
+            is_language_selected = language_code in self.config['ocr']['language'].split('+')
 
             self.sc_checkbox_dict[f'{language_name}'].setChecked(is_file_exist and is_language_selected)
             self.sc_checkbox_dict[f'{language_name}'].setEnabled(is_file_exist)

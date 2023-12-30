@@ -1,4 +1,6 @@
 # Third-party library
+import webbrowser
+
 from googletrans import Translator
 
 # Custom library
@@ -34,26 +36,23 @@ def tesseract_languages():
         'hrv': 'Croatian',
         'ces': 'Czech',
         'dan': 'Danish',
-        'nld': 'Dutch; Flemish',
+        'nld': 'Dutch',
         'dzo': 'Dzongkha',
         'eng': 'English',
-        'enm': 'English, Middle (1100-1500)',
         'epo': 'Esperanto',
         'est': 'Estonian',
         'fao': 'Faroese',
         'fil': 'Filipino (old - Tagalog)',
         'fin': 'Finnish',
         'fra': 'French',
-        'frm': 'French, Middle (ca.1400-1600)',
         'glg': 'Galician',
         'kat': 'Georgian',
         'kat_old': 'Georgian - Old',
         'deu': 'German',
         'frk': 'German - Fraktur',
-        'grc': 'Greek, Ancient (to 1453) (contrib)',
-        'ell': 'Greek, Modern (1453-)',
+        'ell': 'Greek',
         'guj': 'Gujarati',
-        'hat': 'Haitian; Haitian Creole',
+        'hat': 'Haitian Creole',
         'heb': 'Hebrew',
         'hin': 'Hindi',
         'hun': 'Hungarian',
@@ -62,15 +61,14 @@ def tesseract_languages():
         'iku': 'Inuktitut',
         'gle': 'Irish',
         'ita': 'Italian',
-        'ita_old': 'Italian - Old',
         'jpn': 'Japanese',
         'jav': 'Javanese',
         'kan': 'Kannada',
         'kaz': 'Kazakh',
-        'kir': 'Kirghiz; Kyrgyz',
         'kor': 'Korean',
         'kor_vert': 'Korean (vertical)',
-        'kmr': 'Kurmanji (Kurdish - Latin Script)',
+        'kmr': 'Kurdish (kurmanji)',
+        'kir': 'Kyrgyz',
         'lao': 'Lao',
         'lat': 'Latin',
         'lav': 'Latvian',
@@ -82,18 +80,15 @@ def tesseract_languages():
         'mlt': 'Maltese',
         'mri': 'Maori',
         'mar': 'Marathi',
-        'equ': 'Math / equation detection module',
         'mon': 'Mongolian',
         'nep': 'Nepali',
         'nor': 'Norwegian',
-        'oci': 'Occitan (post 1500)',
-        'osd': 'Orientation and script detection module',
-        'ori': 'Oriya',
-        'pan': 'Panjabi; Punjabi',
+        'ori': 'Odia',
+        'pus': 'Pashto',
         'fas': 'Persian',
         'pol': 'Polish',
         'por': 'Portuguese',
-        'pus': 'Pushto; Pashto',
+        'pan': 'Punjabi',
         'que': 'Quechua',
         'ron': 'Romanian; Moldavian; Moldovan',
         'rus': 'Russian',
@@ -105,8 +100,7 @@ def tesseract_languages():
         'sin': 'Sinhala; Sinhalese',
         'slk': 'Slovak',
         'slv': 'Slovenian',
-        'spa': 'Spanish; Castilian',
-        'spa_old': 'Spanish; Castilian - Old',
+        'spa': 'Spanish',
         'sun': 'Sundanese',
         'swa': 'Swahili',
         'swe': 'Swedish',
@@ -120,11 +114,10 @@ def tesseract_languages():
         'tir': 'Tigrinya',
         'ton': 'Tonga',
         'tur': 'Turkish',
-        'uig': 'Uighur; Uyghur',
+        'uig': 'Uyghur',
         'ukr': 'Ukrainian',
         'urd': 'Urdu',
         'uzb': 'Uzbek',
-        'uzb_cyrl': 'Uzbek - Cyrilic',
         'vie': 'Vietnamese',
         'cym': 'Welsh',
         'fry': 'Western Frisian',
@@ -140,14 +133,16 @@ def googletrans_languages():
         'am': 'amharic',
         'ar': 'arabic',
         'hy': 'armenian',
-        'as': 'assamese',
+        'as': 'assamese',  # Added - Not supported
+        'ay': 'aymara',  # Added - Not supported
         'az': 'azerbaijani',
         'eu': 'basque',
         'be': 'belarusian',
         'bn': 'bengali',
+        'bho': 'bhojpuri',
         'bs': 'bosnian',
         'bg': 'bulgarian',
-        'my': 'burmese',
+        'my': 'burmese',  # Added - Supported
         'ca': 'catalan',
         'ceb': 'cebuano',
         'ny': 'chichewa',
@@ -157,14 +152,16 @@ def googletrans_languages():
         'hr': 'croatian',
         'cs': 'czech',
         'da': 'danish',
+        'dv': 'dhivehi',  # Added - Not supported
+        'doi': 'doghri',  # Added - Not supported ('hi' in detected)
         'nl': 'dutch',
         'en': 'english',
         'eo': 'esperanto',
         'et': 'estonian',
+        'ee': 'ewe',  # Added - Supported (Bug: Translated to Estonian)
         'tl': 'filipino',
         'fi': 'finnish',
         'fr': 'french',
-        'fy': 'frisian',
         'gl': 'galician',
         'ka': 'georgian',
         'de': 'german',
@@ -173,13 +170,13 @@ def googletrans_languages():
         'ht': 'haitian creole',
         'ha': 'hausa',
         'haw': 'hawaiian',
-        'iw': 'hebrew',
-        'he': 'hebrew',
+        'iw': 'hebrew',  # Added - Supported (Changed from 'he' to 'iw')
         'hi': 'hindi',
         'hmn': 'hmong',
         'hu': 'hungarian',
         'is': 'icelandic',
         'ig': 'igbo',
+        'ilo': 'ilocano',
         'id': 'indonesian',
         'ga': 'irish',
         'it': 'italian',
@@ -188,36 +185,47 @@ def googletrans_languages():
         'kn': 'kannada',
         'kk': 'kazakh',
         'km': 'khmer',
+        'rw': 'kinyarwanda',  # Added - Not supported
+        'gom': 'konkani',  # Added - Not supported
+        'kri': 'krio',  # Added - Not supported
         'ko': 'korean',
         'ku': 'kurdish (kurmanji)',
+        'ckb': 'kurdish (sorani)',  # Added - Not supported
         'ky': 'kyrgyz',
         'lo': 'lao',
         'la': 'latin',
         'lv': 'latvian',
+        'ln': 'lingala',  # Added - Not supported
         'lt': 'lithuanian',
+        'lg': 'luganda',  # Added - Not supported
         'lb': 'luxembourgish',
         'mk': 'macedonian',
+        'mai': 'maithili',  # Added - Not supported
         'mg': 'malagasy',
         'ms': 'malay',
         'ml': 'malayalam',
         'mt': 'maltese',
         'mi': 'maori',
         'mr': 'marathi',
+        'mni-Mtei': 'meiteilon (manipuri)',  # Added - Not supported
+        'lus': 'mizo',  # Added - Not supported
         'mn': 'mongolian',
         'ne': 'nepali',
         'no': 'norwegian',
         'or': 'odia',
+        'om': 'oromo',  # Added - Not supported
         'ps': 'pashto',
         'fa': 'persian',
         'pl': 'polish',
         'pt': 'portuguese',
         'pa': 'punjabi',
-        'qu': 'quechua',
+        'qu': 'quechua',  # Added - Supported
         'ro': 'romanian',
         'ru': 'russian',
-        'sa': 'sanskrit',
         'sm': 'samoan',
+        'sa': 'sanskrit',  # Added - Not supported
         'gd': 'scots gaelic',
+        'nso': 'sepedi',  # Added - Not supported
         'sr': 'serbian',
         'st': 'southern sotho',
         'sn': 'shona',
@@ -232,16 +240,20 @@ def googletrans_languages():
         'sv': 'swedish',
         'tg': 'tajik',
         'ta': 'tamil',
-        'tt': 'tatar',  # ADDED
+        'tt': 'tatar',  # Added - Not supported
         'te': 'telugu',
         'th': 'thai',
+        'ti': 'tigrinya',  # Added - Not supported
         'tr': 'turkish',
+        'tk': 'turkmen',  # Added - Not supported
+        'ak': 'twi',  # Added - Not supported
         'uk': 'ukrainian',
         'ur': 'urdu',
         'ug': 'uyghur',
         'uz': 'uzbek',
         'vi': 'vietnamese',
         'cy': 'welsh',
+        'fy': 'western frisian',  # Added (Changed from 'frisian' to 'western frisian')
         'xh': 'xhosa',
         'yi': 'yiddish',
         'yo': 'yoruba',
@@ -254,17 +266,28 @@ def translate_text(extracted_text):
     googletrans_languages_dict = googletrans_languages()
     tesseract_languages_dict = tesseract_languages()
 
-    language = tesseract_languages_dict.get(config['ocr']['language'])  # Find only one language
+    # Identify a single language
+    # Evaluate the OCR language and retrieve the corresponding language
+    # For instance, if the language is 'eng', compare it with the googletrans dictionary and identify the key which corresponds to 'English'
+    language = tesseract_languages_dict.get(config['ocr']['language'])
     if language:
         source_language = ''.join(k for k, v in googletrans_languages_dict.items() if v == language.lower())
     else:
         raise ValueError(f"Source language '{config['ocr']['language']}' not found in the translate language list.")
 
     dest_lang = config['translate'][language.lower()]
-    destination_language = next((code for code, name in googletrans_languages_dict.items() if code == dest_lang), None)
+    destination_language = None
+    destination_language_name = None
+    for code, name in googletrans_languages_dict.items():
+        if code == dest_lang:
+            destination_language = code
+            destination_language_name = name
     if not destination_language:
         raise ValueError(f"Destination language '{dest_lang}' not found in the language list.")
 
-    translated_text = translator.translate(extracted_text, src=source_language, dest=destination_language)
-    translated_text_result = translated_text.text
+    try:
+        translated_text = translator.translate(extracted_text, src=source_language, dest=destination_language)
+        translated_text_result = translated_text.text
+    except Exception:
+        translated_text_result = f"The {destination_language_name} language is not currently supported by googletrans module."
     return translated_text_result
