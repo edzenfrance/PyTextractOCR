@@ -1,6 +1,5 @@
 # Third-party library
-import webbrowser
-
+import googletrans
 from googletrans import Translator
 
 # Custom library
@@ -276,12 +275,7 @@ def translate_text(extracted_text):
         raise ValueError(f"Source language '{config['ocr']['language']}' not found in the translate language list.")
 
     dest_lang = config['translate'][language.lower()]
-    destination_language = None
-    destination_language_name = None
-    for code, name in googletrans_languages_dict.items():
-        if code == dest_lang:
-            destination_language = code
-            destination_language_name = name
+    destination_language = next((code for code, name in googletrans_languages_dict.items() if code == dest_lang), None)
     if not destination_language:
         raise ValueError(f"Destination language '{dest_lang}' not found in the language list.")
 
@@ -289,5 +283,6 @@ def translate_text(extracted_text):
         translated_text = translator.translate(extracted_text, src=source_language, dest=destination_language)
         translated_text_result = translated_text.text
     except Exception:
-        translated_text_result = f"The {destination_language_name} language is not currently supported by googletrans module."
-    return translated_text_result
+        translated_text_result = f"<Error>"
+    return translated_text_result, destination_language
+

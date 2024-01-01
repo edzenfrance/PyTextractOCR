@@ -1,3 +1,6 @@
+# Standard library
+import webbrowser
+
 # Third-party libraries
 from loguru import logger
 from PySide6.QtCore import Signal, Qt, QRect
@@ -26,8 +29,11 @@ class OCRTextUI(QDialog):
         self.pos_y = None
         self.text_edit_extracted = None
         self.text_edit_translated = None
+        self.translated_text = None
+        self.destination_language = None
         self.checkbox_always_on_top = None
         self.clickable_label_font = None
+        self.button_translate = None
         self.button_ok = None
         self.horizontal_bottom_layout = None
 
@@ -65,6 +71,7 @@ class OCRTextUI(QDialog):
         widgets = {
             'checkbox_always_on_top': self.checkbox_always_on_top,
             'clickable_label_font': self.clickable_label_font,
+            'button_translate': self.button_translate,
             'button_ok': self.button_ok
         }
         for widget_name, widget in widgets.items():
@@ -92,6 +99,15 @@ class OCRTextUI(QDialog):
         self.clickable_label_font.clicked.connect(self.set_font_style)
         self.horizontal_bottom_layout.addWidget(self.clickable_label_font)
 
+        if self.config['translate']['enable_translation']:
+            self.button_translate = QPushButton("Translate", self)
+            self.button_translate.setFixedSize(75, 23)
+            self.button_translate.setFixedSize(75, 23)
+            self.button_translate.setAutoDefault(False)
+            self.button_translate.setToolTip("Translate in browser")
+            self.horizontal_bottom_layout.addWidget(self.button_translate)
+            self.button_translate.clicked.connect(self.open_in_google_translate)
+
         self.button_ok = QPushButton("OK", self)
         self.button_ok.setFixedSize(75, 23)
         self.button_ok.setAutoDefault(False)
@@ -106,7 +122,9 @@ class OCRTextUI(QDialog):
         self.text_edit_extracted.setPlainText(text)
 
     def set_translated_text(self, text):
-        self.text_edit_translated.setPlainText(text)
+        self.translated_text = text[0]
+        self.destination_language = text[1]
+        self.text_edit_translated.setPlainText(self.translated_text)
 
     def save_popup_window_position(self):
         window_position_x = self.pos().x()
@@ -188,6 +206,11 @@ class OCRTextUI(QDialog):
     def ok_button_clicked(self):
         self.save_popup_window_position()
         self.close()
+
+    def open_in_google_translate(self):
+        base_url = "https://translate.google.com/?sl=auto&tl={}&text={}&op=translate"
+        url = base_url.format(self.destination_language, self.text_edit_extracted.toPlainText().replace(" ", "%20"))
+        webbrowser.open_new(url)
 
     def closeEvent(self, even):
         logger.info("OCR Text window closed")

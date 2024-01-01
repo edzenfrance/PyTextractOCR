@@ -126,13 +126,12 @@ def copy_to_clipboard(text):
 
 
 def translate_extracted_text(extracted_text):
-    google_trans_text = None
     try:
-        google_trans_text = translate_text(extracted_text)
+        text = translate_text(extracted_text)
         logger.success("Text successfully translated using google translate")
+        return text
     except Exception as e:
         logger.error(f"An error occurred while translating text: {e}")
-    return google_trans_text
 
 
 def tesseract_check(tesseract_path):
