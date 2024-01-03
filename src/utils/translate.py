@@ -1,11 +1,20 @@
 # Third-party library
-import googletrans
 from googletrans import Translator
 
 # Custom library
 from src.config.config import load_config
 
 translator = Translator()
+
+
+def tesseract_skip_languages():
+    """
+    Returns a set of languages that are not supported by Google Translation.
+
+    These languages are skipped when creating QTableWidgetItem and QComboBox
+    objects in the application's UI.
+    """
+    return {'Breton', 'Cherokee', 'Dzongkha', 'Faroese', 'Inuktitut', 'Syriac', 'Tibetan', 'Tonga'}
 
 
 def tesseract_languages():
@@ -17,7 +26,7 @@ def tesseract_languages():
         'hye': 'Armenian',
         'asm': 'Assamese',
         'aze': 'Azerbaijani',
-        'aze_cyrl': 'Azerbaijani - Cyrilic',
+        'aze_cyrl': 'Azerbaijani (Cyrilic)',
         'eus': 'Basque',
         'bel': 'Belarusian',
         'ben': 'Bengali',
@@ -25,12 +34,11 @@ def tesseract_languages():
         'bre': 'Breton',
         'bul': 'Bulgarian',
         'mya': 'Burmese',
-        'cat': 'Catalan; Valencian',
+        'cat': 'Catalan',
         'ceb': 'Cebuano',
-        'khm': 'Central Khmer',
         'chr': 'Cherokee',
-        'chi_sim': 'Chinese - Simplified',
-        'chi_tra': 'Chinese - Traditional',
+        'chi_sim': 'Chinese (Simplified)',
+        'chi_tra': 'Chinese (Traditional)',
         'cos': 'Corsican',
         'hrv': 'Croatian',
         'ces': 'Czech',
@@ -41,14 +49,14 @@ def tesseract_languages():
         'epo': 'Esperanto',
         'est': 'Estonian',
         'fao': 'Faroese',
-        'fil': 'Filipino (old - Tagalog)',
+        'fil': 'Filipino',
         'fin': 'Finnish',
         'fra': 'French',
         'glg': 'Galician',
         'kat': 'Georgian',
-        'kat_old': 'Georgian - Old',
+        'kat_old': 'Georgian (Old)',
         'deu': 'German',
-        'frk': 'German - Fraktur',
+        'frk': 'German (Fraktur)',
         'ell': 'Greek',
         'guj': 'Gujarati',
         'hat': 'Haitian Creole',
@@ -64,9 +72,10 @@ def tesseract_languages():
         'jav': 'Javanese',
         'kan': 'Kannada',
         'kaz': 'Kazakh',
+        'khm': 'Khmer',
         'kor': 'Korean',
-        'kor_vert': 'Korean (vertical)',
-        'kmr': 'Kurdish (kurmanji)',
+        'kor_vert': 'Korean (Vertical)',
+        'kmr': 'Kurdish (Kurmanji)',
         'kir': 'Kyrgyz',
         'lao': 'Lao',
         'lat': 'Latin',
@@ -89,14 +98,14 @@ def tesseract_languages():
         'por': 'Portuguese',
         'pan': 'Punjabi',
         'que': 'Quechua',
-        'ron': 'Romanian; Moldavian; Moldovan',
+        'ron': 'Romanian',
         'rus': 'Russian',
         'san': 'Sanskrit',
         'gla': 'Scottish Gaelic',
         'srp': 'Serbian',
-        'srp_latn': 'Serbian - Latin',
+        'srp_latn': 'Serbian (Latin)',
         'snd': 'Sindhi',
-        'sin': 'Sinhala; Sinhalese',
+        'sin': 'Sinhala',
         'slk': 'Slovak',
         'slv': 'Slovenian',
         'spa': 'Spanish',

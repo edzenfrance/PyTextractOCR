@@ -16,7 +16,7 @@ from src.config.config import load_config, update_config
 from src.ocr.ocr_processor import tesseract_check, tesseract_version
 from src.ui.asset_manager import app_icon
 from src.utils.message_box import show_message_box
-from src.utils.translate import googletrans_languages, tesseract_languages
+from src.utils.translate import googletrans_languages, tesseract_languages, tesseract_skip_languages
 from src.ui.download import DownloadTrainedData
 
 
@@ -475,22 +475,28 @@ class SettingsUI(QDialog):
         self.translate_table_widget.setVerticalHeader(header_vertical)
 
         self.translate_table_widget.setColumnCount(2)
-        self.translate_table_widget.setRowCount(len(googletrans_languages()))
+        self.translate_table_widget.setRowCount(len(tesseract_languages()) - len(tesseract_skip_languages()))
         self.translate_table_widget.setHorizontalHeaderLabels(table_header_labels)
         self.translate_table_widget.setEditTriggers(QAbstractItemView.NoEditTriggers)  # Make the entire table read-only
         self.translate_table_widget.setSelectionMode(QAbstractItemView.NoSelection)  # No items can be selected
 
         self.translate_to_comboboxes = []
 
-        for table_row, combobox_language in enumerate(googletrans_languages().values(), start=0):
-            table_widget_language = QTableWidgetItem(combobox_language.capitalize())
+        table_row = 0
+        for combobox_language in tesseract_languages().values():
+            if combobox_language in tesseract_skip_languages():
+                continue
+            table_widget_language = QTableWidgetItem(combobox_language.title())
             translate_to_combobox = QComboBox()
 
-            # Add the languages with the first letter capitalized to the combo box, excluding the current language
             for language_code, language_name in googletrans_languages().items():
-                if language_name != combobox_language:
-                    translate_to_combobox.addItem(language_name.capitalize())
-                if language_code == self.config['translate'][combobox_language.lower()]:
+                # Get the first word of the language_name and combobox_language
+                first_word_language_name = language_name.split(' ')[0].lower()
+                first_word_combobox_language = combobox_language.split(' ')[0].lower()
+                # Add the languages with the first letter capitalized to the combo box, excluding the current language
+                if first_word_language_name not in first_word_combobox_language:
+                    translate_to_combobox.addItem(language_name.title())
+                if language_code == self.config['translate']['languages'][table_row]:
                     index = translate_to_combobox.findText(language_name.capitalize())
                     if index >= 0:  # -1 means the text was not found
                         translate_to_combobox.setCurrentIndex(index)
@@ -499,6 +505,7 @@ class SettingsUI(QDialog):
             self.translate_table_widget.setCellWidget(table_row, 1, translate_to_combobox)
             self.translate_to_comboboxes.append(translate_to_combobox)
             translate_to_combobox.currentIndexChanged.connect(self.toggle_apply_button)
+            table_row += 1
 
         # Make 'Translate To' column stretch to fill table width.
         header_horizontal.setSectionResizeMode(0, QHeaderView.ResizeToContents)
@@ -1098,12 +1105,16 @@ class SettingsUI(QDialog):
         settings_config['ocr']['language'] = '+'.join(checked_languages)
 
         # Get the selected language in every Translate To combobox
-        languages = googletrans_languages()
-        for count, language_name in enumerate(languages.values()):
-            current_text = self.translate_to_comboboxes[count].currentText().lower()
-            for language_code, name in languages.items():
-                if name == current_text:
-                    settings_config['translate'][language_name] = language_code
+        google_l = googletrans_languages()
+        count = 0
+        settings_config['translate']['languages'] = []
+        for language_name in tesseract_languages().values():
+            if language_name in tesseract_skip_languages():
+                continue
+            combobox_text = self.translate_to_comboboxes[count].currentText().lower()
+            language_code = list(google_l.keys())[list(google_l.values()).index(combobox_text)]
+            settings_config['translate']['languages'].append(language_code)
+            count += 1
 
         logger.info("Saving settings in configuration file")
         update_config(settings_config)
