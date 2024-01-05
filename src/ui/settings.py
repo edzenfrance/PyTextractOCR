@@ -292,8 +292,8 @@ class SettingsUI(QDialog):
                                                       "more efficient. Ideal for scanned document or\n"
                                                       "image with tilted text.")
         self.checkbox_deskew = self.create_checkbox("", self.preprocess_tab, 'checkbox_deskew', (95, 79, 180, 20))
-        self.tooltip_deskew = {'First': "Deskew the image before preprocessing",
-                               'Last': "Deskew the image after preprocessing"}
+        self.tooltip_deskew = {'First': "Deskew the image before preprocessing.",
+                               'Last': "Deskew the image after preprocessing."}
         self.combobox_deskew = self.create_combobox((115, 77, 75, 22), self.tooltip_deskew, 'combobox_deskew', 'preprocess',
                                                     'blurring', 1, self.update_combobox_deskew)
 
@@ -313,13 +313,14 @@ class SettingsUI(QDialog):
                                          "weight to the nearby pixels and less to the distant\n"
                                          "ones. This method provides a more natural blurring\n"
                                          "effect and preserves edges better than Box Blur.",
-                             'Median': "Median Blur replaces each pixel's value with the median\n"
-                                       "of the pixel values in its neighborhood. It's particularly\n"
-                                       "effective at reducing salt-and-pepper noise.",
-                             'Bilateral': "Bilateral Blurring" "Bilateral Blur is a more advanced\n"
-                                          "method that also takes into account the intensity\n"
-                                          "difference between pixels. It can preserve edges\n"
-                                          "while still reducing noise."}
+                             'Median': "Median Blur replaces each pixel's value with the\n"
+                                       "median of the pixel values in its neighborhood. It's\n"
+                                       "particularly effective at reducing salt-and-pepper\n"
+                                       "noise.",
+                             'Bilateral': "Bilateral Blur is a more advanced method that\n"
+                                          "also takes into account the intensity difference\n"
+                                          "between pixels. It can preserve edges while still\n"
+                                          "reducing noise."}
         self.combobox_blur = self.create_combobox((115, 112, 75, 22), self.tooltip_blur, 'combobox_blur', 'preprocess',
                                                   'blurring', 3, self.update_combobox_blurring)
         self.label_blur_kernel = self.create_label("K:", self.preprocess_tab, 'label_blur_kernel', (200, 115, 10, 16), tooltip="Kernel")
@@ -352,7 +353,7 @@ class SettingsUI(QDialog):
         self.combobox_thresholding = self.create_combobox((115, 147, 75, 22), self.tooltip_thresholding, 'combobox_thresholding', 'preprocess',
                                                           'thresholding', 1, self.update_combobox_thresholding)
         self.label_threshold = self.create_label("T:", self.preprocess_tab, 'label_threshold', (200, 150, 10, 16), tooltip="Threshold")
-        self.label_global_type = self.create_label("T:", self.preprocess_tab, 'label_global_type', (250, 150, 15, 16), tooltip="Threshold Type")
+        self.label_global_type = self.create_label("T:", self.preprocess_tab, 'label_global_type', (250, 150, 15, 16), tooltip="Type")
         self.tooltip_global_type = {'Binary': "Transforms pixel values. Values exceeding\n"
                                               "the threshold become the maximum, or\n"
                                               "else become zero.",
@@ -471,6 +472,8 @@ class SettingsUI(QDialog):
         self.translate_table_widget = QTableWidget(self.translate_tab)
         table_header_labels = ["OCR Language", "Translate To (Using Google Translate)"]
 
+        # 'MyHeader' class is a custom class that inherits from QHeaderView and provides a way to draw a custom header section.
+        # This class is used as the horizontal and vertical header for the 'translate_table_widget'.
         header_horizontal = MyHeader(Qt.Horizontal, self.translate_table_widget)
         self.translate_table_widget.setHorizontalHeader(header_horizontal)
 

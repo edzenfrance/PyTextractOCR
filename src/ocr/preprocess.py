@@ -112,8 +112,16 @@ def start_preprocess(image_path,
     # Thresholding
     if enable_thresholding:
         if thresholding == 0:
-            logger.info(f"Applying global thresholding: {threshold_global}")
-            _, image = cv2.threshold(image, threshold_global, 255, cv2.THRESH_BINARY)
+            threshold_types = {
+                0: cv2.THRESH_BINARY,
+                1: cv2.THRESH_BINARY_INV,
+                2: cv2.THRESH_TRUNC,
+                3: cv2.THRESH_TOZERO,
+                4: cv2.THRESH_TOZERO_INV,
+            }
+            global_type = threshold_types.get(threshold_global_type, cv2.THRESH_BINARY)
+            logger.info(f"Applying global thresholding: {threshold_global} - Type: {global_type}")
+            _, image = cv2.threshold(image, threshold_global, 255, global_type)
 
         elif thresholding == 1:
             logger.info(f"Applying adaptive thresholding {threshold_adaptive}")

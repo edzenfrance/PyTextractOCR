@@ -25,6 +25,11 @@ def tesseract_skip_languages():
 
 
 def tesseract_languages():
+    """
+    Returns a set of languages that is used to download OCR languages from Github Tesseract
+
+    Also use to compare in Google Translate languages
+    """
     return {
         'afr': 'afrikaans',
         'sqi': 'albanian',
