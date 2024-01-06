@@ -16,9 +16,9 @@ from PySide6.QtWidgets import (QAbstractItemView, QCheckBox, QComboBox, QDialog,
 from src.config.config import load_config, update_config
 from src.ocr.ocr_processor import tesseract_check, tesseract_version
 from src.ui.asset_manager import app_icon
+from src.utils.download import DownloadTrainedData
 from src.utils.message_box import show_message_box
 from src.utils.translate import googletrans_languages, tesseract_languages, tesseract_skip_languages
-from src.ui.download import DownloadTrainedData
 
 
 class SettingsUI(QDialog):
