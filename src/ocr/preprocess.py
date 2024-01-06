@@ -1,11 +1,9 @@
-# Standard library
-import imghdr
-
 # Third-party libraries
 import cv2
 import numpy as np
 from deskew import determine_skew
 from loguru import logger
+from PIL import Image
 from skimage import io
 from skimage.color import rgb2gray
 from skimage.transform import rotate
@@ -51,8 +49,13 @@ def start_preprocess(image_path,
         logger.info("Preprocessing is disabled")
         return
 
-    if imghdr.what(image_path) == 'gif':
-        logger.warning("The image is a GIF (Graphics Interchange Format). OpenCV does not support GIFs.")
+    # Check if image file is GIF (Scan)
+    try:
+        if Image.open(image_path).format == 'GIF':
+            logger.warning("The image is a GIF (Graphics Interchange Format). OpenCV does not support GIFs.")
+            return
+    except IOError:
+        logger.error(f"The image file '{image_path}' cannot be found or opened.")
         return
 
     # Deskew first
