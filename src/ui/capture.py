@@ -18,6 +18,7 @@ from src.config.config import load_config
 from src.ocr.ocr_processor import perform_ocr
 from src.ui.ocr_text import OCRTextUI
 from src.utils.message_box import show_message_box
+from src.utils.translate import translate_text
 
 
 class ImageLabel(QLabel):
@@ -132,6 +133,7 @@ class FullscreenCapture(QMainWindow):
         self.central_widget = None
         self.crosshair_cursor = None
         self.extracted_text = None
+        self.translated_text = None
         self.selection_area = None
         self.start_pos = None
         self.end_pos = None
@@ -272,14 +274,12 @@ class FullscreenCapture(QMainWindow):
                 temporary_file_name = temp.name
                 shutil.copy(file_name, temporary_file_name)  # copy the selected file to the temporary file
                 logger.success(f"Selected image copied as temporary file: {temp.name}")
-            self.extracted_text = perform_ocr(temporary_file_name)
+            self.extracted_text = perform_ocr(temporary_file_name, self.config)
+            self.translated_text = self.translate_extracted_text(self.extracted_text)
         else:
-            self.extracted_text = perform_ocr(file_name)
-            if self.config['output']['save_enhanced_image']:
-                folder = self.config['output']['output_folder_path']
-                self.save_temporary_image(file_name, current_datetime, folder)
-            else:
-                self.remove_temporary_image(file_name)
+            self.extracted_text = perform_ocr(file_name, self.config)
+            self.translated_text = self.translate_extracted_text(self.extracted_text)
+            self.save_or_remove_temporary_image(file_name, current_datetime)
         self.play_sound_file()
         self.close_fullscreen_show_main()
         self.show_ocr_text_ui()
@@ -297,18 +297,18 @@ class FullscreenCapture(QMainWindow):
         return output_folder
 
     def show_ocr_text_ui(self):
-        if not self.extracted_text[0] or not self.config['output']['show_popup_window']:
+        if not self.extracted_text or not self.config['output']['show_popup_window']:
             return
 
         self.ocr_text_ui.init_ui()
         self.ocr_text_ui.show() if not self.ocr_text_ui.isVisible() else self.ocr_text_ui.raise_()
-        self.ocr_text_ui.set_extracted_text(self.extracted_text[0])
+        self.ocr_text_ui.set_extracted_text(self.extracted_text)
 
-        if self.extracted_text[1]:
-            self.ocr_text_ui.set_translated_text(self.extracted_text[1])
+        if self.translated_text:
+            self.ocr_text_ui.set_translated_text(self.translated_text)
 
     def play_sound_file(self):
-        if not self.extracted_text[0] or not self.config['preferences']['enable_sound']:
+        if not self.extracted_text or not self.config['preferences']['enable_sound']:
             return
 
         sound_file = self.config['preferences']['sound_file']
@@ -328,6 +328,22 @@ class FullscreenCapture(QMainWindow):
         now = datetime.now()
         # The hour is in a 24-hour format (military time)
         return f"{now.year}_{now.month:02d}_{now.day:02d}_{now.hour:02d}{now.minute:02d}{now.second:02d}"
+
+    @staticmethod
+    def translate_extracted_text(extracted_text):
+        try:
+            translated_text = translate_text(extracted_text)
+            logger.success(f"Text successfully translated using google translate:\n{translated_text}")
+            return translated_text
+        except Exception as e:
+            logger.error(f"An error occurred while translating text: {e}")
+
+    def save_or_remove_temporary_image(self, file_name, current_datetime):
+        if self.config['output']['save_enhanced_image']:
+            folder = self.config['output']['output_folder_path']
+            self.save_temporary_image(file_name, current_datetime, folder)
+        else:
+            self.remove_temporary_image(file_name)
 
     @staticmethod
     def save_temporary_image(image_path, date_time, output_folder_path):

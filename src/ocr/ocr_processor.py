@@ -12,15 +12,12 @@ from PIL import Image
 from pytesseract import Output
 
 # Custom libraries
-from src.config.config import load_config
 from src.ocr.preprocess import preprocess_image
-from src.utils.translate import translate_text
 
 
-def perform_ocr(working_image):
-    config = load_config()
+def perform_ocr(working_image, configuration):
+    config = configuration
     extracted_text = None
-    translated_text = None
 
     tesseract_path = tesseract_check(config['ocr']['tesseract_path'])
     tessdata_path(config, tesseract_path)
@@ -39,19 +36,17 @@ def perform_ocr(working_image):
                 extracted_text = "\n".join(line for line in extracted_text.split("\n") if line.strip())
             if config['output']['copy_to_clipboard']:
                 copy_to_clipboard(extracted_text)
-            if config['translate']['enable_translation']:
-                translated_text = translate_extracted_text(extracted_text)
 
     except Exception as e:
         logger.error(f"An error occurred during OCR process: {e}")
 
     finally:
         if extracted_text:
-            logger.info(f"OCR Text:\n[{extracted_text}]\nTranslated Text:\n{translated_text}")
+            logger.info(f"OCR Text:\n[{extracted_text}]")
             logger.success("OCR Completed")
         else:
             logger.info("OCR Text is empty")
-        return extracted_text, translated_text
+        return extracted_text
 
 
 def get_pytesseract_configuration(config):
@@ -123,15 +118,6 @@ def copy_to_clipboard(text):
         logger.success("Text successfully copied to clipboard using pyperclip")
     except Exception as e:
         logger.error(f"An error occurred while copying text to clipboard: {e}")
-
-
-def translate_extracted_text(extracted_text):
-    try:
-        text = translate_text(extracted_text)
-        logger.success("Text successfully translated using google translate")
-        return text
-    except Exception as e:
-        logger.error(f"An error occurred while translating text: {e}")
 
 
 def tesseract_check(tesseract_path):

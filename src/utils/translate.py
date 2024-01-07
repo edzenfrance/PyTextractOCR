@@ -295,10 +295,15 @@ def translate_text(extracted_text):
     else:
         raise ValueError(f"Source language '{config['ocr']['language']}' not found in the translate language list.")
 
-    dest_lang = config['translate'][language.lower()]
-    destination_language = next((code for code, name in googletrans_languages_dict.items() if code == dest_lang), None)
-    if not destination_language:
-        raise ValueError(f"Destination language '{dest_lang}' not found in the language list.")
+    counter = 0
+    destination_language = None
+    save_tesseract_languages = [lang for lang in tesseract_languages().values() if lang not in tesseract_skip_languages()]
+    for tess_language_name in save_tesseract_languages:
+        if tess_language_name == language:
+            destination_language = config['translate']['languages'][counter]
+        counter += 1
+    if destination_language is None:
+        raise ValueError(f"Destination language not found in the language list.")
 
     try:
         translated_text = translator.translate(extracted_text, src=source_language, dest=destination_language)
@@ -306,4 +311,3 @@ def translate_text(extracted_text):
     except Exception:
         translated_text_result = f"<Error>"
     return translated_text_result, destination_language
-
