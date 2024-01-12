@@ -173,7 +173,7 @@ def googletrans_languages():
         'cs': 'czech',
         'da': 'danish',
         'dv': 'dhivehi',  # Added - Not supported
-        'doi': 'doghri',  # Added - Not supported ('hi' in detected)
+        'doi': 'doghri',  # Added - Not supported ('hi' in detect language)
         'nl': 'dutch',
         'en': 'english',
         'eo': 'esperanto',
@@ -281,8 +281,8 @@ def googletrans_languages():
     }
 
 
-def translate_text(extracted_text):
-    config = load_config()
+def translate_text(extracted_text, configuration):
+    config = configuration
     googletrans_languages_dict = googletrans_languages()
     tesseract_languages_dict = tesseract_languages()
 

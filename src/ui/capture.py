@@ -329,14 +329,15 @@ class FullscreenCapture(QMainWindow):
         # The hour is in a 24-hour format (military time)
         return f"{now.year}_{now.month:02d}_{now.day:02d}_{now.hour:02d}{now.minute:02d}{now.second:02d}"
 
-    @staticmethod
-    def translate_extracted_text(extracted_text):
-        try:
-            translated_text = translate_text(extracted_text)
-            logger.success(f"Text successfully translated using google translate:\n{translated_text}")
-            return translated_text
-        except Exception as e:
-            logger.error(f"An error occurred while translating text: {e}")
+    def translate_extracted_text(self, extracted_text):
+        if self.config['translate']['enable_translation']:
+            try:
+                logger.info(f"Translating text using google translate")
+                translated_text = translate_text(extracted_text, self.config)
+                logger.info(f"Translated Text:\n{translated_text}")
+                return translated_text
+            except Exception as e:
+                logger.error(f"An error occurred while translating text: {e}")
 
     def save_or_remove_temporary_image(self, file_name, current_datetime):
         if self.config['output']['save_enhanced_image']:
