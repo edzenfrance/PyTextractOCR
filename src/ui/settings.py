@@ -465,8 +465,12 @@ class SettingsUI(QDialog):
         self.checkbox_append_translation = self.create_checkbox("Append translation to clipboard", self.translate_tab,
                                                                 'checkbox_append_translation', (16, 10, 201, 20))
 
-        self.checkbox_show_translation = self.create_checkbox("Show translation in popup window", self.translate_tab,
-                                                              'checkbox_show_translation', (16, 40, 211, 20))
+        self.checkbox_show_translation = self.create_checkbox("Display translation in popup window", self.translate_tab,
+                                                              'checkbox_show_translation', (16, 40, 211, 20),
+                                                              tooltip="Enable this to display translated text in the OCR window.\n"
+                                                                      "Doesn't work with multiple OCR languages. Use 'Translate'\n"
+                                                                      "button in OCR window for multiple languages."
+                                                              )
 
         # TABLE WIDGET - Translate To
         self.translate_table_widget = QTableWidget(self.translate_tab)

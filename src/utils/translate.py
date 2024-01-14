@@ -1,9 +1,6 @@
 # Third-party library
 from googletrans import Translator
 
-# Custom library
-from src.config.config import load_config
-
 translator = Translator()
 
 
@@ -81,6 +78,7 @@ def tesseract_languages():
         'gle': 'irish',
         'ita': 'italian',
         'jpn': 'japanese',
+        'jpn_vert': 'japanese (vertical)',
         'jav': 'javanese',
         'kan': 'kannada',
         'kaz': 'kazakh',
@@ -286,28 +284,46 @@ def translate_text(extracted_text, configuration):
     googletrans_languages_dict = googletrans_languages()
     tesseract_languages_dict = tesseract_languages()
 
+    source_language_code = None
+    source_language_name = None
     # Identify a single language
     # Evaluate the OCR language and retrieve the corresponding language
-    # For instance, if the language is 'eng', compare it with the googletrans dictionary and identify the key which corresponds to 'English'
+    # For example, if the language is 'eng', match it with the googletrans_languages dictionary and identify the key that corresponds to 'English'
+    # Extract the first part of the language string, for instance, extract 'korean' from 'korean (vertical)'
     language = tesseract_languages_dict.get(config['ocr']['language'])
     if language:
-        source_language = ''.join(k for k, v in googletrans_languages_dict.items() if v == language.lower())
+        for gcode, gname in googletrans_languages_dict.items():
+            #  If the googletrans language name matches the first part of the OCR language, print it and set the source language code and name
+            if gname == language.split(' ')[0].lower():
+                source_language_code = gcode
+                source_language_name = gname
     else:
-        raise ValueError(f"Source language '{config['ocr']['language']}' not found in the translate language list.")
+        # ValueError indicates that the user selected multiple OCR language or the language in the config not found
+        raise ValueError(f"Source language ({config['ocr']['language']}) not found in translate language list")
 
+    # Find the position of the language in the Tesseract dictionary
+    # Then get the destination code from the config based on the 'counter' number
     counter = 0
-    destination_language = None
+    destination_language_code = None
+    destination_language_name = None
+    # Filter out languages from Tesseract that are in the skip list
     save_tesseract_languages = [lang for lang in tesseract_languages().values() if lang not in tesseract_skip_languages()]
     for tess_language_name in save_tesseract_languages:
+        # If the current language is the one we're looking for, get its corresponding destination code
         if tess_language_name == language:
-            destination_language = config['translate']['languages'][counter]
+            # Get the destination language code from the config file at the index specified by 'counter'
+            destination_language_code = config['translate']['languages'][counter]
+            # Using the destination language code as a key, get the corresponding destination language name (value)
+            destination_language_name = googletrans_languages_dict.get(destination_language_code)
+        # Increment the counter for the next iteration
         counter += 1
-    if destination_language is None:
+    if destination_language_code is None:
         raise ValueError(f"Destination language not found in the language list.")
 
     try:
-        translated_text = translator.translate(extracted_text, src=source_language, dest=destination_language)
+        translated_text = translator.translate(extracted_text, src=source_language_code, dest=destination_language_code)
         translated_text_result = translated_text.text
-    except Exception:
-        translated_text_result = f"<Error>"
-    return translated_text_result, destination_language
+    except Exception as e:
+        raise ValueError(f"Translating error: {e}")
+    # The destination_language_code is used for the translate_in_default_browser function when translating the OCR text
+    return translated_text_result, source_language_name, destination_language_name, destination_language_code

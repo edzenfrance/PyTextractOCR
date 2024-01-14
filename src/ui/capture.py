@@ -303,16 +303,13 @@ class FullscreenCapture(QMainWindow):
         self.ocr_text_ui.init_ui()
         self.ocr_text_ui.show() if not self.ocr_text_ui.isVisible() else self.ocr_text_ui.raise_()
         self.ocr_text_ui.set_extracted_text(self.extracted_text)
-
-        if self.translated_text:
-            self.ocr_text_ui.set_translated_text(self.translated_text)
+        self.ocr_text_ui.set_translated_text(self.translated_text)
 
     def play_sound_file(self):
         if not self.extracted_text or not self.config['preferences']['enable_sound']:
             return
 
         sound_file = self.config['preferences']['sound_file']
-
         if not Path(sound_file).exists():
             logger.error(f"{sound_file} does not exist")
             return
@@ -334,10 +331,11 @@ class FullscreenCapture(QMainWindow):
             try:
                 logger.info(f"Translating text using google translate")
                 translated_text = translate_text(extracted_text, self.config)
-                logger.info(f"Translated Text:\n{translated_text}")
-                return translated_text
+                logger.info(f"Translated Text ({translated_text[1]}):\n{translated_text[0]}")
             except Exception as e:
+                translated_text = None
                 logger.error(f"An error occurred while translating text: {e}")
+            return translated_text
 
     def save_or_remove_temporary_image(self, file_name, current_datetime):
         if self.config['output']['save_enhanced_image']:

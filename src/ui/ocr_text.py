@@ -29,7 +29,6 @@ class OCRTextUI(QDialog):
         self.pos_y = None
         self.text_edit_extracted = None
         self.text_edit_translated = None
-        self.translated_text = None
         self.destination_language = None
         self.checkbox_always_on_top = None
         self.clickable_label_font = None
@@ -106,7 +105,7 @@ class OCRTextUI(QDialog):
             self.button_translate.setAutoDefault(False)
             self.button_translate.setToolTip("Translate in browser")
             self.horizontal_bottom_layout.addWidget(self.button_translate)
-            self.button_translate.clicked.connect(self.open_in_google_translate)
+            self.button_translate.clicked.connect(self.translate_in_default_browser)
 
         self.button_ok = QPushButton("OK", self)
         self.button_ok.setFixedSize(75, 23)
@@ -122,9 +121,14 @@ class OCRTextUI(QDialog):
         self.text_edit_extracted.setPlainText(text)
 
     def set_translated_text(self, text):
-        self.translated_text = text[0]
-        self.destination_language = text[1]
-        self.text_edit_translated.setPlainText(self.translated_text)
+        if self.config['translate']['enable_translation']:
+            if text:
+                self.setWindowTitle(f"PyTextractOCR - OCR Text ({text[1].capitalize()} to {text[2].capitalize()})")
+                self.destination_language = text[3]  # Important for translate_in_default_browser function
+                self.text_edit_translated.setPlainText(text[0])  # Translated Text
+            else:
+                self.setWindowTitle("PyTextractOCR - OCR Text")
+                self.text_edit_translated.setPlainText(f"<Error>")
 
     def save_popup_window_position(self):
         window_position_x = self.pos().x()
@@ -207,7 +211,7 @@ class OCRTextUI(QDialog):
         self.save_popup_window_position()
         self.close()
 
-    def open_in_google_translate(self):
+    def translate_in_default_browser(self):
         base_url = "https://translate.google.com/?sl=auto&tl={}&text={}&op=translate"
         url = base_url.format(self.destination_language, self.text_edit_extracted.toPlainText().replace(" ", "%20"))
         webbrowser.open_new(url)
