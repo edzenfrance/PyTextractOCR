@@ -28,7 +28,7 @@ def load_config():
         "preprocess": {
             'enable_preprocess': False,
             'scale_factor': 1.0,
-            'enable_grayscale': True,
+            'enable_grayscale': False,
             'remove_noise': False,
             'enable_deskew': False,
             'deskew_position': 1,
@@ -93,10 +93,13 @@ def load_config():
     }
 
     try:
-        if Path('config.toml').exists():
-            config = toml.load('config.toml')
-        else:
+        config_path = Path('config.toml')
+        if not config_path.is_file():
+            with config_path.open('w') as f:
+                toml.dump(default_config, f)
             config = default_config
+        else:
+            config = toml.load(config_path)
     except TomlDecodeError:
         logger.error("An error occurred while loading the configuration file. Using default settings")
         config = default_config
