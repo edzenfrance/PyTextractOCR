@@ -221,7 +221,8 @@ class OCRTextUI(QDialog):
 
 
 class ClickableLabel(QLabel):
-    clicked = Signal()
+    clicked = Signal()  # Define a signal 'clicked' to be emitted when label is clicked
 
     def mousePressEvent(self, event):
-        self.clicked.emit()
+        self.clicked.emit()  # Emit 'clicked' signal when a mouse press event occurs
+

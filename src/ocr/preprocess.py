@@ -51,6 +51,7 @@ def start_preprocess(image_path,
 
     # Check if image file is GIF (Scan)
     try:
+        # Check if the image format is GIF using the Python Imaging Library (PIL)
         if Image.open(image_path).format == 'GIF':
             logger.warning("The image is a GIF (Graphics Interchange Format). OpenCV does not support GIFs.")
             return
@@ -58,12 +59,13 @@ def start_preprocess(image_path,
         logger.error(f"The image file '{image_path}' cannot be found or opened.")
         return
 
-    # Deskew first
+    # Check if deskewing is enabled and set to be the first operation in the OCR preprocessing sequence
     if enable_deskew and deskew_position == 0:
         logger.info("Deskewing image [First]")
         image = io.imread(image_path)
         grayscale = rgb2gray(image)
         angle = determine_skew(grayscale)
+        # If the angle is not None and is greater than 0, rotate the image to correct the skew
         if angle is not None and angle > 0.0:
             rotated = rotate(image, angle, resize=True) * 255
             logger.info(f"Deskew rotated angle value: {angle}")
@@ -173,10 +175,11 @@ def start_preprocess(image_path,
             kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (black_hat_kernel[0], black_hat_kernel[1]))
             image = cv2.morphologyEx(image, cv2.MORPH_BLACKHAT, kernel)
 
-    # Deskew last
+    # Check if deskewing is enabled and set to be the last operation in the OCR preprocessing sequence
     if enable_deskew and deskew_position == 1:
         logger.info(f"Deskewing image [Last]")
         angle = determine_skew(image)
+        # If the angle is not None and is greater than 0, rotate the image to correct the skew
         if angle is not None and angle > 0.0:
             rotated = rotate(image, angle, resize=True) * 255
             logger.info(f"Deskew rotated angle value: {angle}")

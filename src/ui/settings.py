@@ -1155,10 +1155,12 @@ class SettingsUI(QDialog):
 
     @staticmethod
     def fix_line_edit_path(line_edit: QLineEdit):
+        # Replace '/' with '\\', then condense multiple '\\' into a single '\\'
         return re.sub(r'\\+', r'\\', str(line_edit.text()).replace('/', '\\'))
 
     @staticmethod
     def fix_double_spinbox_zeros(value):
+        # Format value to 7 decimals, remove trailing zeros and decimal point if not needed
         return float(format(value, '.7f').rstrip('0').rstrip('.'))
 
     def closeEvent(self, event):

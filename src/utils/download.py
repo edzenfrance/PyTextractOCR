@@ -93,7 +93,7 @@ class DownloadWorker(QThread):
         downloaded_size += len(data)
         progress_percentage = int(downloaded_size / total_size * 100)
         self.progress_signal.emit(self.language, progress_percentage)
-        return downloaded_size  # Return the value so that run can track it correctly
+        return downloaded_size  # Return the value so that run function can track it correctly
 
     def rename_temp_file(self):
         tessdata_folder = Path('./tessdata')

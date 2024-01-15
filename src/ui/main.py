@@ -50,7 +50,7 @@ class MainUI(QDialog):
         self.tray_icon.activated.connect(self.tray_icon_activated)
 
         icon_path = Path(app_icon)
-        # SP_MessageBoxInformation - Built-in system icon if the custom one is missing
+        # SP_MessageBoxInformation - Built-in system icon if the custom icon is missing
         self.tray_icon.setIcon(QIcon(str(icon_path)) if icon_path.is_file else self.style().standardIcon(QStyle.SP_MessageBoxInformation))
 
         self.main_menu_action = QAction('Show PyTexractOCR', triggered=self.show)

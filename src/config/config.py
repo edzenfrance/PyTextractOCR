@@ -105,24 +105,24 @@ def load_config():
         config = default_config
 
     modified = False
-    new_config = {section: {} for section in default_config}  # create a new dictionary with the same sections as default_config
+    new_config = {section: {} for section in default_config}  # Create a new dictionary with the same sections as default_config
     for section, section_config in default_config.items():
         if section in config:
             for key in section_config:
                 if key in config[section]:
-                    new_config[section][key] = config[section][key]  # update the value from loaded config
+                    new_config[section][key] = config[section][key]  # Update the value from loaded config
                 else:
                     logger.warning(f"Missing keys: {[section]}{[key]}")
-                    new_config[section][key] = section_config[key]  # if key was not present in loaded config, use the default value
-                    modified = True  # if key was not present in loaded config, it's a missing key
+                    new_config[section][key] = section_config[key]  # If key was not present in loaded config, use the default value
+                    modified = True  # If key was not present in loaded config, it's a missing key
 
-    if modified:  # if there was a missing key
+    if modified:  # If there was a missing key
         with open("config.toml", "w") as f:
-            toml.dump(new_config, f)  # overwrite the config.toml file with the updated config
+            toml.dump(new_config, f)  # Overwrite the config.toml file with the updated config
     else:
         logger.success("All keys were found in the configuration file")
 
-    return new_config  # return the updated config
+    return new_config  # Return the updated config
 
 
 def update_config(new_config):

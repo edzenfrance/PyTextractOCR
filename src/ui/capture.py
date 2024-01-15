@@ -272,7 +272,7 @@ class FullscreenCapture(QMainWindow):
         if scan_only:
             with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as temp:
                 temporary_file_name = temp.name
-                shutil.copy(file_name, temporary_file_name)  # copy the selected file to the temporary file
+                shutil.copy(file_name, temporary_file_name)  # Copy the selected file to the temporary file
                 logger.success(f"Selected image copied as temporary file: {temp.name}")
             self.extracted_text = perform_ocr(temporary_file_name, self.config)
             self.translated_text = self.translate_extracted_text(self.extracted_text)
